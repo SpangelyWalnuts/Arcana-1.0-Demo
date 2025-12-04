@@ -64,6 +64,7 @@ var active_attack_tiles: Array[Node2D] = []    # NEW: attack tiles
 var active_skill_preview_tiles: Array = []
 var last_preview_tile: Vector2i = Vector2i(-999, -999)
 
+
 func _ready() -> void:
 	spawn_units_from_run()
 	turn_manager.phase_changed.connect(_on_phase_changed)
@@ -99,6 +100,8 @@ func _ready() -> void:
 	# After map is built, you can now spawn units based on terrain, etc.
 	# ...
 
+	battle_finished = false
+
 	_initial_player_unit_count = get_tree().get_nodes_in_group("player_units").size()
 func spawn_test_units() -> void:
 	if unit_scene == null:
@@ -106,30 +109,23 @@ func spawn_test_units() -> void:
 		return
 
 	# Player unit
-	var p = unit_scene.instantiate()
-	units.add_child(p)
-	p.team = "player"
-	p.name = "PlayerUnit"
 	var p_pos := Vector2i(2, 2)
-	p.grid_position = p_pos
+	var p    := _spawn_unit(unit_scene, p_pos, "player")
+	p.name = "PlayerUnit"
 	p.position = grid.tile_to_world(p_pos)
 
 	# Optional: tint so you can visually see player
 	if p.has_node("Sprite2D"):
-		p.get_node("Sprite2D").modulate = Color(0.7, 0.9, 1.0)
+		p.get_node("Sprite2D").modulate = Color(0.8, 0.8, 1.0)
 
 	# Enemy unit
-	var e = unit_scene.instantiate()
-	units.add_child(e)
-	e.team = "enemy"
-	e.name = "EnemyUnit"
-	var e_pos := Vector2i(5, 2)
-	e.grid_position = e_pos
+	var e_pos := Vector2i(8, 4)
+	var e    := _spawn_unit(unit_scene, e_pos, "enemy")
+	e.name = "Enemy"
 	e.position = grid.tile_to_world(e_pos)
 
-	# Tint enemy red-ish
 	if e.has_node("Sprite2D"):
-		e.get_node("Sprite2D").modulate = Color(1.0, 0.6, 0.6)
+		e.get_node("Sprite2D").modulate = Color(1.0, 0.8, 0.8)
 
 
 func _input(event: InputEvent) -> void:
@@ -699,7 +695,8 @@ func _on_unit_died(unit) -> void:
 		players_defeated += 1
 
 	# After any unit dies, re-check victory/defeat conditions.
-	_check_victory_defeat()
+	# 🔹 Defer victory/defeat check to after current frame logic
+		call_deferred("_check_victory_defeat")
 
 
 # UNITS FOR RUN SPAWN CODE
@@ -708,7 +705,6 @@ func spawn_units_from_run() -> void:
 		push_error("Main: 'unit_scene' is not assigned!")
 		return
 
-	# If no run is active or no deployed units, fall back to old test spawn.
 	if not RunManager.run_active or RunManager.deployed_units.is_empty():
 		print("Main: No deployed_units found, falling back to spawn_test_units().")
 		spawn_test_units()
@@ -722,26 +718,30 @@ func spawn_units_from_run() -> void:
 	]
 
 	var i := 0
-	for cls in RunManager.deployed_units:
+	for data in RunManager.deployed_units:
 		if i >= spawn_tiles.size():
 			break
+		if data == null or data.unit_class == null:
+			continue
 
+		var cls: UnitClass = data.unit_class
 		var tile: Vector2i = spawn_tiles[i]
 
 		var u = unit_scene.instantiate()
 
-		# ✅ Set everything BEFORE add_child so _ready() sees correct data
 		u.team = "player"
 		u.unit_class = cls
+		u.level = data.level
+		u.exp = data.exp
+		u.unit_data = data      # ✅ direct assignment
+
 		u.name = cls.display_name
 		u.grid_position = tile
 		u.position = grid.tile_to_world(tile)
 
-		units.add_child(u)  # _ready() runs now, with unit_class already set
-
+		units.add_child(u)
 		i += 1
 
-	# Temporary enemy
 	var enemy_tile := Vector2i(8, 4)
 	var e = unit_scene.instantiate()
 	e.team = "enemy"
@@ -751,6 +751,7 @@ func spawn_units_from_run() -> void:
 	units.add_child(e)
 
 	_initial_player_unit_count = get_tree().get_nodes_in_group("player_units").size()
+
 
 
 # Menu Handler
@@ -1129,42 +1130,43 @@ func _check_victory_defeat() -> void:
 	if battle_finished:
 		return
 
-	# Get current units (using the groups your units join in unit.gd)
+	# Get current units
 	var player_units := get_tree().get_nodes_in_group("player_units")
-	var enemy_units := get_tree().get_nodes_in_group("enemy_units")
+	var enemy_units  := get_tree().get_nodes_in_group("enemy_units")
 
-	# Debug output so we can see what's happening.
+	# 🔍 DEBUG: list what the engine thinks is in the enemy_units group
+	print("Enemy units in group:")
+	for n in enemy_units:
+		print(" - ", n, "  valid:", is_instance_valid(n))
+
+	# Also log counts
 	print("CHECK VICTORY: players =", player_units.size(), " enemies =", enemy_units.size())
 
-	# --- Defeat condition: all player units are gone ---
+	# --- Defeat: all player units gone ---
 	if player_units.is_empty():
 		print(" -> All player units gone: DEFEAT")
 		_on_defeat("All allied units have fallen.")
 		return
 
-	# --- Victory condition: based on battle_objective ---
+	# --- Victory condition: default rout if no objective assigned ---
 	if battle_objective == null:
-		# If no objective is assigned, rout (defeat all enemies) is the default.
 		if enemy_units.is_empty():
 			print(" -> No enemies and no battle_objective: VICTORY (fallback rout)")
 			_on_victory("All enemies defeated.")
 		return
 
-	# Use the objective type to decide victory.
+	# --- Victory based on objective ---
 	match battle_objective.victory_type:
 		BattleObjective.VictoryType.ROUT:
-			# Rout/Clear: all enemies must be defeated.
 			if enemy_units.is_empty():
 				print(" -> ROUT objective and no enemies: VICTORY")
 				_on_victory("All enemies defeated.")
 
 		_:
-			# For now, any unimplemented objective type also treats
-			# "no enemies left" as victory (rout).
+			# Fallback: rout logic
 			if enemy_units.is_empty():
 				print(" -> Unhandled objective type but no enemies: VICTORY as rout")
 				_on_victory("All enemies defeated.")
-
 
 
 
@@ -1242,3 +1244,20 @@ func _count_player_units_lost() -> int:
 	if lost < 0:
 		lost = 0
 	return lost
+
+# SPawn Helper
+func _spawn_unit(scene: PackedScene, grid_pos: Vector2i, team: String) -> Node2D:
+	var u: Node2D = scene.instantiate()
+
+	# Set important data BEFORE entering the tree
+	u.team = team
+	u.grid_position = grid_pos
+
+	# Add under Units root so _ready() runs with correct team
+	units.add_child(u)
+
+	# Connect death signal to main handler
+	if u.has_signal("died"):
+		u.died.connect(_on_unit_died.bind(u))
+
+	return u

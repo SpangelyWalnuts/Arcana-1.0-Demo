@@ -5,10 +5,9 @@ var current_floor: int = 0
 var gold: int = 0
 
 # All units the player owns this run (UnitClass resources)
-var roster: Array[UnitClass] = []
+var roster: Array[UnitData] = []
+var deployed_units: Array[UnitData] = []
 
-# Units chosen to be deployed in the next battle
-var deployed_units: Array[UnitClass] = []
 
 var artifacts: Array[Resource] = []
 
@@ -42,8 +41,12 @@ func _setup_starting_roster() -> void:
 	for path in STARTING_UNIT_CLASS_PATHS:
 		var res := load(path)
 		if res is UnitClass:
-			roster.append(res)
-			print("RunManager: added UnitClass from", path)
+			var data := UnitData.new()
+			data.unit_class = res
+			data.level = 1
+			data.exp = 0
+			roster.append(data)
+			print("RunManager: added", res.display_name, "at level", data.level)
 		else:
 			push_warning("RunManager: Could not load UnitClass at %s" % path)
 
@@ -66,6 +69,65 @@ func goto_battle_scene() -> void:
 		return
 	get_tree().change_scene_to_packed(packed)
 
+# XP AND LEVEL UP HELPERS
+func _grant_post_battle_xp(summary: Dictionary, victory: bool) -> void:
+	# Basic XP per battle, scaled by floor
+	var floor: int = int(summary.get("floor", current_floor))
+	var enemies_defeated: int = int(summary.get("enemies_defeated", 0))
+
+	var base_xp: int = 25 + 5 * max(floor - 1, 0)
+	var kill_bonus: int = enemies_defeated * 3
+
+	var total_xp: int = base_xp + kill_bonus
+
+	# Deployed units get full, undeployed get half
+	var deployed: Array[UnitData] = deployed_units
+	var roster_copy: Array[UnitData] = roster
+
+	var deployed_set: Array[UnitData] = deployed.duplicate()
+
+	for data in roster_copy:
+		if data == null:
+			continue
+
+		var gain: int
+		if deployed_set.has(data):
+			gain = total_xp
+		else:
+			gain = int(round(float(total_xp) * 0.5))
+
+		_add_xp_to_unit(data, gain)
+
+
+func _add_xp_to_unit(data: UnitData, amount: int) -> void:
+	if data == null or data.unit_class == null:
+		return
+
+	data.exp += amount
+	while data.exp >= 100:
+		data.exp -= 100
+		_level_up_unit(data)
+
+
+func _level_up_unit(data: UnitData) -> void:
+	var cls: UnitClass = data.unit_class
+	if cls == null:
+		return
+
+	data.level += 1
+	print("Level up!", cls.display_name, "is now level", data.level)
+
+	# Roll growths
+	if randf() < cls.growth_hp:
+		data.bonus_max_hp += 1
+	if randf() < cls.growth_atk:
+		data.bonus_atk += 1
+	if randf() < cls.growth_defense:
+		data.bonus_defense += 1
+	if randf() < cls.growth_move:
+		data.bonus_move += 1
+	if randf() < cls.growth_mana:
+		data.bonus_max_mana += 1
 
 func return_to_title() -> void:
 	run_active = false

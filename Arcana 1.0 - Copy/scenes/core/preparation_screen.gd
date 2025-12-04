@@ -11,7 +11,7 @@ extends Control
 @onready var mana_label: Label       = $Panel/VBoxContainer/HBoxContainer/DetailsBox/ManaLabel
 @onready var range_label: Label      = $Panel/VBoxContainer/HBoxContainer/DetailsBox/RangeLabel
 @onready var arcana_label: Label     = $Panel/VBoxContainer/HBoxContainer/DetailsBox/ArcanaLabel
-
+@onready var level_label: Label      = $Panel/VBoxContainer/HBoxContainer/DetailsBox/LevelLabel
 
 # Temporary: limit on how many units can be deployed this floor.
 # Later we’ll hook this to map size / enemy count via some floor config.
@@ -63,13 +63,18 @@ func _show_unit_details_from_roster_index(roster_index: int) -> void:
 		_clear_details_panel()
 		return
 
-	var cls: UnitClass = roster[roster_index]
-	if cls == null:
+	var data: UnitData = roster[roster_index]
+	if data == null or data.unit_class == null:
 		_clear_details_panel()
 		return
 
+	var cls: UnitClass = data.unit_class
+
 	# Basic class name
 	class_name_label.text = "Class: %s" % cls.display_name
+
+	# Level / EXP
+	level_label.text = "Level: %d   EXP: %d" % [data.level, data.exp]
 
 	# Core stats
 	stats_label.text = "HP: %d   ATK: %d   DEF: %d" % [
@@ -103,13 +108,16 @@ func _show_unit_details_from_roster_index(roster_index: int) -> void:
 		else:
 			arcana_label.text = "Arcana: " + ", ".join(names)
 
+
 #CLEAR DETAILS HELPER 
 func _clear_details_panel() -> void:
 	class_name_label.text = "Class: -"
+	level_label.text      = "Level: -   EXP: -"
 	stats_label.text      = "HP: -   ATK: -   DEF: -"
 	mana_label.text       = "Mana: -"
 	range_label.text      = "Move: -   Range: -"
 	arcana_label.text     = "Arcana: -"
+
 
 func _populate_roster_lists() -> void:
 	roster_list.clear()
@@ -117,12 +125,16 @@ func _populate_roster_lists() -> void:
 	_deployed_indices.clear()
 
 	var roster = RunManager.roster
-	for i in range(roster.size()):
-		var cls: UnitClass = roster[i]
-		roster_list.add_item(cls.display_name)
 
-		var label_text := cls.display_name
+	for i in range(roster.size()):
+		var data: UnitData = roster[i]
+		if data == null or data.unit_class == null:
+			continue
+
+		var cls: UnitClass = data.unit_class
+		var label_text := "%s (Lv %d)" % [cls.display_name, data.level]
 		roster_list.add_item(label_text)
+
 
 
 func _on_roster_item_activated(index: int) -> void:
@@ -152,32 +164,36 @@ func _refresh_lists() -> void:
 
 	var roster = RunManager.roster
 
+	# --- Rebuild roster list ---
 	for i in range(roster.size()):
-		var cls: UnitClass = roster[i]
-		if cls == null:
+		var data: UnitData = roster[i]
+		if data == null or data.unit_class == null:
 			continue
 
-		var text := cls.display_name
+		var cls: UnitClass = data.unit_class
+		var text := "%s (Lv %d)" % [cls.display_name, data.level]
 
 		if _deployed_indices.has(i):
-			# Mark as "selected" in the roster list (optional)
 			text += " [DEPLOYED]"
 
 		roster_list.add_item(text)
 
-	# Fill deployed list in the same order as _deployed_indices
-	for idx in _deployed_indices:
-		if idx < 0 or idx >= roster.size():
+	# --- Rebuild deployed list in the same order as _deployed_indices ---
+	for roster_index in _deployed_indices:
+		if roster_index < 0 or roster_index >= roster.size():
 			continue
-		var cls: UnitClass = roster[idx]
-		if cls == null:
+
+		var data: UnitData = roster[roster_index]
+		if data == null or data.unit_class == null:
 			continue
-		deploy_list.add_item(cls.display_name)
+
+		var cls: UnitClass = data.unit_class
+		deploy_list.add_item("%s (Lv %d)" % [cls.display_name, data.level])
 
 
 func _on_start_battle_pressed() -> void:
 	if _deployed_indices.is_empty():
-		return  # Maybe show a warning later
+		return  # Maybe later show a warning: "Select at least one unit."
 
 	var roster = RunManager.roster
 	RunManager.deployed_units.clear()
@@ -185,9 +201,10 @@ func _on_start_battle_pressed() -> void:
 	for idx in _deployed_indices:
 		if idx < 0 or idx >= roster.size():
 			continue
-		var cls: UnitClass = roster[idx]
-		if cls != null:
-			RunManager.deployed_units.append(cls)
+
+		var data: UnitData = roster[idx]
+		if data != null:
+			RunManager.deployed_units.append(data)
 
 	# Go to battle scene
 	RunManager.goto_battle_scene()

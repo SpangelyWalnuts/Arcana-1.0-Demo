@@ -71,6 +71,9 @@ size_flags_horizontal = 3
 [node name="ClassNameLabel" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
 layout_mode = 2
 
+[node name="LevelLabel" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
+layout_mode = 2
+
 [node name="StatsLabel" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
 layout_mode = 2
 
