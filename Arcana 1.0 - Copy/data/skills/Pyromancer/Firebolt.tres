@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://bfrqsar2c8kjh"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_wejox"]
+
+[resource]
+script = ExtResource("1_wejox")
+name = "Firebolt"
+mana_cost = 3

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="UnitClass" load_steps=4 format=3 uid="uid://dy0tp2axtcqvr"]
+
+[ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_7jeh2"]
+[ext_resource type="Resource" uid="uid://cs4lwh06yhvos" path="res://data/skills/Pyromancer/Fireball.tres" id="2_bpxdp"]
+[ext_resource type="Resource" uid="uid://bfrqsar2c8kjh" path="res://data/skills/Pyromancer/Firebolt.tres" id="3_0qsor"]
+
+[resource]
+script = ExtResource("1_7jeh2")
+display_name = "Pyromancer"
+max_hp = 9
+atk = 7
+defense = 0
+attack_range = 2
+max_mana = 10
+skills = Array[Resource]([ExtResource("2_bpxdp"), ExtResource("3_0qsor")])

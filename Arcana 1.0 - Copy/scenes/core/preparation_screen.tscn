@@ -1,0 +1,89 @@
+[gd_scene load_steps=2 format=3 uid="uid://ddhda1ldr7xp6"]
+
+[ext_resource type="Script" uid="uid://cfwnuu4x2bjc0" path="res://scenes/core/preparation_screen.gd" id="1_36mye"]
+
+[node name="PreparationScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_36mye")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="FloorLabel" type="Label" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="HintLabel" type="Label" parent="Panel/VBoxContainer"]
+layout_mode = 2
+text = "Choose which units to deploy"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="RosterBox" type="VBoxContainer" parent="Panel/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/VBoxContainer/HBoxContainer/RosterBox"]
+layout_mode = 2
+text = "Available Units"
+
+[node name="RosterList" type="ItemList" parent="Panel/VBoxContainer/HBoxContainer/RosterBox"]
+layout_mode = 2
+auto_width = true
+auto_height = true
+
+[node name="DeployBox" type="VBoxContainer" parent="Panel/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DeployBox"]
+layout_mode = 2
+text = "Deployed Units"
+
+[node name="DeployList" type="ItemList" parent="Panel/VBoxContainer/HBoxContainer/DeployBox"]
+layout_mode = 2
+auto_width = true
+auto_height = true
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="StartBattleButton" type="Button" parent="Panel/VBoxContainer/HBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Start Battle"
+
+[node name="ReturnToTitleButton" type="Button" parent="Panel/VBoxContainer/HBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Return to Title"
+
+[node name="DetailsBox" type="VBoxContainer" parent="Panel/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ClassNameLabel" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
+layout_mode = 2
+
+[node name="StatsLabel" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
+layout_mode = 2
+
+[node name="ManaLabel" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
+layout_mode = 2
+
+[node name="RangeLabel" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
+layout_mode = 2
+
+[node name="ArcanaLabel" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
+layout_mode = 2
+
+[node name="RosterDebugLabel" type="Label" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 11.0

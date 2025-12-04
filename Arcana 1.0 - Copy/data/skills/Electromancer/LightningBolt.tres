@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://cvgvpxwwcs7ye"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_cnhk2"]
+
+[resource]
+script = ExtResource("1_cnhk2")
+name = "Lightning Bolt"
+description = "A bolt of lightning strikes target area."
+cast_range = 4

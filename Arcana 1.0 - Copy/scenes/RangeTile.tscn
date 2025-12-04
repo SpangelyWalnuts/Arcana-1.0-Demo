@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://r6ncydstrjf5"]
+
+[ext_resource type="Texture2D" uid="uid://dstsgg3tburku" path="res://art/ui/valid movement.png" id="1_lx6c5"]
+
+[node name="RangeTile" type="Node2D"]
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+modulate = Color(0.56834656, 0.7770678, 1.1638972, 1)
+z_index = 5
+texture = ExtResource("1_lx6c5")
+centered = false

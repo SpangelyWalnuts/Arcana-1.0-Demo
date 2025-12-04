@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="UnitClass" load_steps=2 format=3 uid="uid://r0vriv0j5ote"]
+
+[ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_phwwh"]
+
+[resource]
+script = ExtResource("1_phwwh")
+display_name = "Geomancer"
+max_hp = 15
+max_mana = 10
+metadata/_custom_type_script = "uid://b823ipo4ebjd5"

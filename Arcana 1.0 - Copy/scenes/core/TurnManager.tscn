@@ -1,0 +1,3 @@
+[gd_scene format=3 uid="uid://b81cn2l3o76bu"]
+
+[node name="TurnManager" type="Node2D"]

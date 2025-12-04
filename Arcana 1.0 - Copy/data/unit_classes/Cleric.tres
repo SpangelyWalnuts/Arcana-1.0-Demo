@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UnitClass" load_steps=3 format=3 uid="uid://cbmgvrsa3mg1a"]
+
+[ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_2eepk"]
+[ext_resource type="Resource" uid="uid://3o3npcfpxsw4" path="res://data/skills/Cleric/Heal.tres" id="2_ue7aj"]
+
+[resource]
+script = ExtResource("1_2eepk")
+display_name = "Cleric"
+max_hp = 8
+atk = 2
+defense = 0
+max_mana = 10
+mana_regen_per_turn = 3
+skills = Array[Resource]([ExtResource("2_ue7aj")])

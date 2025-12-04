@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UnitClass" load_steps=4 format=3 uid="uid://bjrnn7q0lcs5g"]
+
+[ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_3567t"]
+[ext_resource type="Resource" uid="uid://cvgvpxwwcs7ye" path="res://data/skills/Electromancer/LightningBolt.tres" id="2_i23vf"]
+[ext_resource type="Resource" uid="uid://btw03xglibj71" path="res://data/skills/Electromancer/Shock.tres" id="3_7j7p0"]
+
+[resource]
+script = ExtResource("1_3567t")
+display_name = "Electromancer"
+atk = 6
+defense = 0
+move_range = 5
+max_mana = 10
+skills = Array[Resource]([ExtResource("2_i23vf"), ExtResource("3_7j7p0")])

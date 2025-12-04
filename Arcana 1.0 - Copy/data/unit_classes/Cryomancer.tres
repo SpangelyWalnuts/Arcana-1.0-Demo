@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="UnitClass" load_steps=2 format=3 uid="uid://bwlb1xfhjqbtr"]
+
+[ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_c58w8"]
+
+[resource]
+script = ExtResource("1_c58w8")
+display_name = "Cryomancer"
+max_hp = 16
+atk = 5
+max_mana = 10
+metadata/_custom_type_script = "uid://b823ipo4ebjd5"

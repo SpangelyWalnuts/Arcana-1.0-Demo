@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="UnitClass" load_steps=2 format=3 uid="uid://c152wy07rsyy5"]
+
+[ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_lcq46"]
+
+[resource]
+script = ExtResource("1_lcq46")
+display_name = "Abjurer"
+max_hp = 14
+atk = 3
+max_mana = 10

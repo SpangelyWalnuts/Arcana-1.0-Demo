@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="UnitClass" load_steps=2 format=3 uid="uid://duevml1e3d8jt"]
+
+[ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_u1f5u"]
+
+[resource]
+script = ExtResource("1_u1f5u")
+display_name = "Aeromancer"
+max_hp = 11
+atk = 5
+defense = 0
+attack_range = 2
+move_range = 5
+max_mana = 10

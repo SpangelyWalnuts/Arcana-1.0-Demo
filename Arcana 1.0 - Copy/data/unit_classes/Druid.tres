@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="UnitClass" load_steps=2 format=3 uid="uid://vbbdbsfmfcwf"]
+
+[ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_851fg"]
+
+[resource]
+script = ExtResource("1_851fg")
+display_name = "Druid"
+max_hp = 13
+atk = 3
+max_mana = 10
