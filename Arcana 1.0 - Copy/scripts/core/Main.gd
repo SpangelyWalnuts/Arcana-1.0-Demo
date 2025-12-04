@@ -78,6 +78,10 @@ func _ready() -> void:
 	victory_panel.visible = false
 	defeat_panel.visible = false
 
+	# Connect 'died' signal for any units already placed in the scene.
+	for child in units.get_children():
+		_connect_unit_signals(child)
+
 	# Connect buttons for restart / return to title
 	victory_restart_button.pressed.connect(_on_restart_pressed)
 	victory_title_button.pressed.connect(_on_return_to_title_pressed)
@@ -103,6 +107,8 @@ func _ready() -> void:
 	battle_finished = false
 
 	_initial_player_unit_count = get_tree().get_nodes_in_group("player_units").size()
+	
+	
 func spawn_test_units() -> void:
 	if unit_scene == null:
 		push_error("Assign 'unit_scene' in the Inspector on Main")
@@ -113,19 +119,16 @@ func spawn_test_units() -> void:
 	var p    := _spawn_unit(unit_scene, p_pos, "player")
 	p.name = "PlayerUnit"
 	p.position = grid.tile_to_world(p_pos)
-
-	# Optional: tint so you can visually see player
 	if p.has_node("Sprite2D"):
-		p.get_node("Sprite2D").modulate = Color(0.8, 0.8, 1.0)
+		p.get_node("Sprite2D").modulate = Color(0.7, 0.9, 1.0)
 
 	# Enemy unit
-	var e_pos := Vector2i(8, 4)
+	var e_pos := Vector2i(5, 2)
 	var e    := _spawn_unit(unit_scene, e_pos, "enemy")
-	e.name = "Enemy"
+	e.name = "EnemyUnit"
 	e.position = grid.tile_to_world(e_pos)
-
 	if e.has_node("Sprite2D"):
-		e.get_node("Sprite2D").modulate = Color(1.0, 0.8, 0.8)
+		e.get_node("Sprite2D").modulate = Color(1.0, 0.6, 0.6)
 
 
 func _input(event: InputEvent) -> void:
@@ -205,6 +208,12 @@ func _input(event: InputEvent) -> void:
 				return
 
 
+func _connect_unit_signals(u: Node) -> void:
+	# Only connect if the unit actually has the signal
+	if u.has_signal("died"):
+		# Avoid double-connecting in case this is called more than once
+		if not u.died.is_connected(_on_unit_died):
+			u.died.connect(_on_unit_died.bind(u))
 
 
 func _handle_move_click(tile: Vector2i) -> void:
@@ -685,18 +694,15 @@ func _run_enemy_turn() -> void:
 	turn_manager.end_turn()
 
 func _on_unit_died(unit) -> void:
-	# Debug print so we see who died
 	print("Unit died in Main:", unit.name, "team:", unit.team)
 
-	# Update run statistics based on team
 	if unit.team == "enemy":
 		enemies_defeated += 1
 	elif unit.team == "player":
 		players_defeated += 1
 
-	# After any unit dies, re-check victory/defeat conditions.
-	# 🔹 Defer victory/defeat check to after current frame logic
-		call_deferred("_check_victory_defeat")
+	# Defer to ensure groups / tree update is complete
+	call_deferred("_check_victory_defeat")
 
 
 # UNITS FOR RUN SPAWN CODE
@@ -1130,16 +1136,9 @@ func _check_victory_defeat() -> void:
 	if battle_finished:
 		return
 
-	# Get current units
 	var player_units := get_tree().get_nodes_in_group("player_units")
 	var enemy_units  := get_tree().get_nodes_in_group("enemy_units")
 
-	# 🔍 DEBUG: list what the engine thinks is in the enemy_units group
-	print("Enemy units in group:")
-	for n in enemy_units:
-		print(" - ", n, "  valid:", is_instance_valid(n))
-
-	# Also log counts
 	print("CHECK VICTORY: players =", player_units.size(), " enemies =", enemy_units.size())
 
 	# --- Defeat: all player units gone ---
@@ -1161,9 +1160,7 @@ func _check_victory_defeat() -> void:
 			if enemy_units.is_empty():
 				print(" -> ROUT objective and no enemies: VICTORY")
 				_on_victory("All enemies defeated.")
-
 		_:
-			# Fallback: rout logic
 			if enemy_units.is_empty():
 				print(" -> Unhandled objective type but no enemies: VICTORY as rout")
 				_on_victory("All enemies defeated.")

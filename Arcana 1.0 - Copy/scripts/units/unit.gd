@@ -103,7 +103,7 @@ func die() -> void:
 	# Notify listeners (Main.gd, etc.)
 	died.emit()
 
-	# Make sure we're not left in any groups
+	# Make sure we are no longer in unit groups
 	if team == "enemy":
 		remove_from_group("enemy_units")
 	elif team == "player":
