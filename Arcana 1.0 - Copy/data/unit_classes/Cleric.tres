@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=3 format=3 uid="uid://cbmgvrsa3mg1a"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=4 format=3 uid="uid://cbmgvrsa3mg1a"]
 
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_2eepk"]
 [ext_resource type="Resource" uid="uid://3o3npcfpxsw4" path="res://data/skills/Cleric/Heal.tres" id="2_ue7aj"]
+[ext_resource type="Resource" uid="uid://cnohu8yxch23o" path="res://data/skills/Cleric/HealingCircle.tres" id="3_d2whj"]
 
 [resource]
 script = ExtResource("1_2eepk")
@@ -11,4 +12,9 @@ atk = 2
 defense = 0
 max_mana = 10
 mana_regen_per_turn = 3
-skills = Array[Resource]([ExtResource("2_ue7aj")])
+skills = Array[Resource]([ExtResource("2_ue7aj"), ExtResource("3_d2whj")])
+growth_hp = 0.35
+growth_atk = 0.4
+growth_defense = 0.15
+growth_move = 0.05
+growth_mana = 0.8

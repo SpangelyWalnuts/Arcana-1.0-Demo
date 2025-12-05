@@ -12,3 +12,7 @@ defense = 0
 move_range = 5
 max_mana = 10
 skills = Array[Resource]([ExtResource("2_i23vf"), ExtResource("3_7j7p0")])
+growth_hp = 0.4
+growth_defense = 0.2
+growth_move = 0.0
+growth_mana = 0.5

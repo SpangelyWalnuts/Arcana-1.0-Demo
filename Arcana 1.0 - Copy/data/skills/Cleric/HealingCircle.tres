@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://cnohu8yxch23o"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_1d7sr"]
+
+[resource]
+script = ExtResource("1_1d7sr")
+name = "Healing Circle"
+mana_cost = 6
+is_heal = true
+aoe_radius = 3
+flat_power = 5
+target_type = 2
+can_target_self = true

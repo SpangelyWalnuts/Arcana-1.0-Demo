@@ -72,6 +72,9 @@ text = "Shop"
 layout_mode = 2
 size_flags_horizontal = 3
 
+[node name="UnitNameLabel" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
+layout_mode = 2
+
 [node name="ClassNameLabel" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
 layout_mode = 2
 

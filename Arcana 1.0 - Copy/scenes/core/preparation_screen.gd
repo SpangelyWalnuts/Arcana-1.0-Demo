@@ -38,6 +38,8 @@ extends Control
 @onready var shop_buy_button: Button       = $ShopDialog/VBoxContainer/HBoxContainer/BuyButton
 @onready var shop_close_button: Button     = $ShopDialog/VBoxContainer/HBoxContainer/CloseButton
 
+@onready var unit_name_label: Label = $Panel/VBoxContainer/HBoxContainer/DetailsBox/UnitNameLabel
+
 # Track which unit is currently selected in the roster
 var _selected_roster_index: int = -1
 # Temporary: limit on how many units can be deployed this floor.
@@ -64,7 +66,7 @@ func _ready() -> void:
 
 	# Single-click to show details
 	roster_list.item_selected.connect(_on_roster_item_selected)
-	deploy_list.item_selected.connect(_on_deploy_item_selected)
+
 
 	start_button.pressed.connect(_on_start_battle_pressed)
 	title_button.pressed.connect(_on_return_to_title_pressed)
@@ -95,15 +97,6 @@ func _on_roster_item_selected(index: int) -> void:
 	_show_unit_details_from_roster_index(index)
 
 
-func _on_deploy_item_selected(index: int) -> void:
-	if index < 0 or index >= _deployed_indices.size():
-		return
-
-	var roster_index := _deployed_indices[index]
-	_selected_roster_index = roster_index
-	_show_unit_details_from_roster_index(roster_index)
-
-
 func _show_unit_details_from_roster_index(roster_index: int) -> void:
 	var roster = RunManager.roster
 	if roster_index < 0 or roster_index >= roster.size():
@@ -117,45 +110,74 @@ func _show_unit_details_from_roster_index(roster_index: int) -> void:
 
 	var cls: UnitClass = data.unit_class
 
-	# Basic class name
+	# --- Base stats from class ---
+	var base_max_hp: int    = cls.max_hp
+	var base_atk: int       = cls.atk
+	var base_def: int       = cls.defense
+	var base_move: int      = cls.move_range
+	var base_max_mana: int  = cls.max_mana
+	var base_attack_range: int = cls.attack_range
+
+	# --- Add permanent per-unit bonuses (from level-ups etc.) ---
+	var total_max_hp: int   = base_max_hp    + data.bonus_max_hp
+	var total_atk: int      = base_atk       + data.bonus_atk
+	var total_def: int      = base_def       + data.bonus_defense
+	var total_move: int     = base_move      + data.bonus_move
+	var total_max_mana: int = base_max_mana  + data.bonus_max_mana
+	var total_attack_range: int = base_attack_range
+
+	# --- Add equipment bonuses ---
+	for eq in data.equipment_slots:
+		if eq == null:
+			continue
+		var e: Equipment = eq as Equipment
+		if e == null:
+			continue
+
+		total_max_hp    += e.bonus_max_hp
+		total_atk       += e.bonus_atk
+		total_def       += e.bonus_defense
+		total_move      += e.bonus_move
+		total_max_mana  += e.bonus_max_mana
+		# (you could also let equipment modify attack_range later if you want)
+
+	# --- UI: Name / Class / Level ---
+	if unit_name_label:
+		# Right now we don't have a custom per-unit name field,
+		# so we'll just use the class display name as the "name".
+		unit_name_label.text = "Name: %s" % cls.display_name
+
 	class_name_label.text = "Class: %s" % cls.display_name
+	level_label.text      = "Level: %d   EXP: %d" % [data.level, data.exp]
 
-	# Level / EXP
-	level_label.text = "Level: %d   EXP: %d" % [data.level, data.exp]
-
-	# Core stats
+	# --- UI: Stats ---
 	stats_label.text = "HP: %d   ATK: %d   DEF: %d" % [
-		cls.max_hp,
-		cls.atk,
-		cls.defense
+		total_max_hp,
+		total_atk,
+		total_def
 	]
 
-	# Mana info
 	mana_label.text = "Mana: %d (Regen: %d/turn)" % [
-		cls.max_mana,
+		total_max_mana,
 		cls.mana_regen_per_turn
 	]
 
-	# Movement / range
 	range_label.text = "Move: %d   Range: %d" % [
-		cls.move_range,
-		cls.attack_range
+		total_move,
+		total_attack_range
 	]
 
-	# Arcana / skills (equipped)
+	# --- Arcana (equipped) ---
 	if data.equipped_arcana.size() == 0:
 		arcana_label.text = "Arcana: (none equipped)"
 	else:
-		var names: Array[String] = []
+		var arc_names: Array[String] = []
 		for s in data.equipped_arcana:
 			if s != null:
-				names.append(s.name)
-		if names.is_empty():
-			arcana_label.text = "Arcana: (none equipped)"
-		else:
-			arcana_label.text = "Arcana: " + ", ".join(names)
+				arc_names.append(s.name)
+		arcana_label.text = "Arcana: " + ", ".join(arc_names)
 
-	# Equipment slots
+	# --- Equipment slots ---
 	if data.equipment_slots.size() == 0:
 		equipment_label.text = "Equipment: (none)"
 	else:
@@ -165,7 +187,7 @@ func _show_unit_details_from_roster_index(roster_index: int) -> void:
 				eq_names.append(eq.name)
 		equipment_label.text = "Equipment: " + ", ".join(eq_names)
 
-	# Item slots
+	# --- Item slots ---
 	if data.item_slots.size() == 0:
 		items_label.text = "Items: (none)"
 	else:
@@ -174,6 +196,7 @@ func _show_unit_details_from_roster_index(roster_index: int) -> void:
 			if it != null:
 				item_names.append(it.name)
 		items_label.text = "Items: " + ", ".join(item_names)
+
 
 #USAGE HELPERS
 func _count_equipment_usage(eq: Equipment, exclude_roster_index: int) -> int:
@@ -214,6 +237,10 @@ func _count_item_usage(item: Item, exclude_roster_index: int) -> int:
 #CLEAR DETAILS HELPER 
 func _clear_details_panel() -> void:
 	_selected_roster_index = -1
+
+	if unit_name_label:
+		unit_name_label.text = "Name: -"
+
 	class_name_label.text = "Class: -"
 	level_label.text      = "Level: -   EXP: -"
 	stats_label.text      = "HP: -   ATK: -   DEF: -"
@@ -222,6 +249,7 @@ func _clear_details_panel() -> void:
 	arcana_label.text     = "Arcana: -"
 	equipment_label.text  = "Equipment: -"
 	items_label.text      = "Items: -"
+
 
 
 

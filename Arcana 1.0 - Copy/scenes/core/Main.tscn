@@ -494,7 +494,7 @@ layout_mode = 2
 
 [node name="RestartButton" type="Button" parent="UI/VictoryPanel/Panel/VBoxContainer/ButtonRow"]
 layout_mode = 2
-text = "Next Battle"
+text = "Continue"
 
 [node name="TitleButton" type="Button" parent="UI/VictoryPanel/Panel/VBoxContainer/ButtonRow"]
 layout_mode = 2

@@ -11,3 +11,7 @@ defense = 0
 attack_range = 2
 move_range = 5
 max_mana = 10
+growth_hp = 0.5
+growth_atk = 0.3
+growth_defense = 0.3
+growth_mana = 0.5

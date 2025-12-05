@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://dnkeiik2pogwi"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_gthne"]
+
+[resource]
+script = ExtResource("1_gthne")
+name = "Heat Wave"
+cast_range = 0
+aoe_radius = 2
+target_type = 3
+can_target_self = true

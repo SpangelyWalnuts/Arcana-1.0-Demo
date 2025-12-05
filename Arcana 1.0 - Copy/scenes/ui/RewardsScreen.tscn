@@ -1,0 +1,48 @@
+[gd_scene load_steps=2 format=3 uid="uid://do4abab02jja7"]
+
+[ext_resource type="Script" uid="uid://bw4p1xf5uy7ws" path="res://scenes/core/rewards_screen.gd" id="1_i5r6t"]
+
+[node name="RewardsScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_i5r6t")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Choose Your Reward"
+
+[node name="InfoLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="CardsContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Card1" type="Button" parent="MarginContainer/VBoxContainer/CardsContainer"]
+layout_mode = 2
+
+[node name="Card2" type="Button" parent="MarginContainer/VBoxContainer/CardsContainer"]
+layout_mode = 2
+
+[node name="Card3" type="Button" parent="MarginContainer/VBoxContainer/CardsContainer"]
+layout_mode = 2
+
+[node name="Card4" type="Button" parent="MarginContainer/VBoxContainer/CardsContainer"]
+layout_mode = 2
+
+[node name="SkipButton" type="Button" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Skip Reward"
+
+[node name="HintLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Click a card to take the reward, or skip."

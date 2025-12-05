@@ -83,7 +83,7 @@ func _ready() -> void:
 		_connect_unit_signals(child)
 
 	# Connect buttons for restart / return to title
-	victory_restart_button.pressed.connect(_on_restart_pressed)
+	victory_restart_button.pressed.connect(_go_to_rewards_screen)
 	victory_title_button.pressed.connect(_on_return_to_title_pressed)
 	defeat_restart_button.pressed.connect(_on_restart_pressed)
 	defeat_title_button.pressed.connect(_on_return_to_title_pressed)
@@ -1200,6 +1200,7 @@ func _on_defeat(reason: String) -> void:
 
 	defeat_panel.visible = true
 	victory_panel.visible = false
+	
 
 
 func _on_restart_pressed() -> void:
@@ -1258,3 +1259,12 @@ func _spawn_unit(scene: PackedScene, grid_pos: Vector2i, team: String) -> Node2D
 		u.died.connect(_on_unit_died.bind(u))
 
 	return u
+
+#Rewards Screen Helper
+func _go_to_rewards_screen() -> void:
+	# Create rewards for this floor
+	RunManager.generate_rewards_for_floor(RunManager.current_floor)
+
+	var err = get_tree().change_scene_to_file("res://scenes/ui/RewardsScreen.tscn")
+	if err != OK:
+		push_error("Main: Failed to change to RewardsScreen, check path.")

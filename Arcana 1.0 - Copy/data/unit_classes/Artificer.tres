@@ -9,3 +9,7 @@ atk = 2
 attack_range = 2
 max_mana = 10
 mana_regen_per_turn = 2
+growth_atk = 0.1
+growth_defense = 0.3
+growth_move = 0.0
+growth_mana = 1.0

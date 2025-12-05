@@ -10,6 +10,13 @@ var deployed_units: Array[UnitData] = []
 
 var artifacts: Array[Resource] = []
 
+enum RewardType { GOLD, ITEM, EQUIPMENT, EXP_BOOST, ARTIFACT }
+
+# The four options shown on the rewards screen after a battle.
+# Each is a Dictionary:
+# { "type": RewardType, "resource": Resource or null, "amount": int, "desc": String }
+var pending_rewards: Array = []
+
 @export var available_equipment: Array = []  # list of Equipment resources to choose from
 @export var available_items: Array = []      # list of Item resources to choose from
 
@@ -301,3 +308,139 @@ func try_buy_from_shop(index: int) -> Dictionary:
 	result["success"] = true
 	result["entry"] = entry
 	return result
+
+#RUN REWARDS
+func generate_rewards_for_floor(floor: int) -> void:
+	pending_rewards.clear()
+
+	# We always generate 4 options.
+	for i in range(4):
+		var option = _make_random_reward(floor, i)
+		pending_rewards.append(option)
+
+
+func _make_random_reward(floor: int, index: int) -> Dictionary:
+	# Simple weighting by index:
+	# 0–1: items/gold, 2: equipment/exp, 3: artifact / rare stuff
+	var r = randi() % 100
+	var reward_type: int
+
+	match index:
+		0, 1:
+			# More likely to be gold or item
+			if r < 40:
+				reward_type = RewardType.GOLD
+			elif r < 80:
+				reward_type = RewardType.ITEM
+			else:
+				reward_type = RewardType.EQUIPMENT
+		2:
+			# More likely equipment or exp
+			if r < 40:
+				reward_type = RewardType.EQUIPMENT
+			elif r < 80:
+				reward_type = RewardType.EXP_BOOST
+			else:
+				reward_type = RewardType.GOLD
+		3:
+			# Rare-ish: artifact placeholder, exp, or equipment
+			if r < 40:
+				reward_type = RewardType.ARTIFACT
+			elif r < 80:
+				reward_type = RewardType.EXP_BOOST
+			else:
+				reward_type = RewardType.EQUIPMENT
+
+	var option: Dictionary = {
+		"type": reward_type,
+		"resource": null,
+		"amount": 0,
+		"desc": ""
+	}
+
+	match reward_type:
+		RewardType.GOLD:
+			var base = 40 + floor * 10
+			var variance = 20 + floor * 5
+			var gold_amount = base + int(randi() % variance)
+			option["amount"] = gold_amount
+			option["desc"] = "Gain %d gold." % gold_amount
+
+		RewardType.ITEM:
+			if item_defs.size() == 0:
+				# Fallback to gold if no items defined
+				option["type"] = RewardType.GOLD
+				var g = 50 + floor * 8
+				option["amount"] = g
+				option["desc"] = "Gain %d gold." % g
+			else:
+				var item = item_defs[int(randi() % item_defs.size())]
+				var count = 1 + int(randi() % 2)  # 1–2 copies
+				option["resource"] = item
+				option["amount"] = count
+				option["desc"] = "Receive %dx %s." % [count, item.name]
+
+		RewardType.EQUIPMENT:
+			if equipment_defs.size() == 0:
+				# Fallback to gold
+				option["type"] = RewardType.GOLD
+				var g2 = 60 + floor * 12
+				option["amount"] = g2
+				option["desc"] = "Gain %d gold." % g2
+			else:
+				var eq = equipment_defs[int(randi() % equipment_defs.size())]
+				option["resource"] = eq
+				option["amount"] = 1
+				option["desc"] = "Receive %s." % eq.name
+
+		RewardType.EXP_BOOST:
+			# Extra EXP to all units in the roster
+			var exp_amount = 10 + floor * 3
+			option["amount"] = exp_amount
+			option["desc"] = "All allies gain %d bonus EXP." % exp_amount
+
+		RewardType.ARTIFACT:
+			# Placeholder for now. Later you can substitute real artifact resources.
+			option["amount"] = 0
+			option["desc"] = "Obtain a mysterious artifact (not yet implemented)."
+
+	return option
+
+#APPLY REWARDS
+func apply_reward(option: Dictionary) -> void:
+	if option.is_empty():
+		return
+
+	var reward_type = int(option.get("type", RewardType.GOLD))
+	var res = option.get("resource", null)
+	var amount = int(option.get("amount", 0))
+
+	match reward_type:
+		RewardType.GOLD:
+			gold += amount
+
+		RewardType.ITEM:
+			if res is Item:
+				var current = int(inventory_items.get(res, 0))
+				inventory_items[res] = current + amount
+
+		RewardType.EQUIPMENT:
+			if res is Equipment:
+				var current2 = int(inventory_equipment.get(res, 0))
+				inventory_equipment[res] = current2 + amount
+
+		RewardType.EXP_BOOST:
+			# Simple version: add EXP to everyone in the roster
+			for data in roster:
+				if data == null:
+					continue
+				data.exp += amount
+				# You can handle level-ups later when EXP crosses threshold
+
+		RewardType.ARTIFACT:
+			# TODO: hook into your future artifact system.
+			# For now we just print.
+			print("Artifact reward chosen (not implemented yet).")
+
+	# Once a reward is taken, clear the list to avoid reusing it accidentally.
+	pending_rewards.clear()
