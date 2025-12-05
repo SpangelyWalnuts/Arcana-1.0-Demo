@@ -64,6 +64,10 @@ text = "Start Battle"
 layout_mode = 2
 text = "Return to Title"
 
+[node name="ShopButton" type="Button" parent="Panel/VBoxContainer/HBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Shop"
+
 [node name="DetailsBox" type="VBoxContainer" parent="Panel/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -86,7 +90,87 @@ layout_mode = 2
 [node name="ArcanaLabel" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
 layout_mode = 2
 
+[node name="ManageArcanaButton" type="Button" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
+layout_mode = 2
+text = "Manage Arcana"
+
+[node name="EquipmentLabel" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
+layout_mode = 2
+
+[node name="ManageEquipmentButton" type="Button" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
+layout_mode = 2
+text = "Manage Equipment"
+
+[node name="ItemsLabel" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
+layout_mode = 2
+
+[node name="ManageItemsButton" type="Button" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
+layout_mode = 2
+text = "Manage Items"
+
 [node name="RosterDebugLabel" type="Label" parent="."]
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 11.0
+
+[node name="ArcanaPopup" type="AcceptDialog" parent="."]
+oversampling_override = 1.0
+ok_button_text = "Confirm"
+
+[node name="ArcanaList" type="VBoxContainer" parent="ArcanaPopup"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 92.0
+offset_bottom = 63.0
+
+[node name="EquipmentPopup" type="AcceptDialog" parent="."]
+oversampling_override = 1.0
+
+[node name="EquipmentList" type="VBoxContainer" parent="EquipmentPopup"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 92.0
+offset_bottom = 63.0
+
+[node name="ItemsPopup" type="AcceptDialog" parent="."]
+oversampling_override = 1.0
+
+[node name="ItemsList" type="VBoxContainer" parent="ItemsPopup"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 92.0
+offset_bottom = 63.0
+
+[node name="ShopDialog" type="AcceptDialog" parent="."]
+oversampling_override = 1.0
+size = Vector2i(104, 113)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ShopDialog"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 96.0
+offset_bottom = 76.0
+
+[node name="ShopTitleLabel" type="Label" parent="ShopDialog/VBoxContainer"]
+layout_mode = 2
+text = "Scrier's General Goods"
+
+[node name="ShopList" type="ItemList" parent="ShopDialog/VBoxContainer"]
+layout_mode = 2
+
+[node name="GoldLabel" type="Label" parent="ShopDialog/VBoxContainer"]
+layout_mode = 2
+
+[node name="DetailsLabel" type="Label" parent="ShopDialog/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="ShopDialog/VBoxContainer"]
+layout_mode = 2
+
+[node name="BuyButton" type="Button" parent="ShopDialog/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Buy"
+
+[node name="CloseButton" type="Button" parent="ShopDialog/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Close"

@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="Equipment" load_steps=2 format=3 uid="uid://bfv24mujno8tk"]
+
+[ext_resource type="Script" uid="uid://bnsyp2yvudsd2" path="res://scripts/data/equipment.gd" id="1_3lur4"]
+
+[resource]
+script = ExtResource("1_3lur4")
+name = "Leather Boots"
+description = "Increase movement by 1"
+bonus_move = 1

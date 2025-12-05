@@ -12,3 +12,11 @@ class_name UnitData
 @export var bonus_defense: int = 0
 @export var bonus_move: int = 0
 @export var bonus_max_mana: int = 0
+
+# NEW: Arcana loadout for this specific unit.
+# We keep it as plain Array to avoid type issues.
+@export var equipped_arcana: Array = []    # will hold Skill resources
+
+# NEW: per-unit equipment and items (2 slots each by design)
+@export var equipment_slots: Array = []   # will hold Equipment resources
+@export var item_slots: Array = []        # will hold Item resources

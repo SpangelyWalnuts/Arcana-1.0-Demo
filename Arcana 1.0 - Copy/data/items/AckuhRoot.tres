@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="Item" load_steps=2 format=3 uid="uid://bu6w8kbjo4kea"]
+
+[ext_resource type="Script" uid="uid://bf0c8gqgxrasv" path="res://scripts/data/item.gd" id="1_61fvo"]
+
+[resource]
+script = ExtResource("1_61fvo")
+name = "Ackuh Root"
+restore_mana = 5

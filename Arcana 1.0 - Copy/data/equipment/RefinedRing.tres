@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="Equipment" load_steps=2 format=3 uid="uid://bag4wvyos53ax"]
+
+[ext_resource type="Script" uid="uid://bnsyp2yvudsd2" path="res://scripts/data/equipment.gd" id="1_d7e3q"]
+
+[resource]
+script = ExtResource("1_d7e3q")
+name = "Refined Ring"
+bonus_max_mana = 5

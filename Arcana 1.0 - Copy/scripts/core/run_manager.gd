@@ -8,8 +8,10 @@ var gold: int = 0
 var roster: Array[UnitData] = []
 var deployed_units: Array[UnitData] = []
 
-
 var artifacts: Array[Resource] = []
+
+@export var available_equipment: Array = []  # list of Equipment resources to choose from
+@export var available_items: Array = []      # list of Item resources to choose from
 
 # 👉 Hardcode starting unit classes by resource path for now.
 #    Replace these with your actual UnitClass .tres paths.
@@ -24,34 +26,67 @@ const PREP_SCENE_PATH  := "res://scenes/core/preparation_screen.tscn"
 const BATTLE_SCENE_PATH := "res://scenes/core/Main.tscn"
 const TITLE_SCENE_PATH  := "res://scenes/core/TitleScreen.tscn"
 
+const ITEM_DEF_PATHS := [
+	"res://data/items/healingpowder.tres",
+	"res://data/items/AckuhRoot.tres",
+]
+
+const EQUIPMENT_DEF_PATHS := [
+	"res://data/equipment/Steel_Shield.tres",
+	"res://data/equipment/Boots.tres",
+]
+
+var item_defs: Array[Item] = []
+var equipment_defs: Array[Equipment] = []
+
+# Run-wide inventory: how many of each thing the player owns
+var inventory_items: Dictionary = {}      # key: Item (Resource), value: int
+var inventory_equipment: Dictionary = {}  # key: Equipment, value: int
+
+# Shop stock for the current floor.
+# Each entry is a Dictionary:
+# { "resource": Resource, "type": "item"/"equipment", "price": int, "stock": int }
+var shop_stock: Array = []
+
+func _ready() -> void:
+	randomize()
 
 func start_new_run() -> void:
 	run_active = true
 	current_floor = 1
-	gold = 0
+	gold = 100
 	artifacts.clear()
+	_load_item_defs()
+	_load_equipment_defs()
 	_setup_starting_roster()
 	_goto_preparation()
+	_setup_starting_inventory()
+	generate_shop_stock(current_floor)
 
 
 func _setup_starting_roster() -> void:
 	roster.clear()
-	deployed_units.clear()
 
 	for path in STARTING_UNIT_CLASS_PATHS:
 		var res := load(path)
+
 		if res is UnitClass:
 			var data := UnitData.new()
 			data.unit_class = res
 			data.level = 1
 			data.exp = 0
-			roster.append(data)
-			print("RunManager: added", res.display_name, "at level", data.level)
-		else:
-			push_warning("RunManager: Could not load UnitClass at %s" % path)
 
-	if roster.is_empty():
-		push_warning("RunManager: STARTING_UNIT_CLASS_PATHS is empty or invalid.")
+			# Default: equip up to 3 arcana from the class skill list
+			data.equipped_arcana = []
+
+			for s in res.skills:
+				if s != null and data.equipped_arcana.size() < 3:
+					data.equipped_arcana.append(s)
+
+			roster.append(data)
+
+			print("RunManager: added", res.display_name, "at level", data.level)
+
 
 
 func _goto_preparation() -> void:
@@ -148,3 +183,121 @@ func advance_floor() -> bool:
 	current_floor += 1
 	print("Advancing to floor", current_floor)
 	return true
+
+#EQUIPMENT AND ITEM LOAD
+
+func _load_item_defs() -> void:
+	item_defs.clear()
+	for path in ITEM_DEF_PATHS:
+		var res := load(path)
+		if res is Item:
+			item_defs.append(res)
+		else:
+			push_warning("RunManager: Failed to load Item at %s" % path)
+
+
+func _load_equipment_defs() -> void:
+	equipment_defs.clear()
+	for path in EQUIPMENT_DEF_PATHS:
+		var res := load(path)
+		if res is Equipment:
+			equipment_defs.append(res)
+		else:
+			push_warning("RunManager: Failed to load Equipment at %s" % path)
+
+# ITEM EQUIPMENT STARTING HELPER 
+
+func _setup_starting_inventory() -> void:
+	inventory_items.clear()
+	inventory_equipment.clear()
+
+	# Example: give the player 3 small potions and 1 Steel_Shield if they exist
+	if item_defs.size() > 0:
+		var potion: Item = item_defs[0]
+		inventory_items[potion] = 3
+
+	if equipment_defs.size() > 0:
+		var shield: Equipment = equipment_defs[0]
+		inventory_equipment[shield] = 1
+
+#STORE GENERATOR 
+func generate_shop_stock(floor: int) -> void:
+	shop_stock.clear()
+
+	var base_item_price: int = 20 + floor * 5
+	var base_equip_price: int = 40 + floor * 10
+
+	var num_items: int = min(3, item_defs.size())
+	var num_equips: int = min(3, equipment_defs.size())
+
+	# Randomize selection
+	var items_pool: Array = item_defs.duplicate()
+	var equips_pool: Array = equipment_defs.duplicate()
+	items_pool.shuffle()
+	equips_pool.shuffle()
+
+	# Items
+	for i in range(num_items):
+		var it = items_pool[i]
+		var entry_item := {
+			"resource": it,
+			"type": "item",
+			"price": base_item_price,
+			"stock": 3
+		}
+		shop_stock.append(entry_item)
+
+	# Equipment
+	for j in range(num_equips):
+		var eq = equips_pool[j]
+		var entry_eq := {
+			"resource": eq,
+			"type": "equipment",
+			"price": base_equip_price,
+			"stock": 1
+		}
+		shop_stock.append(entry_eq)
+
+#BUY HELPER
+func try_buy_from_shop(index: int) -> Dictionary:
+	var result := {
+		"success": false,
+		"reason": "",
+		"entry": null
+	}
+
+	if index < 0 or index >= shop_stock.size():
+		result["reason"] = "Invalid selection."
+		return result
+
+	var entry = shop_stock[index]
+	var price: int = int(entry.get("price", 0))
+	var stock: int = int(entry.get("stock", 0))
+	var res = entry.get("resource", null)
+	var type_str: String = String(entry.get("type", ""))
+
+	if stock <= 0:
+		result["reason"] = "Out of stock."
+		return result
+
+	if gold < price:
+		result["reason"] = "Not enough gold."
+		return result
+
+	# Deduct gold and decrease stock
+	gold -= price
+	stock -= 1
+	entry["stock"] = stock
+	shop_stock[index] = entry
+
+	# Add to run inventory
+	if type_str == "item":
+		var current: int = int(inventory_items.get(res, 0))
+		inventory_items[res] = current + 1
+	elif type_str == "equipment":
+		var current2: int = int(inventory_equipment.get(res, 0))
+		inventory_equipment[res] = current2 + 1
+
+	result["success"] = true
+	result["entry"] = entry
+	return result

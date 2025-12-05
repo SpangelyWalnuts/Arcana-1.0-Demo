@@ -31,7 +31,7 @@ func _ready() -> void:
 	if not is_active:
 		return
 
-	# Start from class stats
+	# Base from class
 	if unit_class != null:
 		max_hp       = unit_class.max_hp
 		hp           = max_hp
@@ -44,20 +44,45 @@ func _ready() -> void:
 		max_mana          = unit_class.max_mana
 		mana              = max_mana
 		mana_regen_per_turn = unit_class.mana_regen_per_turn
-		skills            = unit_class.skills.duplicate()
 
-	# Then apply per-unit data (level, exp, and stat bonuses)
+	# Then per-unit data (level/exp + stat bonuses)
 	if unit_data != null:
 		level = unit_data.level
 		exp   = unit_data.exp
 
 		max_hp    += unit_data.bonus_max_hp
-		hp         = max_hp  # start full each battle
+		hp         = max_hp
 		atk       += unit_data.bonus_atk
 		defense   += unit_data.bonus_defense
 		move_range += unit_data.bonus_move
 		max_mana  += unit_data.bonus_max_mana
 		mana       = max_mana
+
+	# Equipment bonuses on top
+	if unit_data != null and unit_data.equipment_slots.size() > 0:
+		for eq in unit_data.equipment_slots:
+			if eq == null:
+				continue
+			# Treat as Equipment
+			var e := eq as Equipment
+			if e == null:
+				continue
+
+			max_hp     += e.bonus_max_hp
+			atk        += e.bonus_atk
+			defense    += e.bonus_defense
+			move_range += e.bonus_move
+			max_mana   += e.bonus_max_mana
+
+		# Refill hp/mana to new max after equipment
+		hp   = max_hp
+		mana = max_mana
+
+	# Decide skills from arcana loadout vs class default
+	if unit_data != null and unit_data.equipped_arcana.size() > 0:
+		skills = unit_data.equipped_arcana.duplicate()
+	elif unit_class != null:
+		skills = unit_class.skills.duplicate()
 
 	_update_hp_bar()
 
