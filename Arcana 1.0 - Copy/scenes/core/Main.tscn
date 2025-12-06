@@ -1,4 +1,4 @@
-[gd_scene load_steps=52 format=3 uid="uid://n3fdkibgiero"]
+[gd_scene load_steps=53 format=3 uid="uid://n3fdkibgiero"]
 
 [ext_resource type="Script" uid="uid://h2yfgpr5nkon" path="res://scripts/core/Main.gd" id="1_v0fxp"]
 [ext_resource type="PackedScene" uid="uid://cdxb46fgjtu0c" path="res://scenes/units/Unit.tscn" id="2_dau2k"]
@@ -41,6 +41,7 @@
 [ext_resource type="Script" uid="uid://bqvyfnnwwd26t" path="res://scenes/core/combat_forecast_panel.gd" id="34_gm2h1"]
 [ext_resource type="AudioStream" uid="uid://bhbbrcabjf7l3" path="res://audio/select deselect.wav" id="37_tj20p"]
 [ext_resource type="AudioStream" uid="uid://cabme2c0la5c" path="res://audio/music/Planar.wav" id="38_vyvfi"]
+[ext_resource type="PackedScene" uid="uid://daxq4r3e6lfcn" path="res://scenes/ui/LevelUpPanel.tscn" id="39_chcsr"]
 
 [sub_resource type="Resource" id="Resource_57s6d"]
 script = ExtResource("2_j15km")
@@ -181,6 +182,7 @@ centered = false
 
 [node name="Units" type="Node2D" parent="."]
 script = ExtResource("9_ship8")
+is_active = null
 
 [node name="Overlay" type="Node2D" parent="."]
 
@@ -552,6 +554,8 @@ text = "Restart Battle"
 [node name="TitleButton" type="Button" parent="UI/DefeatPanel/Panel/VBoxContainer/ButtonRow"]
 layout_mode = 2
 text = "Return to Title"
+
+[node name="LevelUpPanel" parent="UI" instance=ExtResource("39_chcsr")]
 
 [node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("terrain")]
 zoom = Vector2(1.5, 1.5)

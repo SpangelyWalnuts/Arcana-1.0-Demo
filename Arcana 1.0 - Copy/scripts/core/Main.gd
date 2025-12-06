@@ -49,6 +49,9 @@ var _first_player_phase_done: bool = false
 @onready var defeat_title_button: Button    = $UI/DefeatPanel/Panel/VBoxContainer/ButtonRow/TitleButton
 @onready var victory_summary_label: Label = $UI/VictoryPanel/Panel/VBoxContainer/SummaryLabel
 @onready var defeat_summary_label: Label  = $UI/DefeatPanel/Panel/VBoxContainer/SummaryLabel
+@onready var level_up_panel: LevelUpPanel = $UI/LevelUpPanel
+
+@export var floating_text_scene: PackedScene
 
 
 @export var battle_objective: BattleObjective
@@ -56,6 +59,9 @@ var _first_player_phase_done: bool = false
 @export var range_tile_scene: PackedScene
 @export var attack_tile_scene: PackedScene     # NEW: attack range
 @export_file("*.tscn") var title_scene_path: String = "res://scenes/ui/TitleScreen.tscn"
+
+var _pending_victory_reason: String = ""
+
 var player_unit
 var selected_unit
 
@@ -88,10 +94,15 @@ func _ready() -> void:
 	defeat_restart_button.pressed.connect(_on_restart_pressed)
 	defeat_title_button.pressed.connect(_on_return_to_title_pressed)
 	
-		# Connect 'died' signal for any units already placed in the scene.
+	if level_up_panel != null:
+		level_up_panel.finished.connect(_on_levelup_panel_finished)
+
+	# Connect 'died' signal for any units already placed in the scene.
 	for child in units_root.get_children():
 		if child.has_signal("died"):
 			child.died.connect(_on_unit_died.bind(child))
+
+	
 
 	# Make sure victory/defeat panels are hidden initially
 	victory_panel.visible = false
@@ -1174,15 +1185,85 @@ func _on_victory(reason: String) -> void:
 
 	print("VICTORY:", reason)
 
-	# Build summary text from your tracked run stats
-	var summary_text := _build_run_summary_text()
+	_pending_victory_reason = reason
 
-	# Show the victory panel UI
-	victory_detail_label.text = reason
-	victory_summary_label.text = summary_text
+	# 1) Grant post-battle EXP and record who got what
+	RunManager.grant_post_battle_exp(enemies_defeated)
 
-	victory_panel.visible = true
-	defeat_panel.visible = false
+	# 2) Spawn EXP popups over each player unit (still on map)
+	_show_exp_popups_for_battle()
+
+	# 3) Check if there are any level-up events
+	var levelups: Array = RunManager.get_last_levelup_events()
+	if levelups.is_empty():
+		# No level-ups → go straight to victory UI
+		_show_victory_ui()
+	else:
+		# Show level-up panel first, then victory once finished
+		level_up_panel.show_for_report(levelups)
+
+
+#HELPER FOR POPUP
+func _show_exp_popups_for_battle() -> void:
+	var report: Array = RunManager.get_last_exp_report()
+	print("_show_exp_popups_for_battle: report size =", report.size())
+	if report.is_empty():
+		return
+
+	# Build a lookup from UnitData -> report entry
+	var by_data: Dictionary = {}
+	for entry in report:
+		if not entry.has("data"):
+			continue
+		var data = entry["data"]
+		by_data[data] = entry
+
+	# For each player unit on the map, show its gain.
+	for child in units.get_children():
+		# We assume children are your Unit nodes (unit.gd)
+		# If you ever add non-unit children under Units, you can add a guard here.
+
+		# Skip non-player teams
+		if child.team != "player":
+			continue
+
+		# Skip if no UnitData attached
+		var data = child.unit_data
+		if data == null:
+			continue
+
+		if not by_data.has(data):
+			continue
+
+		var entry = by_data[data]
+		var gain: int = int(entry.get("exp_gained", 0))
+		var level_before: int = int(entry.get("level_before", 0))
+		var level_after: int  = int(entry.get("level_after", 0))
+
+		var leveled_up: bool = level_after > level_before
+
+		_spawn_exp_popup_for_unit(child, gain, leveled_up)
+
+
+func _build_exp_summary_text() -> String:
+	var report: Array = RunManager.get_last_exp_report()
+	if report.is_empty():
+		return "EXP Gains: (none)"
+
+	var text := "EXP Gains:\n"
+	for entry in report:
+		var name: String = entry.get("name", "Unknown")
+		var gain: int = int(entry.get("exp_gained", 0))
+		var lvl_b: int = int(entry.get("level_before", 0))
+		var lvl_a: int = int(entry.get("level_after", 0))
+
+		if lvl_a > lvl_b:
+			text += "  %s: +%d EXP  (Lv %d → %d)\n" % [name, gain, lvl_b, lvl_a]
+		else:
+			text += "  %s: +%d EXP  (Lv %d)\n" % [name, gain, lvl_a]
+
+	return text
+
 
 
 func _on_defeat(reason: String) -> void:
@@ -1268,3 +1349,37 @@ func _go_to_rewards_screen() -> void:
 	var err = get_tree().change_scene_to_file("res://scenes/ui/RewardsScreen.tscn")
 	if err != OK:
 		push_error("Main: Failed to change to RewardsScreen, check path.")
+
+# EXP POPUP HELPER
+
+func _spawn_exp_popup_for_unit(u: Node2D, exp_gain: int, leveled_up: bool) -> void:
+	if floating_text_scene == null:
+		return
+	if u == null or not is_instance_valid(u):
+		return
+
+	var inst: Node2D = floating_text_scene.instantiate()
+	# We'll attach it under Overlay so it follows the camera like tiles
+	overlay.add_child(inst)
+
+	# Position over the unit's position
+	inst.global_position = u.global_position + Vector2(0, -16)
+
+	# Kick off its animation/text
+	if inst.has_method("show_exp"):
+		inst.show_exp(exp_gain, leveled_up)
+
+#VICTORY UI HELPER
+func _show_victory_ui() -> void:
+	var battle_summary_text: String = _build_run_summary_text()
+	var exp_summary_text: String    = _build_exp_summary_text()
+
+	victory_detail_label.text = _pending_victory_reason
+	victory_summary_label.text = battle_summary_text + "\n\n" + exp_summary_text
+
+	victory_panel.visible = true
+	defeat_panel.visible = false
+
+#LEVELUPPANEL CALLBACK
+func _on_levelup_panel_finished() -> void:
+	_show_victory_ui()

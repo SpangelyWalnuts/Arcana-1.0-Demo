@@ -31,10 +31,20 @@ func _ready() -> void:
 	if not is_active:
 		return
 
-	# Base from class
+	# 1) Decide source of class / level / exp
+	if unit_data != null and unit_data.unit_class != null:
+		# If we have UnitData, let it drive everything
+		unit_class = unit_data.unit_class
+		level = unit_data.level
+		exp   = unit_data.exp
+	elif unit_class != null:
+		# Fallback: class only, no UnitData
+		level = 1
+		exp   = 0
+
+	# 2) Base stats from class (or some safe defaults if no class)
 	if unit_class != null:
 		max_hp       = unit_class.max_hp
-		hp           = max_hp
 		atk          = unit_class.atk
 		defense      = unit_class.defense
 		attack_range = unit_class.attack_range
@@ -42,28 +52,30 @@ func _ready() -> void:
 		team         = unit_class.team
 
 		max_mana          = unit_class.max_mana
-		mana              = max_mana
 		mana_regen_per_turn = unit_class.mana_regen_per_turn
+	else:
+		# In case something was spawned without a class at all
+		max_hp       = 10
+		atk          = 1
+		defense      = 0
+		attack_range = 1
+		move_range   = 4
+		max_mana     = 0
+		mana_regen_per_turn = 0
 
-	# Then per-unit data (level/exp + stat bonuses)
+	# 3) Apply permanent per-unit bonuses from UnitData (level-ups, artifacts, etc.)
 	if unit_data != null:
-		level = unit_data.level
-		exp   = unit_data.exp
+		max_hp       += unit_data.bonus_max_hp
+		atk          += unit_data.bonus_atk
+		defense      += unit_data.bonus_defense
+		move_range   += unit_data.bonus_move
+		max_mana     += unit_data.bonus_max_mana
 
-		max_hp    += unit_data.bonus_max_hp
-		hp         = max_hp
-		atk       += unit_data.bonus_atk
-		defense   += unit_data.bonus_defense
-		move_range += unit_data.bonus_move
-		max_mana  += unit_data.bonus_max_mana
-		mana       = max_mana
-
-	# Equipment bonuses on top
+	# 4) Apply equipment bonuses on top
 	if unit_data != null and unit_data.equipment_slots.size() > 0:
 		for eq in unit_data.equipment_slots:
 			if eq == null:
 				continue
-			# Treat as Equipment
 			var e := eq as Equipment
 			if e == null:
 				continue
@@ -74,22 +86,26 @@ func _ready() -> void:
 			move_range += e.bonus_move
 			max_mana   += e.bonus_max_mana
 
-		# Refill hp/mana to new max after equipment
-		hp   = max_hp
-		mana = max_mana
+	# 5) Finally set current HP / Mana to the *final* max values
+	hp   = max_hp
+	mana = max_mana
 
-	# Decide skills from arcana loadout vs class default
+	# 6) Decide skills: prefer equipped arcana, otherwise class defaults
 	if unit_data != null and unit_data.equipped_arcana.size() > 0:
 		skills = unit_data.equipped_arcana.duplicate()
 	elif unit_class != null:
 		skills = unit_class.skills.duplicate()
+	else:
+		skills = []
 
+	# 7) Update HP bar & groups
 	_update_hp_bar()
 
 	if team == "player":
 		add_to_group("player_units")
 	elif team == "enemy":
 		add_to_group("enemy_units")
+
 
 
 func regenerate_mana() -> void:

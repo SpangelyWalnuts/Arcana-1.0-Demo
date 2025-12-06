@@ -10,6 +10,31 @@ var deployed_units: Array[UnitData] = []
 
 var artifacts: Array[Resource] = []
 
+var last_levelup_events: Array = []
+# Each entry:
+# {
+#   "data": UnitData,
+#   "name": String,
+#   "new_level": int,
+#   "hp_gain": int,
+#   "atk_gain": int,
+#   "def_gain": int,
+#   "move_gain": int,
+#   "mana_gain": int
+# }
+
+var last_exp_report: Array = [] 
+# Each entry: {
+#   "data": UnitData,
+#   "name": String,
+#   "exp_gained": int,
+#   "level_before": int,
+#   "level_after": int,
+#   "exp_before": int,
+#   "exp_after": int
+# }
+
+
 enum RewardType { GOLD, ITEM, EQUIPMENT, EXP_BOOST, ARTIFACT }
 
 # The four options shown on the rewards screen after a battle.
@@ -19,6 +44,8 @@ var pending_rewards: Array = []
 
 @export var available_equipment: Array = []  # list of Equipment resources to choose from
 @export var available_items: Array = []      # list of Item resources to choose from
+
+const LEVEL_CAP: int = 20
 
 # 👉 Hardcode starting unit classes by resource path for now.
 #    Replace these with your actual UnitClass .tres paths.
@@ -42,6 +69,7 @@ const EQUIPMENT_DEF_PATHS := [
 	"res://data/equipment/Steel_Shield.tres",
 	"res://data/equipment/Boots.tres",
 ]
+
 
 var item_defs: Array[Item] = []
 var equipment_defs: Array[Equipment] = []
@@ -94,6 +122,8 @@ func _setup_starting_roster() -> void:
 
 			print("RunManager: added", res.display_name, "at level", data.level)
 
+func get_last_levelup_events() -> Array:
+	return last_levelup_events
 
 
 func _goto_preparation() -> void:
@@ -112,33 +142,49 @@ func goto_battle_scene() -> void:
 	get_tree().change_scene_to_packed(packed)
 
 # XP AND LEVEL UP HELPERS
-func _grant_post_battle_xp(summary: Dictionary, victory: bool) -> void:
-	# Basic XP per battle, scaled by floor
-	var floor: int = int(summary.get("floor", current_floor))
-	var enemies_defeated: int = int(summary.get("enemies_defeated", 0))
+func _grant_post_battle_exp(enemies_defeated: int) -> void:
+	last_exp_report.clear()
 
-	var base_xp: int = 25 + 5 * max(floor - 1, 0)
-	var kill_bonus: int = enemies_defeated * 3
+	# Base EXP scales with floor + enemies defeated
+	var base_exp_deployed: int = 20 + current_floor * 5 + enemies_defeated * 3
+	var base_exp_bench: int    = int(base_exp_deployed / 2)
 
-	var total_xp: int = base_xp + kill_bonus
+	print("Granting post-battle EXP:",
+		" deployed =", base_exp_deployed,
+		" bench =", base_exp_bench)
 
-	# Deployed units get full, undeployed get half
-	var deployed: Array[UnitData] = deployed_units
-	var roster_copy: Array[UnitData] = roster
-
-	var deployed_set: Array[UnitData] = deployed.duplicate()
-
-	for data in roster_copy:
-		if data == null:
+	for data in roster:
+		if data == null or data.unit_class == null:
 			continue
 
-		var gain: int
-		if deployed_set.has(data):
-			gain = total_xp
+		var exp_gain: int = 0
+		if deployed_units.has(data):
+			exp_gain = base_exp_deployed
 		else:
-			gain = int(round(float(total_xp) * 0.5))
+			exp_gain = base_exp_bench
 
-		_add_xp_to_unit(data, gain)
+		var before_level: int = data.level
+		var before_exp: int   = data.exp
+
+		data.exp += exp_gain
+
+		# Will increment level / bonuses as needed
+		_process_level_ups_for_unit(data)
+
+		var after_level: int = data.level
+		var after_exp: int   = data.exp
+
+		var entry := {
+			"data": data,
+			"name": data.unit_class.display_name,
+			"exp_gained": exp_gain,
+			"level_before": before_level,
+			"level_after": after_level,
+			"exp_before": before_exp,
+			"exp_after": after_exp
+		}
+
+		last_exp_report.append(entry)
 
 
 func _add_xp_to_unit(data: UnitData, amount: int) -> void:
@@ -150,26 +196,56 @@ func _add_xp_to_unit(data: UnitData, amount: int) -> void:
 		data.exp -= 100
 		_level_up_unit(data)
 
+#EXPORT FOR UI
+func get_last_exp_report() -> Array:
+	return last_exp_report
+
 
 func _level_up_unit(data: UnitData) -> void:
 	var cls: UnitClass = data.unit_class
 	if cls == null:
 		return
 
+	# Track how much this specific level gave
+	var hp_gain: int   = 0
+	var atk_gain: int  = 0
+	var def_gain: int  = 0
+	var move_gain: int = 0
+	var mana_gain: int = 0
+
 	data.level += 1
 	print("Level up!", cls.display_name, "is now level", data.level)
 
-	# Roll growths
+	# FE-style growth rolls
 	if randf() < cls.growth_hp:
 		data.bonus_max_hp += 1
+		hp_gain += 1
 	if randf() < cls.growth_atk:
 		data.bonus_atk += 1
+		atk_gain += 1
 	if randf() < cls.growth_defense:
 		data.bonus_defense += 1
+		def_gain += 1
 	if randf() < cls.growth_move:
 		data.bonus_move += 1
+		move_gain += 1
 	if randf() < cls.growth_mana:
 		data.bonus_max_mana += 1
+		mana_gain += 1
+
+	# Record this single level-up as an event
+	var evt: Dictionary = {
+		"data": data,
+		"name": cls.display_name,
+		"new_level": data.level,
+		"hp_gain": hp_gain,
+		"atk_gain": atk_gain,
+		"def_gain": def_gain,
+		"move_gain": move_gain,
+		"mana_gain": mana_gain
+	}
+	last_levelup_events.append(evt)
+
 
 func return_to_title() -> void:
 	run_active = false
@@ -444,3 +520,75 @@ func apply_reward(option: Dictionary) -> void:
 
 	# Once a reward is taken, clear the list to avoid reusing it accidentally.
 	pending_rewards.clear()
+
+#POST BATTLE EXP
+func grant_post_battle_exp(enemies_defeated: int) -> void:
+	last_exp_report.clear()
+	last_levelup_events.clear()  # 🔹 also clear old level-up events
+
+	var base_exp_deployed: int = 20 + current_floor * 5 + enemies_defeated * 3
+	var base_exp_bench: int    = int(base_exp_deployed / 2)
+
+	print("Granting post-battle EXP:",
+		" deployed =", base_exp_deployed,
+		" bench =", base_exp_bench)
+
+	if roster.is_empty():
+		print("grant_post_battle_exp: roster is empty!")
+		return
+
+	for data in roster:
+		if data == null or data.unit_class == null:
+			continue
+
+		var exp_gain: int = 0
+		if deployed_units.has(data):
+			exp_gain = base_exp_deployed
+		else:
+			exp_gain = base_exp_bench
+
+		var before_level: int = data.level
+		var before_exp: int   = data.exp
+
+		data.exp += exp_gain
+
+		# This will also append entries into last_levelup_events
+		_process_level_ups_for_unit(data)
+
+		var after_level: int = data.level
+		var after_exp: int   = data.exp
+
+		var entry: Dictionary = {
+			"data": data,
+			"name": data.unit_class.display_name,
+			"exp_gained": exp_gain,
+			"level_before": before_level,
+			"level_after": after_level,
+			"exp_before": before_exp,
+			"exp_after": after_exp
+		}
+
+		last_exp_report.append(entry)
+
+	print("grant_post_battle_exp: recorded", last_exp_report.size(), "entries in last_exp_report")
+	print("grant_post_battle_exp: recorded", last_levelup_events.size(), "level-up events")
+
+#LEVEL UP PROCESSING
+func _process_all_level_ups() -> void:
+	for data in roster:
+		if data == null or data.unit_class == null:
+			continue
+		_process_level_ups_for_unit(data)
+
+
+func _process_level_ups_for_unit(data: UnitData) -> void:
+	var cls: UnitClass = data.unit_class
+	if cls == null:
+		return
+
+	var exp_needed: int = max(cls.exp_per_level, 1)
+
+	# Loop in case one big EXP gain gives multiple levels
+	while data.level < LEVEL_CAP and data.exp >= exp_needed:
+		data.exp -= exp_needed
+		_level_up_unit(data)

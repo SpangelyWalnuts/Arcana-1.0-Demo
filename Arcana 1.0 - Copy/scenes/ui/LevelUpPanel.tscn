@@ -1,0 +1,64 @@
+[gd_scene load_steps=2 format=3 uid="uid://daxq4r3e6lfcn"]
+
+[ext_resource type="Script" uid="uid://c171dtrx2rjt2" path="res://scenes/ui/level_up_panel.gd" id="1_rdsd0"]
+
+[node name="LevelUpPanel" type="Control"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_rdsd0")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel"]
+layout_mode = 0
+offset_right = 53.0
+offset_bottom = 139.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="UnitNameLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="StatsVBox" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="HPLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/StatsVBox"]
+layout_mode = 2
+
+[node name="ATKLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/StatsVBox"]
+layout_mode = 2
+
+[node name="DEFLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/StatsVBox"]
+layout_mode = 2
+
+[node name="MoveLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/StatsVBox"]
+layout_mode = 2
+
+[node name="ManaLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/StatsVBox"]
+layout_mode = 2
+
+[node name="UnlockLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="NextButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/ButtonRow"]
+layout_mode = 2
+text = "Next"
+
+[node name="SkipButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/ButtonRow"]
+layout_mode = 2
+text = "Skip"

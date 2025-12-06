@@ -92,6 +92,6 @@ func _on_skip_pressed() -> void:
 
 
 func _go_to_preparation_screen() -> void:
-	var err = get_tree().change_scene_to_file("res://scenes/ui/PreparationScreen.tscn")
+	var err = get_tree().change_scene_to_file("res://scenes/core/preparation_screen.tscn")
 	if err != OK:
 		push_error("RewardsScreen: Failed to change to PreparationScreen, check path.")
