@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://cpgycncjb4er5"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_n8g84"]
+
+[resource]
+script = ExtResource("1_n8g84")
+name = "Destroy Wall"
+mana_cost = 1
+effect_type = 4
+target_type = 4
+duration_turns = 0
+terrain_action = 1
+terrain_object_duration = 0

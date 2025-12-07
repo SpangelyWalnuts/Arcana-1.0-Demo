@@ -51,6 +51,7 @@ var _first_player_phase_done: bool = false
 @onready var defeat_summary_label: Label  = $UI/DefeatPanel/Panel/VBoxContainer/SummaryLabel
 @onready var level_up_panel: LevelUpPanel = $UI/LevelUpPanel
 @onready var terrain_effects_root: Node2D = $TerrainEffects
+@onready var enemy_spawner: EnemySpawnManager = $EnemySpawnManager
 
 @export var floating_text_scene: PackedScene
 
@@ -98,10 +99,6 @@ func _ready() -> void:
 	if level_up_panel != null:
 		level_up_panel.finished.connect(_on_levelup_panel_finished)
 
-	# Connect 'died' signal for any units already placed in the scene.
-	for child in units_root.get_children():
-		if child.has_signal("died"):
-			child.died.connect(_on_unit_died.bind(child))
 
 	
 
@@ -817,11 +814,14 @@ func spawn_units_from_run() -> void:
 		push_error("Main: 'unit_scene' is not assigned!")
 		return
 
+	# If no run is active or no deployed units, fall back to old test spawn.
 	if not RunManager.run_active or RunManager.deployed_units.is_empty():
 		print("Main: No deployed_units found, falling back to spawn_test_units().")
 		spawn_test_units()
 		return
 
+	# Simple starting positions for player units (tile coords).
+	# You can change these later or use proper spawn markers.
 	var spawn_tiles: Array[Vector2i] = [
 		Vector2i(2, 2),
 		Vector2i(3, 2),
@@ -829,7 +829,7 @@ func spawn_units_from_run() -> void:
 		Vector2i(3, 3),
 	]
 
-	var i := 0
+	var i: int = 0
 	for data in RunManager.deployed_units:
 		if i >= spawn_tiles.size():
 			break
@@ -839,13 +839,13 @@ func spawn_units_from_run() -> void:
 		var cls: UnitClass = data.unit_class
 		var tile: Vector2i = spawn_tiles[i]
 
-		var u = unit_scene.instantiate()
+		var u: Node2D = unit_scene.instantiate()
 
 		u.team = "player"
 		u.unit_class = cls
 		u.level = data.level
 		u.exp = data.exp
-		u.unit_data = data      # ✅ direct assignment
+		u.unit_data = data      # direct assignment so Unit.gd can read it
 
 		u.name = cls.display_name
 		u.grid_position = tile
@@ -854,15 +854,24 @@ func spawn_units_from_run() -> void:
 		units.add_child(u)
 		i += 1
 
-	var enemy_tile := Vector2i(8, 4)
-	var e = unit_scene.instantiate()
-	e.team = "enemy"
-	e.name = "Enemy"
-	e.grid_position = enemy_tile
-	e.position = grid.tile_to_world(enemy_tile)
-	units.add_child(e)
+	# ✅ After all player units are spawned, ask EnemySpawnManager to spawn enemies.
+	if enemy_spawner != null:
+		enemy_spawner.spawn_enemies_for_floor(
+			RunManager.current_floor,
+			spawn_tiles      # we treat these as player spawn tiles
+		)
+	else:
+		# Fallback: spawn a single generic enemy so you can still test combat
+		var enemy_tile := Vector2i(8, 4)
+		var e: Node2D = unit_scene.instantiate()
+		e.team = "enemy"
+		e.name = "Enemy"
+		e.grid_position = enemy_tile
+		e.position = grid.tile_to_world(enemy_tile)
+		units.add_child(e)
 
 	_initial_player_unit_count = get_tree().get_nodes_in_group("player_units").size()
+
 
 
 

@@ -14,9 +14,7 @@ var unit_data: UnitData = null
 
 var grid_position: Vector2i
 var move_range: int = 4
-
-# --- STATUS SYSTEM: buffs / debuffs live here as Dictionaries ---
-var active_statuses: Array = []  # each entry is a Dictionary
+var active_statuses: Array = []  # list of Dictionaries for now
 
 var team: String = "player"   # "player" or "enemy"
 var has_acted: bool = false
@@ -29,7 +27,6 @@ var attack_range: int = 1
 
 @onready var hp_bg: ColorRect   = $HPBar/BG
 @onready var hp_fill: ColorRect = $HPBar/Fill
-
 
 func _ready() -> void:
 	if not is_active:
@@ -53,10 +50,12 @@ func _ready() -> void:
 		defense      = unit_class.defense
 		attack_range = unit_class.attack_range
 		move_range   = unit_class.move_range
-		team         = unit_class.team
 
-		max_mana             = unit_class.max_mana
-		mana_regen_per_turn  = unit_class.mana_regen_per_turn
+		# 🔹 DO **NOT** override team here anymore.
+		# team stays whatever the spawner set ("player" or "enemy").
+		# max_mana/mana_regen from class:
+		max_mana            = unit_class.max_mana
+		mana_regen_per_turn = unit_class.mana_regen_per_turn
 	else:
 		# In case something was spawned without a class at all
 		max_hp       = 10
@@ -69,11 +68,14 @@ func _ready() -> void:
 
 	# 3) Apply permanent per-unit bonuses from UnitData (level-ups, artifacts, etc.)
 	if unit_data != null:
-		max_hp     += unit_data.bonus_max_hp
-		atk        += unit_data.bonus_atk
-		defense    += unit_data.bonus_defense
-		move_range += unit_data.bonus_move
-		max_mana   += unit_data.bonus_max_mana
+		level = unit_data.level
+		exp   = unit_data.exp
+
+		max_hp       += unit_data.bonus_max_hp
+		atk          += unit_data.bonus_atk
+		defense      += unit_data.bonus_defense
+		move_range   += unit_data.bonus_move
+		max_mana     += unit_data.bonus_max_mana
 
 	# 4) Apply equipment bonuses on top
 	if unit_data != null and unit_data.equipment_slots.size() > 0:
@@ -102,103 +104,27 @@ func _ready() -> void:
 	else:
 		skills = []
 
-	# 7) Update HP bar & groups
-	_update_hp_bar()
+	# 7) Add to correct group
+	# If team somehow isn't set, default to player.
+	if team != "player" and team != "enemy":
+		team = "player"
 
 	if team == "player":
 		add_to_group("player_units")
 	elif team == "enemy":
 		add_to_group("enemy_units")
 
+	_update_hp_bar()
 
-# --- STATUS SYSTEM HELPERS ---
 
 func regenerate_mana() -> void:
-	var regen: int = mana_regen_per_turn
-
-	# Allow statuses to modify mana regen
-	for s in active_statuses:
-		if typeof(s) != TYPE_DICTIONARY:
-			continue
-		regen += int(s.get("mana_regen_mod", 0))
-
-	if regen < 0:
-		regen = 0
-
-	mana += regen
+	mana += mana_regen_per_turn
 	if mana > max_mana:
 		mana = max_mana
-
 
 func reset_for_new_turn() -> void:
 	has_acted = false
 	regenerate_mana()
-	_tick_status_effects()
-
-
-func _tick_status_effects() -> void:
-	var remaining: Array = []
-	for s in active_statuses:
-		if typeof(s) != TYPE_DICTIONARY:
-			continue
-
-		var turns: int = int(s.get("remaining_turns", 0))
-		if turns > 0:
-			turns -= 1
-			if turns > 0:
-				s["remaining_turns"] = turns
-				remaining.append(s)
-			# if turns == 0, it expires
-		else:
-			# 0 or negative duration means "until consumed" or permanent
-			remaining.append(s)
-
-	active_statuses = remaining
-
-
-func get_effective_atk() -> int:
-	var result: int = atk
-	for s in active_statuses:
-		if typeof(s) != TYPE_DICTIONARY:
-			continue
-		result += int(s.get("atk_mod", 0))
-	return max(result, 0)
-
-
-func get_effective_defense() -> int:
-	var result: int = defense
-	for s in active_statuses:
-		if typeof(s) != TYPE_DICTIONARY:
-			continue
-		result += int(s.get("def_mod", 0))
-	return max(result, 0)
-
-
-func get_effective_move_range() -> int:
-	var result: int = move_range
-	for s in active_statuses:
-		if typeof(s) != TYPE_DICTIONARY:
-			continue
-		result += int(s.get("move_mod", 0))
-	return max(result, 0)
-
-
-func can_cast_arcana() -> bool:
-	for s in active_statuses:
-		if typeof(s) != TYPE_DICTIONARY:
-			continue
-		if s.get("prevent_arcana", false):
-			return false
-	return true
-
-
-func can_move() -> bool:
-	for s in active_statuses:
-		if typeof(s) != TYPE_DICTIONARY:
-			continue
-		if s.get("prevent_move", false):
-			return false
-	return true
 
 
 func is_enemy_of(other) -> bool:
@@ -245,7 +171,6 @@ func _update_hp_bar() -> void:
 	# Use the background bar width as the "full" width
 	var full_width: float = hp_bg.size.x
 	hp_fill.size.x = full_width * ratio
-
 
 func update_hp_bar() -> void:
 	_update_hp_bar()

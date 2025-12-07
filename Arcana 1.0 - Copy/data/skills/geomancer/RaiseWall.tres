@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://boccsnr552fws"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_x654m"]
+[ext_resource type="PackedScene" uid="uid://dlkfu2nbid67s" path="res://scenes/terrain_effects/GeomancerWallEffect.tscn" id="2_mq82g"]
+
+[resource]
+script = ExtResource("1_x654m")
+name = "Raise Wall"
+effect_type = 4
+target_type = 4
+duration_turns = 0
+terrain_tile_key = "wall"
+is_terrain_object_skill = true
+terrain_object_scene = ExtResource("2_mq82g")
+terrain_object_key = "wall"
+terrain_object_blocks_movement = true

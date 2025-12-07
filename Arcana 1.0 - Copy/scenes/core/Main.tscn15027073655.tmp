@@ -583,11 +583,13 @@ volume_db = -14.312
 
 [node name="TerrainEffects" type="Node2D" parent="."]
 
-[node name="EnemySpawnManager" type="Node" parent="." node_paths=PackedStringArray("grid", "units_root")]
+[node name="EnemySpawnManager" type="Node" parent="." node_paths=PackedStringArray("grid", "units_root", "terrain_objects_root")]
 script = ExtResource("43_q8d2n")
 grid = NodePath("../Grid")
 units_root = NodePath("../Units")
 unit_scene = ExtResource("2_dau2k")
-offense_classes = Array[ExtResource("44_7m268")]([ExtResource("46_leefl"), ExtResource("45_gnjag")])
-defense_classes = Array[ExtResource("44_7m268")]([ExtResource("47_8kqbm"), ExtResource("49_0l231"), ExtResource("48_kylyq")])
-support_classes = Array[ExtResource("44_7m268")]([ExtResource("52_bwyab"), ExtResource("51_oh68v"), ExtResource("50_j8vbb")])
+terrain_objects_root = NodePath("../TerrainEffects")
+offense_classes = Array[ExtResource("44_7m268")]([ExtResource("45_gnjag"), ExtResource("46_leefl")])
+defense_classes = Array[ExtResource("44_7m268")]([ExtResource("47_8kqbm"), ExtResource("48_kylyq"), ExtResource("49_0l231")])
+support_classes = Array[ExtResource("44_7m268")]([ExtResource("50_j8vbb"), ExtResource("51_oh68v"), ExtResource("52_bwyab")])
+min_spawn_distance = null
