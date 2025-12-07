@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_xbk6i")
 name = "Earths Bounty"
+effect_type = 1
 is_heal = true
 cast_range = 1
 flat_power = 3

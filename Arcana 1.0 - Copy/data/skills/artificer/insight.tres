@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://4p4g2olvpi2h"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_0p7ah"]
+
+[resource]
+script = ExtResource("1_0p7ah")
+name = "insight"
+mana_cost = 3
+effect_type = 2
+cast_range = 2
+power_multiplier = 0.5
+target_type = 2
+can_target_self = true
+atk_mod = 2

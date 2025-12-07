@@ -6,8 +6,12 @@
 script = ExtResource("1_1d7sr")
 name = "Healing Circle"
 mana_cost = 6
+effect_type = 1
 is_heal = true
+cast_range = 1
 aoe_radius = 3
+power_multiplier = 0.5
 flat_power = 5
 target_type = 2
 can_target_self = true
+duration_turns = 0

@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://dlkfu2nbid67s"]
+
+[ext_resource type="Script" uid="uid://cqerukd2xodt6" path="res://scripts/terrain/terrain_effect.gd" id="1_tbndf"]
+
+[node name="GeomancerWallEffect" type="Node2D"]
+script = ExtResource("1_tbndf")
+blocks_movement = true
+
+[node name="Sprite2D" type="Sprite2D" parent="."]

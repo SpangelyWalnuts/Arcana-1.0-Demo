@@ -1,6 +1,9 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=2 format=3 uid="uid://bvkvy6vfo1ylc"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=5 format=3 uid="uid://bvkvy6vfo1ylc"]
 
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_i74ft"]
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_av64s"]
+[ext_resource type="Resource" uid="uid://83hx2jarskvu" path="res://data/skills/artificer/alacrity.tres" id="3_ash0m"]
+[ext_resource type="Resource" uid="uid://4p4g2olvpi2h" path="res://data/skills/artificer/insight.tres" id="4_p2xr4"]
 
 [resource]
 script = ExtResource("1_i74ft")
@@ -9,6 +12,7 @@ atk = 2
 attack_range = 2
 max_mana = 10
 mana_regen_per_turn = 2
+skills = Array[ExtResource("2_av64s")]([ExtResource("3_ash0m"), ExtResource("4_p2xr4")])
 growth_atk = 0.1
 growth_defense = 0.3
 growth_move = 0.0

@@ -4,9 +4,15 @@ var run_active: bool = false
 var current_floor: int = 0
 var gold: int = 0
 
-# All units the player owns this run (UnitClass resources)
+# All units the player owns this run (per-unit data)
 var roster: Array[UnitData] = []
 var deployed_units: Array[UnitData] = []
+
+# --- Draft system ---
+var all_unit_classes: Array[UnitClass] = []          # pool of all possible draftable classes
+var draft_round: int = 0
+var max_draft_picks: int = 4                         # pick 1 of 4, 4 times
+var current_draft_options: Array[UnitClass] = []     # options in the current draft round
 
 var artifacts: Array[Resource] = []
 
@@ -23,8 +29,9 @@ var last_levelup_events: Array = []
 #   "mana_gain": int
 # }
 
-var last_exp_report: Array = [] 
-# Each entry: {
+var last_exp_report: Array = []
+# Each entry:
+# {
 #   "data": UnitData,
 #   "name": String,
 #   "exp_gained": int,
@@ -33,7 +40,6 @@ var last_exp_report: Array = []
 #   "exp_before": int,
 #   "exp_after": int
 # }
-
 
 enum RewardType { GOLD, ITEM, EQUIPMENT, EXP_BOOST, ARTIFACT }
 
@@ -47,16 +53,23 @@ var pending_rewards: Array = []
 
 const LEVEL_CAP: int = 20
 
-# 👉 Hardcode starting unit classes by resource path for now.
-#    Replace these with your actual UnitClass .tres paths.
+# 👉 All possible unit classes for this run (starting pool).
+#    You can expand this over time.
 const STARTING_UNIT_CLASS_PATHS := [
 	"res://data/unit_classes/Geomancer.tres",
 	"res://data/unit_classes/Druid.tres",
 	"res://data/unit_classes/Pyromancer.tres",
 	"res://data/unit_classes/Cleric.tres",
+	"res://data/unit_classes/Artificer.tres",
+	"res://data/unit_classes/Cryomancer.tres",
+	"res://data/unit_classes/Shaman.tres",
+	"res://data/unit_classes/Electromancer.tres",
 ]
 
-const PREP_SCENE_PATH  := "res://scenes/core/preparation_screen.tscn"
+# If/when you add a dedicated draft UI scene:
+const DRAFT_SCENE_PATH  := "res://scenes/ui/DraftScreen.tscn"
+
+const PREP_SCENE_PATH   := "res://scenes/core/preparation_screen.tscn"
 const BATTLE_SCENE_PATH := "res://scenes/core/Main.tscn"
 const TITLE_SCENE_PATH  := "res://scenes/core/TitleScreen.tscn"
 
@@ -70,7 +83,6 @@ const EQUIPMENT_DEF_PATHS := [
 	"res://data/equipment/Boots.tres",
 ]
 
-
 var item_defs: Array[Item] = []
 var equipment_defs: Array[Equipment] = []
 
@@ -83,51 +95,165 @@ var inventory_equipment: Dictionary = {}  # key: Equipment, value: int
 # { "resource": Resource, "type": "item"/"equipment", "price": int, "stock": int }
 var shop_stock: Array = []
 
+
 func _ready() -> void:
 	randomize()
 
+
+# -------------------------------------------------------------------
+#  START / END OF RUN
+# -------------------------------------------------------------------
 func start_new_run() -> void:
 	run_active = true
 	current_floor = 1
 	gold = 100
 	artifacts.clear()
+
+	# Reset state
+	roster.clear()
+	deployed_units.clear()
+	last_exp_report.clear()
+	last_levelup_events.clear()
+
 	_load_item_defs()
 	_load_equipment_defs()
-	_setup_starting_roster()
-	_goto_preparation()
-	_setup_starting_inventory()
-	generate_shop_stock(current_floor)
+	_load_all_unit_classes()
+
+	draft_round = 0
+	# Start the first draft round (also changes scene to DraftScreen)
+	_start_draft_round()
 
 
-func _setup_starting_roster() -> void:
+func return_to_title() -> void:
+	run_active = false
+	current_floor = 0
+	gold = 0
+	roster.clear()
+	deployed_units.clear()
+	artifacts.clear()
+
+	var packed: PackedScene = load(TITLE_SCENE_PATH)
+	if packed == null:
+		push_error("RunManager: Could not load title scene at %s" % TITLE_SCENE_PATH)
+		return
+	get_tree().change_scene_to_packed(packed)
+
+
+func advance_floor() -> bool:
+	current_floor += 1
+	print("Advancing to floor", current_floor)
+	return true
+
+
+# -------------------------------------------------------------------
+#  DRAFT SYSTEM
+# -------------------------------------------------------------------
+func _build_all_unit_classes() -> void:
+	all_unit_classes.clear()
+	for path in STARTING_UNIT_CLASS_PATHS:
+		var res: Resource = load(path)
+		if res is UnitClass:
+			all_unit_classes.append(res as UnitClass)
+		else:
+			push_warning("RunManager: Failed to load UnitClass at %s" % path)
+
+
+# Simple fallback: auto-draft 4 units randomly (used when no DraftScreen yet).
+func _auto_draft_starting_party() -> void:
 	roster.clear()
 
-	for path in STARTING_UNIT_CLASS_PATHS:
-		var res := load(path)
+	if all_unit_classes.is_empty():
+		_build_all_unit_classes()
 
-		if res is UnitClass:
-			var data := UnitData.new()
-			data.unit_class = res
-			data.level = 1
-			data.exp = 0
+	var pool: Array[UnitClass] = all_unit_classes.duplicate()
+	pool.shuffle()
 
-			# Default: equip up to 3 arcana from the class skill list
-			data.equipped_arcana = []
+	var picks: int = min(max_draft_picks, pool.size())
+	for i in range(picks):
+		var cls: UnitClass = pool[i]
+		var data: UnitData = UnitData.new()
+		data.unit_class = cls
+		data.level = 1
+		data.exp = 0
 
-			for s in res.skills:
-				if s != null and data.equipped_arcana.size() < 3:
-					data.equipped_arcana.append(s)
+		# Default: equip up to 3 arcana from the class skill list
+		data.equipped_arcana = []
+		for s in cls.skills:
+			if s != null and data.equipped_arcana.size() < 3:
+				data.equipped_arcana.append(s)
 
-			roster.append(data)
-
-			print("RunManager: added", res.display_name, "at level", data.level)
-
-func get_last_levelup_events() -> Array:
-	return last_levelup_events
+		roster.append(data)
+		print("RunManager [auto-draft]: added", cls.display_name, "at level", data.level)
 
 
+# Multi-round draft: “pick 1 of 4, 4 times”.
+func _start_next_draft_round() -> void:
+	if draft_round >= max_draft_picks:
+		# Draft complete → go to Preparation
+		print("Draft complete; roster size:", roster.size())
+		_setup_starting_inventory()
+		generate_shop_stock(current_floor)
+		_goto_preparation()
+		return
+
+	draft_round += 1
+	current_draft_options.clear()
+
+	if all_unit_classes.is_empty():
+		_build_all_unit_classes()
+
+	var pool: Array[UnitClass] = all_unit_classes.duplicate()
+	pool.shuffle()
+
+	var picks: int = min(4, pool.size())
+	for i in range(picks):
+		current_draft_options.append(pool[i])
+
+	_show_draft_screen()
+
+
+# TODO UI hook: for now just logs. Later you’ll create DraftScreen.tscn and pass these options to it.
+func _show_draft_screen() -> void:
+	print("=== DRAFT ROUND %d ===" % draft_round)
+	for i in range(current_draft_options.size()):
+		var cls: UnitClass = current_draft_options[i]
+		print("  Option %d: %s" % [i, cls.display_name])
+	# In your DraftScreen script, you’ll call RunManager.choose_unit_from_draft(index).
+
+
+# Called by DraftScreen when player chooses one of the 4 options (by index).
+func choose_unit_from_draft(index: int) -> void:
+	if index < 0 or index >= current_draft_options.size():
+		return
+
+	var cls: UnitClass = current_draft_options[index]
+
+	var data: UnitData = UnitData.new()
+	data.unit_class = cls
+	data.level = 1
+	data.exp = 0
+
+	data.equipped_arcana = []
+	for s in cls.skills:
+		if s != null and data.equipped_arcana.size() < 3:
+			data.equipped_arcana.append(s)
+
+	roster.append(data)
+	print("Draft pick:", cls.display_name, " -> roster size now:", roster.size())
+
+	# Proceed to next round (or prep when done)
+	_start_next_draft_round()
+
+
+func get_current_draft_options() -> Array[UnitClass]:
+	return current_draft_options
+
+
+# -------------------------------------------------------------------
+#  SCENE TRANSITIONS
+# -------------------------------------------------------------------
 func _goto_preparation() -> void:
-	var packed := load(PREP_SCENE_PATH)
+	var packed: PackedScene = load(PREP_SCENE_PATH)
 	if packed == null:
 		push_error("RunManager: Could not load Preparation scene at %s" % PREP_SCENE_PATH)
 		return
@@ -135,56 +261,22 @@ func _goto_preparation() -> void:
 
 
 func goto_battle_scene() -> void:
-	var packed := load(BATTLE_SCENE_PATH)
+	var packed: PackedScene = load(BATTLE_SCENE_PATH)
 	if packed == null:
 		push_error("RunManager: Could not load battle scene at %s" % BATTLE_SCENE_PATH)
 		return
 	get_tree().change_scene_to_packed(packed)
 
-# XP AND LEVEL UP HELPERS
-func _grant_post_battle_exp(enemies_defeated: int) -> void:
-	last_exp_report.clear()
 
-	# Base EXP scales with floor + enemies defeated
-	var base_exp_deployed: int = 20 + current_floor * 5 + enemies_defeated * 3
-	var base_exp_bench: int    = int(base_exp_deployed / 2)
+# -------------------------------------------------------------------
+#  EXP / LEVEL UP
+# -------------------------------------------------------------------
+func get_last_levelup_events() -> Array:
+	return last_levelup_events
 
-	print("Granting post-battle EXP:",
-		" deployed =", base_exp_deployed,
-		" bench =", base_exp_bench)
 
-	for data in roster:
-		if data == null or data.unit_class == null:
-			continue
-
-		var exp_gain: int = 0
-		if deployed_units.has(data):
-			exp_gain = base_exp_deployed
-		else:
-			exp_gain = base_exp_bench
-
-		var before_level: int = data.level
-		var before_exp: int   = data.exp
-
-		data.exp += exp_gain
-
-		# Will increment level / bonuses as needed
-		_process_level_ups_for_unit(data)
-
-		var after_level: int = data.level
-		var after_exp: int   = data.exp
-
-		var entry := {
-			"data": data,
-			"name": data.unit_class.display_name,
-			"exp_gained": exp_gain,
-			"level_before": before_level,
-			"level_after": after_level,
-			"exp_before": before_exp,
-			"exp_after": after_exp
-		}
-
-		last_exp_report.append(entry)
+func get_last_exp_report() -> Array:
+	return last_exp_report
 
 
 func _add_xp_to_unit(data: UnitData, amount: int) -> void:
@@ -192,13 +284,9 @@ func _add_xp_to_unit(data: UnitData, amount: int) -> void:
 		return
 
 	data.exp += amount
-	while data.exp >= 100:
+	while data.exp >= 100 and data.level < LEVEL_CAP:
 		data.exp -= 100
 		_level_up_unit(data)
-
-#EXPORT FOR UI
-func get_last_exp_report() -> Array:
-	return last_exp_report
 
 
 func _level_up_unit(data: UnitData) -> void:
@@ -206,7 +294,6 @@ func _level_up_unit(data: UnitData) -> void:
 	if cls == null:
 		return
 
-	# Track how much this specific level gave
 	var hp_gain: int   = 0
 	var atk_gain: int  = 0
 	var def_gain: int  = 0
@@ -216,7 +303,6 @@ func _level_up_unit(data: UnitData) -> void:
 	data.level += 1
 	print("Level up!", cls.display_name, "is now level", data.level)
 
-	# FE-style growth rolls
 	if randf() < cls.growth_hp:
 		data.bonus_max_hp += 1
 		hp_gain += 1
@@ -233,7 +319,6 @@ func _level_up_unit(data: UnitData) -> void:
 		data.bonus_max_mana += 1
 		mana_gain += 1
 
-	# Record this single level-up as an event
 	var evt: Dictionary = {
 		"data": data,
 		"name": cls.display_name,
@@ -242,289 +327,14 @@ func _level_up_unit(data: UnitData) -> void:
 		"atk_gain": atk_gain,
 		"def_gain": def_gain,
 		"move_gain": move_gain,
-		"mana_gain": mana_gain
+		"mana_gain": mana_gain,
 	}
 	last_levelup_events.append(evt)
 
 
-func return_to_title() -> void:
-	run_active = false
-	current_floor = 0
-	gold = 0
-	roster.clear()
-	deployed_units.clear()
-	artifacts.clear()
-
-	var packed := load(TITLE_SCENE_PATH)
-	if packed == null:
-		push_error("RunManager: Could not load title scene at %s" % TITLE_SCENE_PATH)
-		return
-	get_tree().change_scene_to_packed(packed)
-
-
-func advance_floor() -> bool:
-	current_floor += 1
-	print("Advancing to floor", current_floor)
-	return true
-
-#EQUIPMENT AND ITEM LOAD
-
-func _load_item_defs() -> void:
-	item_defs.clear()
-	for path in ITEM_DEF_PATHS:
-		var res := load(path)
-		if res is Item:
-			item_defs.append(res)
-		else:
-			push_warning("RunManager: Failed to load Item at %s" % path)
-
-
-func _load_equipment_defs() -> void:
-	equipment_defs.clear()
-	for path in EQUIPMENT_DEF_PATHS:
-		var res := load(path)
-		if res is Equipment:
-			equipment_defs.append(res)
-		else:
-			push_warning("RunManager: Failed to load Equipment at %s" % path)
-
-# ITEM EQUIPMENT STARTING HELPER 
-
-func _setup_starting_inventory() -> void:
-	inventory_items.clear()
-	inventory_equipment.clear()
-
-	# Example: give the player 3 small potions and 1 Steel_Shield if they exist
-	if item_defs.size() > 0:
-		var potion: Item = item_defs[0]
-		inventory_items[potion] = 3
-
-	if equipment_defs.size() > 0:
-		var shield: Equipment = equipment_defs[0]
-		inventory_equipment[shield] = 1
-
-#STORE GENERATOR 
-func generate_shop_stock(floor: int) -> void:
-	shop_stock.clear()
-
-	var base_item_price: int = 20 + floor * 5
-	var base_equip_price: int = 40 + floor * 10
-
-	var num_items: int = min(3, item_defs.size())
-	var num_equips: int = min(3, equipment_defs.size())
-
-	# Randomize selection
-	var items_pool: Array = item_defs.duplicate()
-	var equips_pool: Array = equipment_defs.duplicate()
-	items_pool.shuffle()
-	equips_pool.shuffle()
-
-	# Items
-	for i in range(num_items):
-		var it = items_pool[i]
-		var entry_item := {
-			"resource": it,
-			"type": "item",
-			"price": base_item_price,
-			"stock": 3
-		}
-		shop_stock.append(entry_item)
-
-	# Equipment
-	for j in range(num_equips):
-		var eq = equips_pool[j]
-		var entry_eq := {
-			"resource": eq,
-			"type": "equipment",
-			"price": base_equip_price,
-			"stock": 1
-		}
-		shop_stock.append(entry_eq)
-
-#BUY HELPER
-func try_buy_from_shop(index: int) -> Dictionary:
-	var result := {
-		"success": false,
-		"reason": "",
-		"entry": null
-	}
-
-	if index < 0 or index >= shop_stock.size():
-		result["reason"] = "Invalid selection."
-		return result
-
-	var entry = shop_stock[index]
-	var price: int = int(entry.get("price", 0))
-	var stock: int = int(entry.get("stock", 0))
-	var res = entry.get("resource", null)
-	var type_str: String = String(entry.get("type", ""))
-
-	if stock <= 0:
-		result["reason"] = "Out of stock."
-		return result
-
-	if gold < price:
-		result["reason"] = "Not enough gold."
-		return result
-
-	# Deduct gold and decrease stock
-	gold -= price
-	stock -= 1
-	entry["stock"] = stock
-	shop_stock[index] = entry
-
-	# Add to run inventory
-	if type_str == "item":
-		var current: int = int(inventory_items.get(res, 0))
-		inventory_items[res] = current + 1
-	elif type_str == "equipment":
-		var current2: int = int(inventory_equipment.get(res, 0))
-		inventory_equipment[res] = current2 + 1
-
-	result["success"] = true
-	result["entry"] = entry
-	return result
-
-#RUN REWARDS
-func generate_rewards_for_floor(floor: int) -> void:
-	pending_rewards.clear()
-
-	# We always generate 4 options.
-	for i in range(4):
-		var option = _make_random_reward(floor, i)
-		pending_rewards.append(option)
-
-
-func _make_random_reward(floor: int, index: int) -> Dictionary:
-	# Simple weighting by index:
-	# 0–1: items/gold, 2: equipment/exp, 3: artifact / rare stuff
-	var r = randi() % 100
-	var reward_type: int
-
-	match index:
-		0, 1:
-			# More likely to be gold or item
-			if r < 40:
-				reward_type = RewardType.GOLD
-			elif r < 80:
-				reward_type = RewardType.ITEM
-			else:
-				reward_type = RewardType.EQUIPMENT
-		2:
-			# More likely equipment or exp
-			if r < 40:
-				reward_type = RewardType.EQUIPMENT
-			elif r < 80:
-				reward_type = RewardType.EXP_BOOST
-			else:
-				reward_type = RewardType.GOLD
-		3:
-			# Rare-ish: artifact placeholder, exp, or equipment
-			if r < 40:
-				reward_type = RewardType.ARTIFACT
-			elif r < 80:
-				reward_type = RewardType.EXP_BOOST
-			else:
-				reward_type = RewardType.EQUIPMENT
-
-	var option: Dictionary = {
-		"type": reward_type,
-		"resource": null,
-		"amount": 0,
-		"desc": ""
-	}
-
-	match reward_type:
-		RewardType.GOLD:
-			var base = 40 + floor * 10
-			var variance = 20 + floor * 5
-			var gold_amount = base + int(randi() % variance)
-			option["amount"] = gold_amount
-			option["desc"] = "Gain %d gold." % gold_amount
-
-		RewardType.ITEM:
-			if item_defs.size() == 0:
-				# Fallback to gold if no items defined
-				option["type"] = RewardType.GOLD
-				var g = 50 + floor * 8
-				option["amount"] = g
-				option["desc"] = "Gain %d gold." % g
-			else:
-				var item = item_defs[int(randi() % item_defs.size())]
-				var count = 1 + int(randi() % 2)  # 1–2 copies
-				option["resource"] = item
-				option["amount"] = count
-				option["desc"] = "Receive %dx %s." % [count, item.name]
-
-		RewardType.EQUIPMENT:
-			if equipment_defs.size() == 0:
-				# Fallback to gold
-				option["type"] = RewardType.GOLD
-				var g2 = 60 + floor * 12
-				option["amount"] = g2
-				option["desc"] = "Gain %d gold." % g2
-			else:
-				var eq = equipment_defs[int(randi() % equipment_defs.size())]
-				option["resource"] = eq
-				option["amount"] = 1
-				option["desc"] = "Receive %s." % eq.name
-
-		RewardType.EXP_BOOST:
-			# Extra EXP to all units in the roster
-			var exp_amount = 10 + floor * 3
-			option["amount"] = exp_amount
-			option["desc"] = "All allies gain %d bonus EXP." % exp_amount
-
-		RewardType.ARTIFACT:
-			# Placeholder for now. Later you can substitute real artifact resources.
-			option["amount"] = 0
-			option["desc"] = "Obtain a mysterious artifact (not yet implemented)."
-
-	return option
-
-#APPLY REWARDS
-func apply_reward(option: Dictionary) -> void:
-	if option.is_empty():
-		return
-
-	var reward_type = int(option.get("type", RewardType.GOLD))
-	var res = option.get("resource", null)
-	var amount = int(option.get("amount", 0))
-
-	match reward_type:
-		RewardType.GOLD:
-			gold += amount
-
-		RewardType.ITEM:
-			if res is Item:
-				var current = int(inventory_items.get(res, 0))
-				inventory_items[res] = current + amount
-
-		RewardType.EQUIPMENT:
-			if res is Equipment:
-				var current2 = int(inventory_equipment.get(res, 0))
-				inventory_equipment[res] = current2 + amount
-
-		RewardType.EXP_BOOST:
-			# Simple version: add EXP to everyone in the roster
-			for data in roster:
-				if data == null:
-					continue
-				data.exp += amount
-				# You can handle level-ups later when EXP crosses threshold
-
-		RewardType.ARTIFACT:
-			# TODO: hook into your future artifact system.
-			# For now we just print.
-			print("Artifact reward chosen (not implemented yet).")
-
-	# Once a reward is taken, clear the list to avoid reusing it accidentally.
-	pending_rewards.clear()
-
-#POST BATTLE EXP
 func grant_post_battle_exp(enemies_defeated: int) -> void:
 	last_exp_report.clear()
-	last_levelup_events.clear()  # 🔹 also clear old level-up events
+	last_levelup_events.clear()
 
 	var base_exp_deployed: int = 20 + current_floor * 5 + enemies_defeated * 3
 	var base_exp_bench: int    = int(base_exp_deployed / 2)
@@ -551,8 +361,6 @@ func grant_post_battle_exp(enemies_defeated: int) -> void:
 		var before_exp: int   = data.exp
 
 		data.exp += exp_gain
-
-		# This will also append entries into last_levelup_events
 		_process_level_ups_for_unit(data)
 
 		var after_level: int = data.level
@@ -573,7 +381,7 @@ func grant_post_battle_exp(enemies_defeated: int) -> void:
 	print("grant_post_battle_exp: recorded", last_exp_report.size(), "entries in last_exp_report")
 	print("grant_post_battle_exp: recorded", last_levelup_events.size(), "level-up events")
 
-#LEVEL UP PROCESSING
+
 func _process_all_level_ups() -> void:
 	for data in roster:
 		if data == null or data.unit_class == null:
@@ -588,7 +396,335 @@ func _process_level_ups_for_unit(data: UnitData) -> void:
 
 	var exp_needed: int = max(cls.exp_per_level, 1)
 
-	# Loop in case one big EXP gain gives multiple levels
 	while data.level < LEVEL_CAP and data.exp >= exp_needed:
 		data.exp -= exp_needed
 		_level_up_unit(data)
+
+
+# -------------------------------------------------------------------
+#  ITEM / EQUIPMENT DEFINITIONS + INVENTORY
+# -------------------------------------------------------------------
+func _load_item_defs() -> void:
+	item_defs.clear()
+	for path in ITEM_DEF_PATHS:
+		var res: Resource = load(path)
+		if res is Item:
+			item_defs.append(res as Item)
+		else:
+			push_warning("RunManager: Failed to load Item at %s" % path)
+
+
+func _load_equipment_defs() -> void:
+	equipment_defs.clear()
+	for path in EQUIPMENT_DEF_PATHS:
+		var res: Resource = load(path)
+		if res is Equipment:
+			equipment_defs.append(res as Equipment)
+		else:
+			push_warning("RunManager: Failed to load Equipment at %s" % path)
+
+
+func _setup_starting_inventory() -> void:
+	inventory_items.clear()
+	inventory_equipment.clear()
+
+	if item_defs.size() > 0:
+		var potion: Item = item_defs[0]
+		inventory_items[potion] = 3
+
+	if equipment_defs.size() > 0:
+		var shield: Equipment = equipment_defs[0]
+		inventory_equipment[shield] = 1
+
+
+# -------------------------------------------------------------------
+#  SHOP
+# -------------------------------------------------------------------
+func generate_shop_stock(floor: int) -> void:
+	shop_stock.clear()
+
+	var base_item_price: int = 20 + floor * 5
+	var base_equip_price: int = 40 + floor * 10
+
+	var num_items: int = min(3, item_defs.size())
+	var num_equips: int = min(3, equipment_defs.size())
+
+	var items_pool: Array[Item] = item_defs.duplicate()
+	var equips_pool: Array[Equipment] = equipment_defs.duplicate()
+	items_pool.shuffle()
+	equips_pool.shuffle()
+
+	for i in range(num_items):
+		var it: Item = items_pool[i]
+		var entry_item: Dictionary = {
+			"resource": it,
+			"type": "item",
+			"price": base_item_price,
+			"stock": 3
+		}
+		shop_stock.append(entry_item)
+
+	for j in range(num_equips):
+		var eq: Equipment = equips_pool[j]
+		var entry_eq: Dictionary = {
+			"resource": eq,
+			"type": "equipment",
+			"price": base_equip_price,
+			"stock": 1
+		}
+		shop_stock.append(entry_eq)
+
+
+func try_buy_from_shop(index: int) -> Dictionary:
+	var result: Dictionary = {
+		"success": false,
+		"reason": "",
+		"entry": null
+	}
+
+	if index < 0 or index >= shop_stock.size():
+		result["reason"] = "Invalid selection."
+		return result
+
+	var entry: Dictionary = shop_stock[index]
+	var price: int = int(entry.get("price", 0))
+	var stock: int = int(entry.get("stock", 0))
+	var res: Resource = entry.get("resource", null)
+	var type_str: String = String(entry.get("type", ""))
+
+	if stock <= 0:
+		result["reason"] = "Out of stock."
+		return result
+
+	if gold < price:
+		result["reason"] = "Not enough gold."
+		return result
+
+	gold -= price
+	stock -= 1
+	entry["stock"] = stock
+	shop_stock[index] = entry
+
+	if type_str == "item":
+		var current: int = int(inventory_items.get(res, 0))
+		inventory_items[res] = current + 1
+	elif type_str == "equipment":
+		var current2: int = int(inventory_equipment.get(res, 0))
+		inventory_equipment[res] = current2 + 1
+
+	result["success"] = true
+	result["entry"] = entry
+	return result
+
+
+# -------------------------------------------------------------------
+#  RUN REWARDS
+# -------------------------------------------------------------------
+func generate_rewards_for_floor(floor: int) -> void:
+	pending_rewards.clear()
+	for i in range(4):
+		var option: Dictionary = _make_random_reward(floor, i)
+		pending_rewards.append(option)
+
+
+func _make_random_reward(floor: int, index: int) -> Dictionary:
+	var r: int = int(randi() % 100)
+	var reward_type: int
+
+	match index:
+		0, 1:
+			if r < 40:
+				reward_type = RewardType.GOLD
+			elif r < 80:
+				reward_type = RewardType.ITEM
+			else:
+				reward_type = RewardType.EQUIPMENT
+		2:
+			if r < 40:
+				reward_type = RewardType.EQUIPMENT
+			elif r < 80:
+				reward_type = RewardType.EXP_BOOST
+			else:
+				reward_type = RewardType.GOLD
+		3:
+			if r < 40:
+				reward_type = RewardType.ARTIFACT
+			elif r < 80:
+				reward_type = RewardType.EXP_BOOST
+			else:
+				reward_type = RewardType.EQUIPMENT
+
+	var option: Dictionary = {
+		"type": reward_type,
+		"resource": null,
+		"amount": 0,
+		"desc": ""
+	}
+
+	match reward_type:
+		RewardType.GOLD:
+			var base: int = 40 + floor * 10
+			var variance: int = 20 + floor * 5
+			var gold_amount: int = base + int(randi() % variance)
+			option["amount"] = gold_amount
+			option["desc"] = "Gain %d gold." % gold_amount
+
+		RewardType.ITEM:
+			if item_defs.size() == 0:
+				option["type"] = RewardType.GOLD
+				var g: int = 50 + floor * 8
+				option["amount"] = g
+				option["desc"] = "Gain %d gold." % g
+			else:
+				var item: Item = item_defs[int(randi() % item_defs.size())]
+				var count: int = 1 + int(randi() % 2)
+				option["resource"] = item
+				option["amount"] = count
+				option["desc"] = "Receive %dx %s." % [count, item.name]
+
+		RewardType.EQUIPMENT:
+			if equipment_defs.size() == 0:
+				option["type"] = RewardType.GOLD
+				var g2: int = 60 + floor * 12
+				option["amount"] = g2
+				option["desc"] = "Gain %d gold." % g2
+			else:
+				var eq: Equipment = equipment_defs[int(randi() % equipment_defs.size())]
+				option["resource"] = eq
+				option["amount"] = 1
+				option["desc"] = "Receive %s." % eq.name
+
+		RewardType.EXP_BOOST:
+			var exp_amount: int = 10 + floor * 3
+			option["amount"] = exp_amount
+			option["desc"] = "All allies gain %d bonus EXP." % exp_amount
+
+		RewardType.ARTIFACT:
+			option["amount"] = 0
+			option["desc"] = "Obtain a mysterious artifact (not yet implemented)."
+
+	return option
+
+
+func apply_reward(option: Dictionary) -> void:
+	if option.is_empty():
+		return
+
+	var reward_type: int = int(option.get("type", RewardType.GOLD))
+	var res: Resource = option.get("resource", null)
+	var amount: int = int(option.get("amount", 0))
+
+	match reward_type:
+		RewardType.GOLD:
+			gold += amount
+
+		RewardType.ITEM:
+			if res is Item:
+				var current: int = int(inventory_items.get(res, 0))
+				inventory_items[res] = current + amount
+
+		RewardType.EQUIPMENT:
+			if res is Equipment:
+				var current2: int = int(inventory_equipment.get(res, 0))
+				inventory_equipment[res] = current2 + amount
+
+		RewardType.EXP_BOOST:
+			for data in roster:
+				if data == null:
+					continue
+				data.exp += amount
+				# Level-ups for reward EXP are handled later with _process_level_ups_for_unit if you want.
+
+		RewardType.ARTIFACT:
+			print("Artifact reward chosen (not implemented yet).")
+
+	pending_rewards.clear()
+
+# Load unit HELPER
+
+func _load_all_unit_classes() -> void:
+	all_unit_classes.clear()
+
+	for path in STARTING_UNIT_CLASS_PATHS:
+		var res := load(path)
+		if res is UnitClass:
+			all_unit_classes.append(res)
+		else:
+			push_warning("RunManager: Failed to load UnitClass at %s" % path)
+
+	if all_unit_classes.is_empty():
+		push_error("RunManager: all_unit_classes is empty! Check STARTING_UNIT_CLASS_PATHS.")
+
+#DRAFT STARTER
+func _start_draft_round() -> void:
+	if all_unit_classes.is_empty():
+		# Fallback: if something went wrong, just create a basic roster and go to prep.
+		
+		_setup_starting_inventory()
+		generate_shop_stock(current_floor)
+		_goto_preparation()
+		return
+
+	draft_round += 1
+	current_draft_options.clear()
+
+	# Pick up to 4 random classes out of all_unit_classes
+	var pool: Array[UnitClass] = all_unit_classes.duplicate()
+	pool.shuffle()
+
+	var count: int = min(4, pool.size())
+	for i in range(count):
+		current_draft_options.append(pool[i])
+
+	# Go to DraftScreen
+	var packed := load(DRAFT_SCENE_PATH)
+	if packed == null:
+		push_error("RunManager: Could not load DraftScreen at %s" % DRAFT_SCENE_PATH)
+		# Fallback: if draft screen cannot be loaded, just skip to prep
+		
+		_setup_starting_inventory()
+		generate_shop_stock(current_floor)
+		_goto_preparation()
+		return
+
+	get_tree().change_scene_to_packed(packed)
+
+#CHOOSE DRAFT UNIT
+func choose_draft_unit(choice_index: int) -> void:
+	if choice_index < 0 or choice_index >= current_draft_options.size():
+		return
+
+	var cls: UnitClass = current_draft_options[choice_index]
+	if cls == null:
+		return
+
+	# Build a new UnitData entry for this pick
+	var data := UnitData.new()
+	data.unit_class = cls
+	data.level = 1
+	data.exp = 0
+
+	# Default: equip up to 3 arcana from the class skill list
+	data.equipped_arcana = []
+	for s in cls.skills:
+		if s != null and data.equipped_arcana.size() < 3:
+			data.equipped_arcana.append(s)
+
+	roster.append(data)
+	print("Draft pick:", cls.display_name, " -> roster size now", roster.size())
+
+	# If we haven't finished all picks, start another draft round
+	if draft_round < max_draft_picks:
+		_start_draft_round()
+		return
+
+	# Draft complete: set deployed units to your newly drafted roster for floor 1
+	deployed_units.clear()
+	for d in roster:
+		deployed_units.append(d)
+
+	_setup_starting_inventory()
+	generate_shop_stock(current_floor)
+
+	# Now go to the normal preparation screen
+	_goto_preparation()

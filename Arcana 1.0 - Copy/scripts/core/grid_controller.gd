@@ -1,7 +1,22 @@
 # scripts/grid_controller.gd
 extends Node2D
+# or whatever you already have
 
 @onready var terrain: TileMap = $Terrain
+
+
+# We only have 1 atlas source, so we hardcode source_id = 0.
+const TERRAIN_SOURCE_ID: int = 1
+
+# Map logical terrain keys to atlas coords
+# 🔹 CHANGE these coords to match what you see in the TileSet editor.
+@export var terrain_atlas_coords: Dictionary = {
+	"wall": Vector2i(4, 5),   # example
+	"vines": Vector2i(5, 5),   # example
+	"spikes": Vector2i(6, 5)   # example
+}
+
+
 @onready var cursor: Node2D  = $Cursor
 
 var cursor_tile: Vector2i = Vector2i.ZERO
@@ -72,7 +87,8 @@ const TERRAIN_TABLE := {
 	Vector3i(1, 1, 5): { "name": "forest", "move_cost": 2, "def": 1, "walkable": true },
 	Vector3i(1, 2, 5): { "name": "forest", "move_cost": 2, "def": 1, "walkable": true },
 	Vector3i(1, 3, 5): { "name": "forest", "move_cost": 2, "def": 1, "walkable": true },
-	
+	#HAZARD
+	Vector3i(1, 6, 5): { "name": "spikes", "move_cost": 1, "def": 0, "walkable": true },
 	#FORT/CASTLE
 	Vector3i(1, 5, 5): { "name": "Fort", "move_cost": 3, "def": 3, "walkable": true },
 	# Mountain variants
@@ -128,3 +144,40 @@ func get_defense_bonus(tile: Vector2i) -> int:
 func is_walkable(tile: Vector2i) -> bool:
 	var info: Dictionary = get_terrain_info(tile)
 	return bool(info["walkable"])
+
+func apply_terrain_skill(tile: Vector2i, user, skill: Skill) -> void:
+	if skill.terrain_tile_key == "":
+		print("apply_terrain_skill: Skill", skill.name, "has empty terrain_tile_key.")
+		return
+
+	match skill.terrain_action:
+		Skill.TerrainAction.SET_TILE:
+			_set_terrain_tile(tile, skill.terrain_tile_key)
+
+		Skill.TerrainAction.CLEAR_TILE:
+			_clear_terrain_tile(tile)
+
+		_:
+			print("apply_terrain_skill: Unsupported TerrainAction on skill", skill.name)
+
+
+#TErrain skill helpers
+func _set_terrain_tile(tile: Vector2i, key: String) -> void:
+	if not terrain_atlas_coords.has(key):
+		print("Grid: Unknown terrain key:", key)
+		return
+
+	var atlas: Vector2i = terrain_atlas_coords[key]
+
+	# layer = 0, source_id = TERRAIN_SOURCE_ID, atlas_coords = atlas, alt = 0
+	terrain.set_cell(0, tile, TERRAIN_SOURCE_ID, atlas, 0)
+	print("Grid: set tile", tile, "to", key, "atlas:", atlas)
+
+
+
+func _clear_terrain_tile(tile: Vector2i) -> void:
+	# Either erase:
+	terrain.erase_cell(0, tile)
+	# Or you can set_cell with -1 to clear:
+	# terrain.set_cell(0, tile, -1)
+	print("Grid: cleared tile", tile)

@@ -1,6 +1,9 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=2 format=3 uid="uid://vbbdbsfmfcwf"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=5 format=3 uid="uid://dr514xgg3ujki"]
 
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_851fg"]
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_nnrtr"]
+[ext_resource type="Resource" uid="uid://ci844ttgxgesx" path="res://data/skills/druid/Entangling Vines.tres" id="3_h63y4"]
+[ext_resource type="Resource" uid="uid://c7j2c7apo5id" path="res://data/skills/druid/Earths_Bounty.tres" id="4_jbx38"]
 
 [resource]
 script = ExtResource("1_851fg")
@@ -8,6 +11,7 @@ display_name = "Druid"
 max_hp = 13
 atk = 3
 max_mana = 10
+skills = Array[ExtResource("2_nnrtr")]([ExtResource("3_h63y4"), ExtResource("4_jbx38")])
 growth_hp = 0.5
 growth_atk = 0.4
 growth_defense = 0.3

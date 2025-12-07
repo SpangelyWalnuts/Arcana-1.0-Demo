@@ -50,6 +50,7 @@ var _first_player_phase_done: bool = false
 @onready var victory_summary_label: Label = $UI/VictoryPanel/Panel/VBoxContainer/SummaryLabel
 @onready var defeat_summary_label: Label  = $UI/DefeatPanel/Panel/VBoxContainer/SummaryLabel
 @onready var level_up_panel: LevelUpPanel = $UI/LevelUpPanel
+@onready var terrain_effects_root: Node2D = $TerrainEffects
 
 @export var floating_text_scene: PackedScene
 
@@ -269,24 +270,64 @@ func _handle_skill_target_click(tile: Vector2i) -> void:
 		print("Skill target click aborted: no selected_unit or _current_skill")
 		return
 
+	var skill: Skill = _current_skill
 	var target = _get_unit_at_tile(tile)
-	print("Skill click:", _current_skill.name, " at tile:", tile, " target:", target)
+	print("Skill click:", skill.name, " at tile:", tile, " target:", target)
 
+	# 🔹 If this is a terrain-object skill, we don't require a unit target.
+	if skill.is_terrain_object_skill:
+		# Range check (optional – you already handle cast_range in preview,
+		# but this is a nice safety net)
+		var dist_to_center: int = abs(selected_unit.grid_position.x - tile.x) \
+			+ abs(selected_unit.grid_position.y - tile.y)
+		if dist_to_center > skill.cast_range:
+			print("Tile is out of cast range for terrain-object skill.")
+			return
+
+		# Mana check
+		if selected_unit.mana < skill.mana_cost:
+			print("Not enough mana.")
+			return
+
+		# Spend mana and spawn the effect
+		selected_unit.mana -= skill.mana_cost
+		_spawn_terrain_effect(skill, tile, selected_unit)
+
+		# Mark as acted and cleanup
+		selected_unit.has_acted = true
+		_play_deselect_fx(selected_unit)
+		selected_unit = null
+		clear_all_ranges()
+
+		if action_menu.has_method("hide_menu"):
+			action_menu.hide_menu()
+		else:
+			action_menu.hide()
+
+		if skill_menu.has_method("hide_menu"):
+			skill_menu.hide_menu()
+		else:
+			skill_menu.hide()
+
+		input_mode = InputMode.FREE
+		return
+
+	# 🔹 Otherwise: normal unit-target skill (heal, damage, buffs)
 	# Generic check (works for damage + heal)
-	if not _is_valid_skill_target(selected_unit, target, _current_skill):
+	if not _is_valid_skill_target(selected_unit, target, skill):
 		print(" -> invalid target for this skill")
 		return
 
 	# Mana check
-	if selected_unit.mana < _current_skill.mana_cost:
+	if selected_unit.mana < skill.mana_cost:
 		print("Not enough mana.")
 		return
 
 	# Spend mana
-	selected_unit.mana -= _current_skill.mana_cost
+	selected_unit.mana -= skill.mana_cost
 
-	# Execute the effect (damage or heal)
-	_execute_skill_on_target(selected_unit, target, _current_skill)
+	# Execute the effect (damage or heal, or buffs if you wired them)
+	_execute_skill_on_target(selected_unit, target, skill)
 
 	# Mark unit as having acted and clean up
 	selected_unit.has_acted = true
@@ -306,6 +347,8 @@ func _handle_skill_target_click(tile: Vector2i) -> void:
 		skill_menu.hide()
 
 	input_mode = InputMode.FREE
+
+
 
 
 
@@ -361,6 +404,8 @@ func _try_select_unit_at_tile(tile: Vector2i) -> void:
 		# Clicked empty or non-player: clear selection
 		if selected_unit != null and selected_unit.has_node("Sprite2D"):
 			selected_unit.get_node("Sprite2D").modulate = Color.WHITE
+				# 🔹 Apply tile hazards (e.g. spikes) AFTER finishing the move
+		_apply_tile_hazard_for_unit(selected_unit)
 		selected_unit = null
 		input_mode = InputMode.FREE
 		_play_select_fx(selected_unit)
@@ -374,6 +419,11 @@ func _try_move_selected_unit_to_tile(tile: Vector2i) -> void:
 		return
 
 	if selected_unit.team != "player":
+		return
+
+	# 🔹 Check if this unit is allowed to move (rooted / immobilized)
+	if selected_unit.has_method("can_move") and not selected_unit.can_move():
+		print("This unit cannot move right now.")
 		return
 
 	var target_unit = _get_unit_at_tile(tile)
@@ -393,7 +443,7 @@ func _try_move_selected_unit_to_tile(tile: Vector2i) -> void:
 		# Occupied by ally or something else – no movement
 		return
 
-	# ✅ NEW: Use terrain-aware reachable tiles instead of raw distance
+	# ✅ Terrain-aware reachable tiles (with move buffs/debuffs)
 	var reachable_tiles: Array[Vector2i] = get_reachable_tiles_for_unit(selected_unit)
 	if not reachable_tiles.has(tile):
 		print("Tile is not reachable according to terrain/pathfinding.")
@@ -412,6 +462,7 @@ func _try_move_selected_unit_to_tile(tile: Vector2i) -> void:
 
 	if _all_player_units_have_acted():
 		turn_manager.end_turn()
+
 
 
 
@@ -472,12 +523,17 @@ func _on_phase_changed(new_phase) -> void:
 				_first_player_phase_done = true
 
 			print("PLAYER PHASE - Turn:", run_turns)
+
+			# 🔹 Tick terrain durations + per-turn hooks
+			_advance_terrain_effects_one_turn()
+
 			_reset_player_units()
 
 		turn_manager.Phase.ENEMY:
 			# Enemy's turn begins.
 			print("ENEMY PHASE")
 			_run_enemy_turn()
+
 
 
 func _reset_player_units() -> void:
@@ -548,6 +604,11 @@ func get_reachable_tiles_for_unit(unit) -> Array[Vector2i]:
 	frontier.append(start)
 	cost_so_far[start] = 0
 
+	# 🔹 Use effective move range if available
+	var max_move: int = unit.move_range
+	if unit.has_method("get_effective_move_range"):
+		max_move = unit.get_effective_move_range()
+
 	var directions: Array[Vector2i] = [
 		Vector2i(1, 0),
 		Vector2i(-1, 0),
@@ -572,13 +633,23 @@ func get_reachable_tiles_for_unit(unit) -> Array[Vector2i]:
 			if occupant != null and occupant != unit:
 				continue
 
-			# 3) Add terrain move cost
+			# 2b) Check terrain effect objects (walls, vines, etc.)
+			var eff: TerrainEffect = _get_terrain_effect_at_tile(next)
+			if eff != null and eff.blocks_movement:
+				# Wall or similar – cannot enter
+				continue
+
+			# 3) Add terrain move cost from grid
 			var move_cost: int = grid.get_move_cost(next)
 			if move_cost < 0:
 				continue
 
+			# 3b) Add extra cost from terrain effect (e.g. vines)
+			if eff != null:
+				move_cost += eff.move_cost_bonus
+
 			var new_cost: int = current_cost + move_cost
-			if new_cost > unit.move_range:
+			if new_cost > max_move:
 				continue
 
 			# 4) If we've seen this tile with cheaper cost, skip
@@ -591,6 +662,7 @@ func get_reachable_tiles_for_unit(unit) -> Array[Vector2i]:
 	# Optional: you may want to exclude the starting tile from "move tiles"
 	result.erase(unit.grid_position)
 	return result
+
 
 
 func get_fe_attack_range(unit) -> Array[Vector2i]:
@@ -635,7 +707,17 @@ func _get_enemy_units() -> Array:
 
 
 func _is_tile_occupied(tile: Vector2i) -> bool:
-	return _get_unit_at_tile(tile) != null
+	# Units block
+	if _get_unit_at_tile(tile) != null:
+		return true
+
+	# Terrain effects that block movement also block
+	var eff: TerrainEffect = _get_terrain_effect_at_tile(tile)
+	if eff != null and eff.blocks_movement:
+		return true
+
+	return false
+
 
 func _find_closest_player(enemy) -> Node:
 	var players = _get_player_units()
@@ -695,11 +777,24 @@ func _run_enemy_turn() -> void:
 
 			# Don't walk into occupied tiles
 			if not _is_tile_occupied(next_tile):
+				var old_tile: Vector2i = enemy.grid_position
+
+				# Exit old effect
+				var old_eff: TerrainEffect = _get_terrain_effect_at_tile(old_tile)
+				if old_eff != null:
+					old_eff.on_unit_exit(enemy)
+
 				enemy.grid_position = next_tile
 				enemy.position = grid.tile_to_world(next_tile)
 				print(enemy.name, "moves to", next_tile)
+
+				# Enter new effect
+				var new_eff: TerrainEffect = _get_terrain_effect_at_tile(next_tile)
+				if new_eff != null:
+					new_eff.on_unit_enter(enemy)
 			else:
 				print(enemy.name, "wanted to move, but tile", next_tile, "is occupied.")
+
 
 	print("Enemy phase done, back to player.")
 	turn_manager.end_turn()
@@ -795,11 +890,19 @@ func _on_action_menu_selected(action_name: String) -> void:
 			show_attack_range(selected_unit)
 
 		"skill":
+						# 🔹 Check for silence / prevent_arcana
+			if selected_unit.has_method("can_cast_arcana") and not selected_unit.can_cast_arcana():
+				print("This unit cannot cast Arcana right now.")
+				return
 			input_mode = InputMode.AWAIT_ACTION
 			skill_menu.show_for_unit(selected_unit)
 
 		"wait":
 			selected_unit.has_acted = true
+			
+			# 🔹 Apply hazard when the unit ends its action on this tile
+			_apply_tile_hazard_for_unit(selected_unit)
+	
 			if selected_unit.has_node("Sprite2D"):
 				selected_unit.get_node("Sprite2D").modulate = Color.WHITE
 
@@ -1069,16 +1172,40 @@ func _execute_skill_on_target(user, target, skill: Skill) -> void:
 	if skill == null or target == null:
 		return
 
-	if skill.is_heal:
-		_apply_skill_heal(user, target, skill)
-	else:
-		_apply_skill_damage(user, target, skill)
+	# Prefer the new EffectType enum if set
+	match skill.effect_type:
+		Skill.EffectType.DAMAGE:
+			_apply_skill_damage(user, target, skill)
+
+		Skill.EffectType.HEAL:
+			_apply_skill_heal(user, target, skill)
+
+		Skill.EffectType.BUFF:
+			_apply_status_from_skill(user, target, skill, true)
+
+		Skill.EffectType.DEBUFF:
+			_apply_status_from_skill(user, target, skill, false)
+
+		Skill.EffectType.TERRAIN:
+			# Terrain manipulation will be implemented later
+			# For now, do nothing so it doesn't crash.
+			pass
+
+		_:
+			# Fallback for older skills using is_heal
+			if skill.is_heal:
+				_apply_skill_heal(user, target, skill)
+			else:
+				_apply_skill_damage(user, target, skill)
+
 
 
 
 func _apply_skill_heal(user, target, skill: Skill) -> void:
 	# You can switch to user.magic later if you add that stat
 	var base_magic: int = user.atk
+	if user.has_method("get_effective_atk"):
+		base_magic = user.get_effective_atk()
 
 	var raw: float = float(base_magic) * skill.power_multiplier + float(skill.flat_power)
 	var amount: int = int(round(raw))
@@ -1096,6 +1223,7 @@ func _apply_skill_heal(user, target, skill: Skill) -> void:
 
 	# Optional: heal popup / SFX
 	# _spawn_heal_popup(target, actual_heal)
+
 
 
 func _is_valid_skill_target(user, target, skill: Skill) -> bool:
@@ -1128,11 +1256,28 @@ func _is_valid_skill_target(user, target, skill: Skill) -> bool:
 func _apply_skill_damage(user, target, skill: Skill) -> void:
 	# Base offensive stat – if you later add user.magic, you can branch here per skill
 	var base_attack: int = user.atk
+	if user.has_method("get_effective_atk"):
+		base_attack = user.get_effective_atk()
 
 	var raw: float = float(base_attack) * skill.power_multiplier + float(skill.flat_power)
+
+	# 🔹 Apply one-shot "next attack damage" buffs from statuses
+	var damage_mul: float = 1.0
+	for s in user.active_statuses:
+		if typeof(s) != TYPE_DICTIONARY:
+			continue
+		var extra: float = float(s.get("next_attack_damage_mul", 0.0))
+		if extra != 0.0:
+			damage_mul += extra
+
+	raw *= damage_mul
+
 	var amount: int = int(round(raw))
 	if amount < 1:
 		amount = 1
+
+	# 🔹 Consume "next attack" buffs now that we've used them
+	_consume_next_attack_buffs(user)
 
 	target.hp = max(target.hp - amount, 0)
 	if target.has_method("update_hp_bar"):
@@ -1140,6 +1285,7 @@ func _apply_skill_damage(user, target, skill: Skill) -> void:
 
 	# Optional: damage popup / SFX
 	# _spawn_damage_popup(target, amount)
+
 
 #VICTORY AND DEFEAT
 func _check_victory_defeat() -> void:
@@ -1383,3 +1529,146 @@ func _show_victory_ui() -> void:
 #LEVELUPPANEL CALLBACK
 func _on_levelup_panel_finished() -> void:
 	_show_victory_ui()
+
+#SKILL BUFF HELPERS
+func _consume_next_attack_buffs(user) -> void:
+	var remaining: Array = []
+	for s in user.active_statuses:
+		if typeof(s) != TYPE_DICTIONARY:
+			remaining.append(s)
+			continue
+
+		var extra: float = float(s.get("next_attack_damage_mul", 0.0))
+		if extra != 0.0:
+			# This was a one-shot "next attack" modifier; drop it.
+			continue
+
+		remaining.append(s)
+
+	user.active_statuses = remaining
+
+func _apply_status_from_skill(user, target, skill: Skill, is_buff: bool) -> void:
+	if target == null:
+		return
+
+	# Build a status dictionary from the skill's exported fields
+	var status: Dictionary = {
+		"id": skill.name.to_lower(),
+		"name": skill.name,
+		"remaining_turns": skill.duration_turns,
+
+		"atk_mod": skill.atk_mod,
+		"def_mod": skill.def_mod,
+		"move_mod": skill.move_mod,
+		"mana_regen_mod": skill.mana_regen_mod,
+
+		"prevent_arcana": skill.prevent_arcana,
+		"prevent_move": skill.prevent_move,
+
+		"next_attack_damage_mul": skill.next_attack_damage_mul,
+		"next_arcana_aoe_bonus": skill.next_arcana_aoe_bonus,
+	}
+
+	# For debuffs, invert positive stat bonuses
+	if not is_buff:
+		status["atk_mod"] = -int(status["atk_mod"])
+		status["def_mod"] = -int(status["def_mod"])
+		status["move_mod"] = -int(status["move_mod"])
+		status["mana_regen_mod"] = -int(status["mana_regen_mod"])
+
+	# Attach to the target unit
+	target.active_statuses.append(status)
+	print("Applied status", status["name"], "to", target.name)
+
+# Terrain skill helper
+func _apply_terrain_skill_at_tile(tile: Vector2i, user, skill: Skill) -> void:
+	# For now we let Grid/terrain controller decide what to do.
+	if grid != null and grid.has_method("apply_terrain_skill"):
+		grid.apply_terrain_skill(tile, user, skill)
+	else:
+		print("Terrain skill cast at", tile, "but grid.apply_terrain_skill() is not implemented.")
+
+#HAZARD TILES HELPER
+func _apply_tile_hazard_for_unit(u) -> void:
+	if u == null or not is_instance_valid(u):
+		return
+
+	# Use the unit's grid_position to check the terrain
+	var tile: Vector2i = u.grid_position
+	var info: Dictionary = grid.get_terrain_info(tile)
+
+	var terrain_name: String = str(info.get("name", ""))
+	terrain_name = terrain_name.to_lower()
+
+	# 🔹 Simple rule for now: "spikes" terrain deals damage
+	if terrain_name == "spikes":
+		var dmg: int = 2   # tweak to taste
+		print(u.name, "takes", dmg, "damage from spikes on tile", tile)
+
+		# Apply damage via your existing method
+		if u.has_method("take_damage"):
+			u.take_damage(dmg)
+
+#TERRAIN EFFECTS HELPER
+func _get_terrain_effect_at_tile(tile: Vector2i) -> TerrainEffect:
+	if terrain_effects_root == null:
+		return null
+
+	for child in terrain_effects_root.get_children():
+		var eff: TerrainEffect = child as TerrainEffect
+		if eff == null:
+			continue
+		if eff.grid_position == tile:
+			return eff
+
+	return null
+
+func _spawn_terrain_effect(skill: Skill, tile: Vector2i, user) -> void:
+	if skill.terrain_object_scene == null:
+		push_error("Terrain-object skill '%s' has no terrain_object_scene set!" % skill.name)
+		return
+
+	if terrain_effects_root == null:
+		push_error("Main: terrain_effects_root ($TerrainEffects) is missing.")
+		return
+
+	var inst: Node2D = skill.terrain_object_scene.instantiate()
+	terrain_effects_root.add_child(inst)
+
+	# Position in world
+	inst.position = grid.tile_to_world(tile)
+
+	# If it has TerrainEffect script, configure it
+	var eff: TerrainEffect = inst as TerrainEffect
+	if eff != null:
+		eff.grid_position = tile
+
+		# Key: either from skill or keep the scene default
+		if skill.terrain_object_key != "":
+			eff.key = skill.terrain_object_key
+
+		# Duration: if skill has a value other than 0, override
+		if skill.terrain_object_duration != 0:
+			eff.duration_turns = skill.terrain_object_duration
+
+		eff.blocks_movement = skill.terrain_object_blocks_movement
+		eff.move_cost_bonus = skill.terrain_object_move_cost_bonus
+
+	print("Spawned terrain effect for skill", skill.name, "at tile", tile)
+
+# TERRAIN EFFECT TICK HELPER
+func _advance_terrain_effects_one_turn() -> void:
+	if terrain_effects_root == null:
+		return
+
+	# We tick all terrain effects once per player phase.
+	for child in terrain_effects_root.get_children():
+		var eff: TerrainEffect = child as TerrainEffect
+		if eff == null:
+			continue
+
+		# Hook for custom logic
+		eff.on_turn_start("player")
+
+		# Duration handling
+		eff.tick_duration()

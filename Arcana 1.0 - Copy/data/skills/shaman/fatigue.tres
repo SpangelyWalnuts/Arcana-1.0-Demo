@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://bjl3kwcsocmoq"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_2wkiv"]
+
+[resource]
+script = ExtResource("1_2wkiv")
+name = "Fatigue"
+mana_cost = 3
+effect_type = 3
+cast_range = 6
+power_multiplier = 0.0
+target_type = 1
+duration_turns = 2
+prevent_move = true
