@@ -1,0 +1,37 @@
+[gd_scene load_steps=3 format=3 uid="uid://cdxb46fgjtu0c"]
+
+[ext_resource type="Script" uid="uid://c2kfu4b3sbqbo" path="res://scripts/units/unit.gd" id="1_fqlnf"]
+[ext_resource type="Texture2D" uid="uid://cpb0iwxqmhhux" path="res://art/units/Cryomancer map.png" id="2_gocqw"]
+
+[node name="Units" type="Node2D"]
+script = ExtResource("1_fqlnf")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("2_gocqw")
+centered = false
+
+[node name="HPBar" type="Sprite2D" parent="."]
+position = Vector2(0, -20)
+
+[node name="StatusIcons" type="HBoxContainer" parent="HPBar"]
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 2
+
+[node name="BG" type="ColorRect" parent="HPBar"]
+custom_minimum_size = Vector2(24, 4)
+offset_top = 20.0
+offset_right = 32.0
+offset_bottom = 24.0
+mouse_filter = 2
+color = Color(0.011087579, 0.011087578, 0.01108758, 1)
+
+[node name="Fill" type="ColorRect" parent="HPBar"]
+custom_minimum_size = Vector2(24, 4)
+offset_top = 20.0
+offset_right = 32.0
+offset_bottom = 24.0
+mouse_filter = 2
+color = Color(0.36232832, 0.82887036, 3.85046e-07, 1)

@@ -1,0 +1,629 @@
+[gd_scene load_steps=66 format=3 uid="uid://n3fdkibgiero"]
+
+[ext_resource type="Script" uid="uid://h2yfgpr5nkon" path="res://scripts/core/Main.gd" id="1_v0fxp"]
+[ext_resource type="PackedScene" uid="uid://cdxb46fgjtu0c" path="res://scenes/units/Unit.tscn" id="2_dau2k"]
+[ext_resource type="Script" uid="uid://corb5o4r3fpqi" path="res://scripts/battle_objective.gd" id="2_j15km"]
+[ext_resource type="PackedScene" uid="uid://r6ncydstrjf5" path="res://scenes/RangeTile.tscn" id="3_ld2r7"]
+[ext_resource type="PackedScene" uid="uid://bar32phypb100" path="res://scenes/AttackTile.tscn" id="4_nxm05"]
+[ext_resource type="Script" uid="uid://bsqdk8ekr04j0" path="res://scripts/core/grid_controller.gd" id="5_x24xt"]
+[ext_resource type="Script" uid="uid://0c3ertpx5ieg" path="res://scenes/core/map_generator.gd" id="6_57s6d"]
+[ext_resource type="TileSet" uid="uid://bnxwiy3yga8y" path="res://scenes/core/SnowTileSet.tres" id="7_j15km"]
+[ext_resource type="Script" uid="uid://b7il60mhh2gxo" path="res://scripts/terrain.gd" id="7_tupnw"]
+[ext_resource type="PackedScene" uid="uid://biyne7gg2b8sk" path="res://scenes/Chunks/Snow/Chunk_RoadHills.tscn" id="7_xhixk"]
+[ext_resource type="PackedScene" uid="uid://cjxp8wde4exkv" path="res://scenes/Chunks/Snow/chunk_snow_roads.tscn" id="8_chcsr"]
+[ext_resource type="Texture2D" uid="uid://c0a00mrijdwrw" path="res://art/animations/highlight/Hightlight V2.png" id="8_ym1f7"]
+[ext_resource type="Texture2D" uid="uid://5wgt6knspj2r" path="res://art/animations/highlight/Hightlight V3.png" id="9_b7lq7"]
+[ext_resource type="Script" uid="uid://c2kfu4b3sbqbo" path="res://scripts/units/unit.gd" id="9_ship8"]
+[ext_resource type="Script" uid="uid://85x5ta0d1qgh" path="res://scripts/core/turn_manager.gd" id="10_d7485"]
+[ext_resource type="Texture2D" uid="uid://dq6d05m4ewvfi" path="res://art/animations/highlight/Hightlight V4.png" id="10_gm2h1"]
+[ext_resource type="Texture2D" uid="uid://cuj6spx1njmy1" path="res://art/animations/highlight/Hightlight V5.png" id="11_agh6m"]
+[ext_resource type="Script" uid="uid://dsj1ti4is1ryr" path="res://scenes/core/combat_manager.gd" id="11_dau2k"]
+[ext_resource type="Texture2D" uid="uid://djn8q0kefouoj" path="res://art/animations/highlight/Hightlight V6.png" id="12_tj20p"]
+[ext_resource type="Script" uid="uid://5quna8uwyqii" path="res://scripts/ui/tile_info_panel.gd" id="13_nxm05"]
+[ext_resource type="Texture2D" uid="uid://rj18myc7fema" path="res://art/animations/highlight/Hightlight V7.png" id="13_vyvfi"]
+[ext_resource type="Theme" uid="uid://cin6ixr60fos6" path="res://scenes/core/game_theme.tres" id="13_wpo1s"]
+[ext_resource type="Script" uid="uid://dyr8u0ikrwpp6" path="res://scenes/core/action_menu.gd" id="14_founp"]
+[ext_resource type="Texture2D" uid="uid://c86ge48mtx67d" path="res://art/animations/highlight/Hightlight V8.png" id="14_j15km"]
+[ext_resource type="Texture2D" uid="uid://bu0fp6jpfdre6" path="res://art/animations/highlight/Hightlight V9.png" id="15_57s6d"]
+[ext_resource type="Script" uid="uid://d0ddnfotjpb7a" path="res://scenes/core/skill_menu.gd" id="15_tupnw"]
+[ext_resource type="Script" uid="uid://cybd31a6lrogt" path="res://scripts/core/camera_controller.gd" id="16_tupnw"]
+[ext_resource type="Texture2D" uid="uid://cggdbxjqvkwpe" path="res://art/animations/highlight/Hightlight V10.png" id="16_xhixk"]
+[ext_resource type="Texture2D" uid="uid://dd0ukfj4xiher" path="res://art/animations/highlight/Hightlight V11.png" id="17_chcsr"]
+[ext_resource type="Texture2D" uid="uid://deabse3cfih0m" path="res://art/ui/Game Border.png" id="18_d7485"]
+[ext_resource type="Texture2D" uid="uid://ct6ajwnm8qtc2" path="res://art/animations/highlight/Hightlight V12.png" id="18_q8d2n"]
+[ext_resource type="Texture2D" uid="uid://c7nijytl225sq" path="res://art/animations/highlight/Hightlight V13.png" id="19_pw2mr"]
+[ext_resource type="Texture2D" uid="uid://drqmvrfcpbg2u" path="res://art/animations/highlight/Hightlight V14.png" id="20_ewl0u"]
+[ext_resource type="Texture2D" uid="uid://cwjdyuracromf" path="res://art/animations/highlight/Hightlight V15.png" id="21_1hc2n"]
+[ext_resource type="Texture2D" uid="uid://tb530gvt00wn" path="res://art/animations/highlight/Hightlight V16.png" id="22_klg8m"]
+[ext_resource type="Texture2D" uid="uid://rp2hu8jppu4k" path="res://art/ui/Big Square Background 96 by 64.png" id="32_leefl"]
+[ext_resource type="Script" uid="uid://bey8xgcuxldtv" path="res://scenes/core/phase_banner.gd" id="33_b7lq7"]
+[ext_resource type="Script" uid="uid://bqvyfnnwwd26t" path="res://scenes/core/combat_forecast_panel.gd" id="34_gm2h1"]
+[ext_resource type="Texture2D" uid="uid://dtsettj0v6hlv" path="res://art/ui/Horizontal Background 96 by 32.png" id="36_8kqbm"]
+[ext_resource type="AudioStream" uid="uid://bhbbrcabjf7l3" path="res://audio/select deselect.wav" id="37_tj20p"]
+[ext_resource type="AudioStream" uid="uid://cabme2c0la5c" path="res://audio/music/Planar.wav" id="38_vyvfi"]
+[ext_resource type="PackedScene" uid="uid://daxq4r3e6lfcn" path="res://scenes/ui/LevelUpPanel.tscn" id="39_chcsr"]
+[ext_resource type="Texture2D" uid="uid://mdxd06352mgu" path="res://art/ui/Small Turn BAckground 48 x 32.png" id="39_leefl"]
+[ext_resource type="Script" uid="uid://bf87e28tdo73f" path="res://scripts/core/enemy_spawn_manager.gd" id="43_q8d2n"]
+[ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="44_7m268"]
+[ext_resource type="Resource" uid="uid://dy0tp2axtcqvr" path="res://data/unit_classes/Pyromancer.tres" id="45_gnjag"]
+[ext_resource type="Resource" uid="uid://bjrnn7q0lcs5g" path="res://data/unit_classes/Electromancer.tres" id="46_leefl"]
+[ext_resource type="Resource" uid="uid://bwlb1xfhjqbtr" path="res://data/unit_classes/Cryomancer.tres" id="47_8kqbm"]
+[ext_resource type="Resource" uid="uid://r0vriv0j5ote" path="res://data/unit_classes/Geomancer.tres" id="48_kylyq"]
+[ext_resource type="Resource" uid="uid://dr514xgg3ujki" path="res://data/unit_classes/Druid.tres" id="49_0l231"]
+[ext_resource type="Resource" uid="uid://bvkvy6vfo1ylc" path="res://data/unit_classes/Artificer.tres" id="50_j8vbb"]
+[ext_resource type="Resource" uid="uid://cbmgvrsa3mg1a" path="res://data/unit_classes/Cleric.tres" id="51_oh68v"]
+[ext_resource type="Resource" uid="uid://vbbdbsfmfcwf" path="res://data/unit_classes/Shaman.tres" id="52_bwyab"]
+[ext_resource type="Script" uid="uid://jsplyi4dljps" path="res://scripts/systems/skill_system.gd" id="53_gnjag"]
+
+[sub_resource type="Resource" id="Resource_57s6d"]
+script = ExtResource("2_j15km")
+metadata/_custom_type_script = "uid://corb5o4r3fpqi"
+
+[sub_resource type="Gradient" id="Gradient_ship8"]
+offsets = PackedFloat32Array(0, 0.99382716)
+colors = PackedColorArray(0.49803922, 0.78039217, 1, 1, 0.2901961, 0.7137255, 0.72156864, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_d7485"]
+gradient = SubResource("Gradient_ship8")
+width = 3840
+height = 2160
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_ship8"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("8_ym1f7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_b7lq7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_gm2h1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_agh6m")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_tj20p")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_vyvfi")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_j15km")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_57s6d")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_xhixk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_chcsr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_q8d2n")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_pw2mr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_ewl0u")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_1hc2n")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_klg8m")
+}],
+"loop": true,
+"name": &"default",
+"speed": 15.0
+}]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_tyork"]
+texture = ExtResource("18_d7485")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_kylyq"]
+texture = ExtResource("32_leefl")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_1yraq"]
+texture = ExtResource("32_leefl")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_d7485"]
+content_margin_left = 6.0
+content_margin_top = 6.0
+content_margin_right = 6.0
+content_margin_bottom = 6.0
+texture = ExtResource("36_8kqbm")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gm2h1"]
+bg_color = Color(0.10277911, 0.12624115, 0.42467642, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.1643115, 0.19824359, 0.609002, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_agh6m"]
+texture = ExtResource("32_leefl")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_gm2h1"]
+texture = ExtResource("39_leefl")
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_v0fxp")
+use_procedural_map = true
+battle_objective = SubResource("Resource_57s6d")
+unit_scene = ExtResource("2_dau2k")
+range_tile_scene = ExtResource("3_ld2r7")
+attack_tile_scene = ExtResource("4_nxm05")
+
+[node name="MapGenerator" type="Node" parent="." node_paths=PackedStringArray("terrain")]
+script = ExtResource("6_57s6d")
+terrain = NodePath("../Grid/Terrain")
+chunk_scenes = Array[PackedScene]([ExtResource("7_xhixk"), ExtResource("8_chcsr")])
+chunks_high = 1
+
+[node name="Background" type="Node2D" parent="."]
+
+[node name="Sprite2D" type="Sprite2D" parent="Background"]
+texture = SubResource("GradientTexture2D_d7485")
+
+[node name="Grid" type="Node2D" parent="."]
+script = ExtResource("5_x24xt")
+
+[node name="Terrain" type="TileMap" parent="Grid"]
+texture_filter = 1
+texture_repeat = 1
+tile_set = ExtResource("7_j15km")
+rendering_quadrant_size = 32
+format = 2
+layer_0/tile_data = PackedInt32Array(0, 720897, 0, 2, 851969, 0, 3, 720897, 0, 65537, 393217, 1, 131073, 786433, 2, 65538, 524289, 1, 131074, 851969, 2, 65539, 655361, 1, 131075, 720897, 2, 65536, 720897, 1, 131072, 720897, 2, 1, 786433, 0, 4, 786433, 0, 131076, 786433, 2, 5, 851969, 0, 65541, 851969, 1, 131077, 851969, 2, 65540, 393217, 1, 196609, 393217, 1, 6, 720897, 3, 65542, 655361, 3, 131078, 524289, 3, 7, 720897, 3, 65543, 393217, 1, 131079, 720897, 3, 8, 655361, 3, 65544, 524289, 3, 131080, 720897, 3, 196613, 393217, 3, 196611, 720897, 3, 196610, 720897, 3, 196612, 720897, 3, 196608, 720897, 3, 262144, 720897, 3, 262145, 720897, 3, 262146, 720897, 3, 262147, 720897, 3, 262148, 720897, 3, 262149, 393217, 1, 327685, 720897, 2, 327686, 786433, 0, 327687, 786433, 0, 393224, 851969, 1, 327688, 851969, 0, 327683, 589825, 3, 393221, 589825, 3, 327680, 720897, 3, 327681, 458753, 3, 9, 720897, 3, 65545, 655361, 3, 131081, 720897, 3, 196618, 720897, 3, 262154, 720897, 3, 327690, 655361, 3, 393226, 720897, 3, 393225, 720897, 3, 327689, 720897, 3, 262153, 65537, 2, 196617, 65537, 1, 65546, 720897, 3, 10, 720897, 3, 131082, 720897, 3, 196616, 655361, 3, 196615, 720897, 3, 262150, 720897, 3, 262151, 720897, 3, 262152, 720897, 3, 196614, 720897, 3, 458760, 851969, 1, 458761, 720897, 3, 458762, 720897, 3, 458759, 720897, 3, 393223, 720897, 3, 393222, 720897, 3, 458758, 720897, 3, 458756, 720897, 3, 393220, 720897, 3, 327684, 720897, 3, 458757, 720897, 3, 458755, 720897, 3, 393219, 720897, 3, 393218, 1, 1, 327682, 720897, 3, 458754, 1, 2, 458753, 720897, 3, 458752, 720897, 3, 393216, 720897, 3, 393217, 720897, 3, 458763, 720897, 3, 393227, 720897, 3, 327691, 720897, 3, 262155, 720897, 3, 196619, 720897, 3, 131083, 720897, 3, 65547, 720897, 3, 11, 720897, 3, 12, 720897, 3, 13, 720897, 3, 65549, 720897, 3, 65548, 720897, 3, 131084, 720897, 3, 196620, 720897, 3, 262156, 720897, 3, 327692, 720897, 3, 393228, 720897, 3, 458764, 720897, 3, 458765, 720897, 3, 393229, 720897, 3, 327693, 720897, 3, 131085, 720897, 3, 262157, 720897, 3, 196621, 720897, 3, 524287, 720897, 3, 524286, 720897, 3, 524285, 720897, 3, 524284, 458753, 2, 524283, 786433, 1, 524282, 786433, 1, 524281, 393217, 0, 524280, 327681, 0, 524279, 851969, 3, 524278, 786433, 1, 524277, 786433, 1, 524276, 786433, 3, 524275, 393217, 0, 524274, 327681, 0, 458738, 786433, 1, 393202, 786433, 1, 327666, 786433, 1, 262130, 1, 0, 196594, 786433, 0, 131058, 720897, 3, 65522, 720897, 3, -14, 720897, 3, -65550, 720897, 3, -131086, 720897, 3, -196622, 720897, 3, -262158, 720897, 3, -327694, 720897, 3, -393230, 720897, 3, -458766, 720897, 3, -458765, 720897, 3, -458764, 720897, 3, -458763, 720897, 3, -458762, 720897, 3, -458761, 720897, 3, -458760, 720897, 3, -458759, 720897, 3, -458758, 720897, 1, -458757, 720897, 3, -458756, 720897, 3, -458755, 720897, 3, -458754, 720897, 3, -458753, 720897, 3, -524288, 720897, 3, -524287, 720897, 3, -524286, 720897, 3, -524285, 720897, 3, -524284, 720897, 3, -524283, 720897, 3, -524282, 720897, 3, -524281, 720897, 3, -524280, 720897, 3, -524279, 720897, 3, -524278, 720897, 3, -524277, 720897, 3, -524276, 720897, 3, -524275, 327681, 1, -458739, 327681, 2, -393203, 327681, 3, -327667, 720897, 3, -262131, 720897, 3, -196595, 720897, 3, -131059, 720897, 3, -65523, 720897, 3, -65524, 720897, 3, -65525, 720897, 3, -65526, 720897, 3, -65527, 393217, 1, -65528, 720897, 3, -65529, 720897, 3, -65530, 720897, 3, -65531, 720897, 3, -65532, 720897, 3, -65533, 720897, 3, -65534, 720897, 3, -65535, 720897, 3, -65536, 720897, 3, -1, 720897, 3, -2, 720897, 3, -3, 720897, 3, -4, 720897, 3, -5, 720897, 3, -6, 851969, 1, -7, 720897, 3, -8, 720897, 3, -9, 720897, 1, -10, 720897, 3, -11, 720897, 3, -12, 720897, 3, -13, 720897, 3, -65549, 393217, 1, -131085, 720897, 3, -196621, 720897, 3, -262157, 720897, 3, -327693, 720897, 3, -393229, 720897, 3, -393228, 393217, 1, -393227, 720897, 3, -393226, 720897, 3, -393225, 720897, 3, -393224, 720897, 3, -393223, 720897, 3, -393222, 720897, 1, -393221, 720897, 3, -393220, 720897, 3, -393219, 720897, 3, -393218, 720897, 3, -393217, 720897, 3, -458752, 720897, 3, -458751, 720897, 3, -458750, 720897, 3, -458749, 720897, 3, -458748, 720897, 3, -458747, 720897, 3, -458746, 720897, 3, -458745, 720897, 3, -458744, 720897, 3, -458743, 720897, 3, -458742, 720897, 3, -458741, 720897, 3, -458740, 720897, 3, -393204, 720897, 3, -327668, 720897, 3, -262132, 720897, 3, -196596, 720897, 3, -131060, 720897, 3, -131061, 720897, 3, -131062, 720897, 3, -131063, 720897, 3, -131064, 720897, 3, -131065, 720897, 3, -131066, 720897, 3, -131067, 720897, 3, -131068, 720897, 3, -131069, 720897, 3, -131070, 720897, 3, -131071, 720897, 3, -131072, 720897, 3, -65537, 720897, 3, -65538, 720897, 3, -65539, 720897, 3, -65540, 720897, 3, -65541, 720897, 3, -65542, 851969, 1, -65543, 720897, 3, -65544, 720897, 3, -65545, 720897, 1, -65546, 720897, 3, -65547, 720897, 3, -65548, 720897, 3, -131084, 720897, 3, -196620, 720897, 3, -262156, 720897, 3, -327692, 720897, 3, -327691, 720897, 3, -327690, 720897, 3, -327689, 393217, 1, -327688, 720897, 3, -327687, 720897, 3, -327686, 720897, 1, -327685, 720897, 3, -327684, 1, 1, -327683, 720897, 3, -327682, 720897, 3, -327681, 720897, 3, -393216, 720897, 3, -393215, 393217, 1, -393214, 720897, 3, -393213, 720897, 3, -393212, 720897, 3, -393211, 720897, 3, -393210, 720897, 3, -393209, 720897, 3, -393208, 720897, 3, -393207, 720897, 3, -393206, 393217, 1, -393205, 720897, 3, -327669, 720897, 3, -262133, 720897, 3, -196597, 720897, 3, -196598, 720897, 3, -196599, 720897, 3, -196600, 720897, 3, -196601, 720897, 3, -196602, 720897, 3, -196603, 720897, 3, -196604, 720897, 3, -196605, 720897, 3, -196606, 720897, 3, -196607, 720897, 3, -196608, 720897, 3, -131073, 720897, 3, -131074, 393217, 1, -131075, 720897, 3, -131076, 720897, 3, -131077, 589825, 3, -131078, 655361, 1, -131079, 786433, 0, -131080, 786433, 0, -131081, 720897, 0, -131082, 720897, 3, -131083, 1, 3, -196619, 1, 2, -262155, 1, 1, -327672, 720897, 3, -327671, 720897, 3, -327670, 720897, 3, -262134, 720897, 3, -262135, 720897, 3, -262136, 720897, 3, -262137, 393217, 1, -262138, 720897, 3, -262139, 720897, 3, -262140, 720897, 3, -262141, 720897, 3, -262142, 393217, 1, -262143, 720897, 3, -262144, 720897, 3, -196609, 720897, 3, -196610, 720897, 3, -196611, 720897, 3, -196612, 1, 3, -196613, 720897, 3, -196614, 720897, 1, -196615, 720897, 3, -196616, 720897, 3, -196617, 655361, 3, -196618, 720897, 3, -262154, 720897, 3, -262152, 720897, 3, -262151, 720897, 3, -262150, 720897, 1, -262149, 720897, 3, -262148, 1, 2, -262147, 720897, 3, -262146, 720897, 3, -262145, 720897, 3, -327680, 393217, 1, -327679, 720897, 3, -327678, 720897, 3, -327677, 720897, 3, -327676, 720897, 3, -327675, 720897, 3, -327674, 720897, 3, -327673, 720897, 3, -262153, 720897, 3, 65523, 720897, 3, 131059, 655361, 3, 196595, 786433, 0, 262131, 1, 0, 327667, 786433, 1, 393203, 786433, 1, 458739, 786433, 1, 458740, 786433, 1, 458741, 786433, 1, 458742, 786433, 1, 458743, 786433, 1, 458744, 786433, 1, 458745, 786433, 1, 458746, 786433, 1, 458747, 786433, 1, 458748, 786433, 1, 458749, 458753, 1, 458750, 720897, 3, 458751, 720897, 3, 393215, 720897, 3, 327679, 720897, 3, 262143, 720897, 3, 196607, 720897, 3, 131071, 720897, 3, 65535, 720897, 3, 65534, 720897, 3, 65533, 720897, 3, 65532, 720897, 3, 65531, 720897, 3, 65530, 720897, 1, 65529, 720897, 3, 65528, 720897, 3, 65527, 720897, 1, 65526, 589825, 3, 65525, 720897, 3, 65524, 720897, 3, 131060, 458753, 3, 196596, 786433, 0, 262132, 1, 0, 327668, 786433, 1, 393204, 786433, 1, 393205, 786433, 1, 393206, 786433, 1, 393207, 786433, 1, 393208, 786433, 1, 393209, 786433, 1, 393210, 786433, 1, 393211, 786433, 1, 393212, 786433, 1, 393213, 393217, 1, 393214, 720897, 3, 327678, 720897, 3, 262142, 720897, 3, 196606, 720897, 3, 131070, 720897, 3, 131069, 720897, 3, 131068, 720897, 3, 131067, 393217, 1, 131066, 720897, 2, 131065, 720897, 3, 131064, 655361, 3, 131063, 851969, 2, 131062, 720897, 0, 131061, 589825, 3, 196597, 786433, 0, 262133, 1, 0, 327669, 786433, 1, 327670, 786433, 1, 327671, 786433, 1, 327672, 786433, 1, 327673, 786433, 1, 327674, 786433, 1, 327675, 786433, 1, 327676, 720897, 3, 327677, 720897, 3, 262141, 720897, 3, 196605, 720897, 3, 196604, 720897, 3, 196603, 720897, 3, 196602, 720897, 3, 196601, 720897, 3, 196600, 720897, 3, 196599, 655361, 3, 196598, 851969, 2, 262134, 1, 0, 262135, 1, 0, 262136, 1, 0, 262137, 1, 0, 262138, 1, 0, 262139, 720897, 3, 262140, 720897, 3)
+script = ExtResource("7_tupnw")
+
+[node name="Cursor" type="Node2D" parent="Grid"]
+z_index = 10
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Grid/Cursor"]
+sprite_frames = SubResource("SpriteFrames_ship8")
+autoplay = "default"
+frame = 1
+centered = false
+
+[node name="Units" type="Node2D" parent="."]
+script = ExtResource("9_ship8")
+
+[node name="Overlay" type="Node2D" parent="."]
+
+[node name="TurnManager" type="Node" parent="."]
+script = ExtResource("10_d7485")
+
+[node name="CombatManager" type="Node" parent="."]
+script = ExtResource("11_dau2k")
+default_skill_aoe_includes_caster = null
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="HUDFrame" type="Control" parent="UI"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Panel" type="Panel" parent="UI/HUDFrame"]
+custom_minimum_size = Vector2(1280, 720)
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_tyork")
+
+[node name="ActionMenu" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = -10.0
+offset_top = -30.0
+offset_right = 30.0
+offset_bottom = 10.0
+script = ExtResource("14_founp")
+
+[node name="Panel" type="Panel" parent="UI/ActionMenu"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 0
+offset_left = 252.0
+offset_top = 530.0
+offset_right = 474.0
+offset_bottom = 734.0
+theme_override_styles/panel = SubResource("StyleBoxTexture_kylyq")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/ActionMenu/Panel"]
+layout_mode = 0
+offset_left = 17.0
+offset_top = 2.0
+offset_right = 65.5
+offset_bottom = 46.0
+scale = Vector2(4, 4)
+mouse_filter = 0
+
+[node name="MoveButton" type="Button" parent="UI/ActionMenu/Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+
+[node name="AttackButton" type="Button" parent="UI/ActionMenu/Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="SkillButton" type="Button" parent="UI/ActionMenu/Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="WaitButton" type="Button" parent="UI/ActionMenu/Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="SkillMenu" type="Control" parent="UI"]
+custom_minimum_size = Vector2(200, 200)
+layout_mode = 3
+anchor_right = 0.721
+anchor_bottom = 0.76000005
+offset_left = 462.0
+offset_top = 478.0
+offset_right = -260.88
+offset_bottom = 130.79999
+script = ExtResource("15_tupnw")
+metadata/_edit_use_anchors_ = true
+
+[node name="Panel" type="Panel" parent="UI/SkillMenu"]
+texture_filter = 1
+texture_repeat = 1
+custom_minimum_size = Vector2(200, 200)
+layout_mode = 0
+offset_right = 215.0
+offset_bottom = 207.0
+theme_override_styles/panel = SubResource("StyleBoxTexture_1yraq")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/SkillMenu/Panel"]
+custom_minimum_size = Vector2(200, 200)
+layout_mode = 0
+offset_right = 200.0
+offset_bottom = 200.0
+mouse_filter = 0
+
+[node name="TileInfoPanel" type="Control" parent="UI" node_paths=PackedStringArray("grid")]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 1017.0
+offset_top = 539.0
+offset_right = 1057.0
+offset_bottom = 579.0
+mouse_filter = 2
+theme = ExtResource("13_wpo1s")
+script = ExtResource("13_nxm05")
+grid = NodePath("../../Grid")
+metadata/_edit_use_anchors_ = true
+
+[node name="Panel" type="Panel" parent="UI/TileInfoPanel"]
+texture_filter = 1
+texture_repeat = 1
+custom_minimum_size = Vector2(200, 100)
+layout_mode = 0
+offset_left = -42.0
+offset_top = 51.0
+offset_right = 226.0
+offset_bottom = 151.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_d7485")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/TileInfoPanel/Panel"]
+layout_mode = 0
+offset_left = 51.0
+offset_top = 4.0
+offset_right = 234.0
+offset_bottom = 84.0
+mouse_filter = 2
+
+[node name="TerrainLabel" type="Label" parent="UI/TileInfoPanel/Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+
+[node name="MoveCostLabel" type="Label" parent="UI/TileInfoPanel/Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+
+[node name="DefenseLabel" type="Label" parent="UI/TileInfoPanel/Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+
+[node name="Panel2" type="Panel" parent="UI/TileInfoPanel"]
+texture_filter = 1
+texture_repeat = 1
+custom_minimum_size = Vector2(200, 100)
+layout_mode = 0
+offset_left = -1013.0
+offset_top = 47.0
+offset_right = -774.0
+offset_bottom = 154.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_d7485")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/TileInfoPanel/Panel2"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 4.0
+offset_right = 90.0
+offset_bottom = 86.0
+mouse_filter = 2
+
+[node name="UnitNameLabel" type="Label" parent="UI/TileInfoPanel/Panel2/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+
+[node name="UnitHPLabel" type="Label" parent="UI/TileInfoPanel/Panel2/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+
+[node name="UnitStatsLabel" type="Label" parent="UI/TileInfoPanel/Panel2/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+
+[node name="PhaseBanner" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_right = 20.0
+offset_bottom = 40.0
+grow_horizontal = 2
+mouse_filter = 2
+script = ExtResource("33_b7lq7")
+
+[node name="Panel" type="Panel" parent="UI/PhaseBanner"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_gm2h1")
+
+[node name="Label" type="Label" parent="UI/PhaseBanner/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "PLAYER PHASE"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CombatForecastPanel" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("34_gm2h1")
+
+[node name="Panel" type="Panel" parent="UI/CombatForecastPanel"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 0
+offset_left = 1.0
+offset_top = 239.0
+offset_right = 110.0
+offset_bottom = 356.0
+theme_override_styles/panel = SubResource("StyleBoxTexture_agh6m")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/CombatForecastPanel/Panel"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 10.0
+offset_right = 52.0
+offset_bottom = 96.0
+
+[node name="AttackerLabel" type="Label" parent="UI/CombatForecastPanel/Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Attack:"
+
+[node name="AttackerHPLabel" type="Label" parent="UI/CombatForecastPanel/Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "HP:"
+
+[node name="DefenderLabel" type="Label" parent="UI/CombatForecastPanel/Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Defender:"
+
+[node name="DefenderHPLabel" type="Label" parent="UI/CombatForecastPanel/Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "HP:"
+
+[node name="DamageLabel" type="Label" parent="UI/CombatForecastPanel/Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Damage:"
+
+[node name="CounterLabel" type="Label" parent="UI/CombatForecastPanel/Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Damage:"
+
+[node name="TurnPanel" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 2
+
+[node name="Panel" type="Panel" parent="UI/TurnPanel"]
+layout_mode = 0
+offset_top = 88.0
+offset_right = 40.0
+offset_bottom = 128.0
+theme_override_styles/panel = SubResource("StyleBoxTexture_gm2h1")
+
+[node name="TurnLabel" type="Label" parent="UI/TurnPanel/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 7.0
+offset_top = 10.0
+offset_right = 7.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Turn 0"
+
+[node name="VictoryPanel" type="Control" parent="UI"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="UI/VictoryPanel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/VictoryPanel/Panel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="TitleLabel" type="Label" parent="UI/VictoryPanel/Panel/VBoxContainer"]
+layout_mode = 2
+text = "VICTORY"
+
+[node name="DetailLabel" type="Label" parent="UI/VictoryPanel/Panel/VBoxContainer"]
+layout_mode = 2
+text = "All enemies defeated."
+
+[node name="SummaryLabel" type="Label" parent="UI/VictoryPanel/Panel/VBoxContainer"]
+layout_mode = 2
+text = "Summary"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ButtonRow" type="HBoxContainer" parent="UI/VictoryPanel/Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="RestartButton" type="Button" parent="UI/VictoryPanel/Panel/VBoxContainer/ButtonRow"]
+layout_mode = 2
+text = "Continue"
+
+[node name="TitleButton" type="Button" parent="UI/VictoryPanel/Panel/VBoxContainer/ButtonRow"]
+layout_mode = 2
+text = "Return to Title"
+
+[node name="DefeatPanel" type="Control" parent="UI"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="UI/DefeatPanel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/DefeatPanel/Panel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="TitleLabel" type="Label" parent="UI/DefeatPanel/Panel/VBoxContainer"]
+layout_mode = 2
+text = "DEFEAT"
+
+[node name="DetailLabel" type="Label" parent="UI/DefeatPanel/Panel/VBoxContainer"]
+layout_mode = 2
+text = "All allied units have fallen."
+
+[node name="SummaryLabel" type="Label" parent="UI/DefeatPanel/Panel/VBoxContainer"]
+layout_mode = 2
+text = "Summary"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ButtonRow" type="HBoxContainer" parent="UI/DefeatPanel/Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="RestartButton" type="Button" parent="UI/DefeatPanel/Panel/VBoxContainer/ButtonRow"]
+layout_mode = 2
+text = "Restart Battle"
+
+[node name="TitleButton" type="Button" parent="UI/DefeatPanel/Panel/VBoxContainer/ButtonRow"]
+layout_mode = 2
+text = "Return to Title"
+
+[node name="LevelUpPanel" parent="UI" instance=ExtResource("39_chcsr")]
+
+[node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("terrain")]
+zoom = Vector2(1.5, 1.5)
+script = ExtResource("16_tupnw")
+terrain = NodePath("../Grid/Terrain")
+
+[node name="SFX" type="Node2D" parent="."]
+
+[node name="SelectSFX" type="AudioStreamPlayer" parent="SFX"]
+stream = ExtResource("37_tj20p")
+volume_db = -4.771
+
+[node name="MusicPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("38_vyvfi")
+volume_db = -14.312
+
+[node name="TerrainEffects" type="Node2D" parent="."]
+
+[node name="EnemySpawnManager" type="Node" parent="." node_paths=PackedStringArray("grid", "units_root")]
+script = ExtResource("43_q8d2n")
+grid = NodePath("../Grid")
+units_root = NodePath("../Units")
+unit_scene = ExtResource("2_dau2k")
+offense_classes = Array[ExtResource("44_7m268")]([ExtResource("46_leefl"), ExtResource("45_gnjag")])
+defense_classes = Array[ExtResource("44_7m268")]([ExtResource("47_8kqbm"), ExtResource("49_0l231"), ExtResource("48_kylyq")])
+support_classes = Array[ExtResource("44_7m268")]([ExtResource("52_bwyab"), ExtResource("51_oh68v"), ExtResource("50_j8vbb")])
+
+[node name="SkillSystem" type="Node" parent="."]
+script = ExtResource("53_gnjag")
