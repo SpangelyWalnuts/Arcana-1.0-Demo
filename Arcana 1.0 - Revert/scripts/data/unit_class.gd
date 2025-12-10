@@ -29,3 +29,8 @@ class_name UnitClass
 @export_range(0.0, 1.0, 0.01) var growth_defense: float = 0.5
 @export_range(0.0, 1.0, 0.01) var growth_move: float    = 0.1
 @export_range(0.0, 1.0, 0.01) var growth_mana: float    = 0.7
+
+#TEXTURES
+@export var sprite_texture: Texture2D    # used for the in-battle Sprite2D
+@export var portrait_texture: Texture2D  # optional, for UI (prep, etc.)
+@export var icon_texture: Texture2D      # optional, small class icon

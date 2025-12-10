@@ -5,9 +5,12 @@ extends Control
 @onready var terrain_label: Label     = $Panel/VBoxContainer/TerrainLabel
 @onready var move_cost_label: Label   = $Panel/VBoxContainer/MoveCostLabel
 @onready var defense_label: Label     = $Panel/VBoxContainer/DefenseLabel
+
 @onready var unit_name_label: Label   = $Panel2/VBoxContainer/UnitNameLabel
 @onready var unit_hp_label: Label     = $Panel2/VBoxContainer/UnitHPLabel
 @onready var unit_stats_label: Label  = $Panel2/VBoxContainer/UnitStatsLabel
+@onready var unit_portrait: TextureRect = $Panel2/UnitPortrait
+@onready var status_icon_container: HBoxContainer = $Panel2/StatusIcons
 
 var _last_tile: Vector2i = Vector2i(-999, -999)
 
@@ -92,10 +95,23 @@ func _process(_delta: float) -> void:
 		unit_name_label.text = "Unit: %s" % unit.name
 		unit_hp_label.text = "HP: %d / %d" % [unit.hp, unit.max_hp]
 		unit_stats_label.text = "ATK: %d   DEF: %d" % [unit.atk, unit.defense]
+
+		# Portrait from unit_class (if set)
+		if unit_portrait != null:
+			var tex: Texture2D = null
+			if unit.unit_class != null and unit.unit_class.portrait_texture != null:
+				tex = unit.unit_class.portrait_texture
+			unit_portrait.texture = tex
+
+		_update_status_icons(unit)
 	else:
 		unit_name_label.text = "Unit: -"
 		unit_hp_label.text = "HP: -"
 		unit_stats_label.text = ""
+		if unit_portrait != null:
+			unit_portrait.texture = null
+
+		_update_status_icons(null)
 
 
 func _get_unit_at_tile(tile: Vector2i):
@@ -109,3 +125,38 @@ func _get_unit_at_tile(tile: Vector2i):
 			return u
 
 	return null
+
+
+func _update_status_icons(unit) -> void:
+	if status_icon_container == null:
+		return
+
+	# Clear existing icons
+	for child in status_icon_container.get_children():
+		child.queue_free()
+
+	if unit == null:
+		status_icon_container.visible = false
+		return
+
+	# Get flags from StatusManager (autoload)
+	var flags: Dictionary = StatusManager.get_flags_for_unit(unit)
+	if flags.is_empty():
+		status_icon_container.visible = false
+		return
+
+	for flag_name in flags.keys():
+		if not bool(flags[flag_name]):
+			continue
+
+		var tex: Texture2D = StatusManager.get_icon_for_flag(flag_name)
+		if tex == null:
+			continue
+
+		var icon_rect := TextureRect.new()
+		icon_rect.texture = tex
+		icon_rect.custom_min_size = Vector2(16, 16)
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		status_icon_container.add_child(icon_rect)
+
+	status_icon_container.visible = status_icon_container.get_child_count() > 0

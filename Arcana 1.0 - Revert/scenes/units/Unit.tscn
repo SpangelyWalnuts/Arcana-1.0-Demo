@@ -12,13 +12,15 @@ texture_repeat = 1
 texture = ExtResource("2_gocqw")
 centered = false
 
+[node name="StatusIcons" type="HBoxContainer" parent="."]
+offset_top = -44.0
+offset_right = 40.0
+offset_bottom = -4.0
+size_flags_horizontal = 4
+mouse_filter = 2
+
 [node name="HPBar" type="Sprite2D" parent="."]
 position = Vector2(0, -20)
-
-[node name="StatusIcons" type="HBoxContainer" parent="HPBar"]
-offset_right = 40.0
-offset_bottom = 40.0
-mouse_filter = 2
 
 [node name="BG" type="ColorRect" parent="HPBar"]
 custom_minimum_size = Vector2(24, 4)

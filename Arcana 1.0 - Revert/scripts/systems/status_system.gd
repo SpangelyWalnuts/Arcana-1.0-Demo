@@ -1,7 +1,24 @@
 extends Node
 
+
+signal status_changed(unit)
 # We use the Unit script's active_statuses array as the storage.
 const STATUS_LIST_KEY := "active_statuses"
+# status_system.gd
+
+# Map status flags → icon textures
+var status_icon_map: Dictionary = {}
+# Map status keys → icon textures
+var STATUS_ICON_TEXTURES: Dictionary = {
+	# debuffs
+	"prevent_move": preload("res://art/ui/status_icons/fatigue.png"),
+	"prevent_arcana": preload("res://art/ui/status_icons/silence.png"),
+
+	# optional: buffs (if you want icons for them too)
+	"atk_mod": preload("res://art/ui/status_icons/buff_atk.png"),
+	"def_mod": preload("res://art/ui/status_icons/buff_def.png"),
+}
+
 
 # -------------------------------------------------
 # INTERNAL: fetch / ensure the status list on a unit
@@ -52,7 +69,10 @@ func apply_status_to_unit(unit, skill: Skill, source_unit: Node = null) -> void:
 	}
 
 	list.append(status)
-	unit.set(STATUS_LIST_KEY, list)
+
+	# 🔔 Tell listeners (units) to update UI (icons, etc.)
+	status_changed.emit(unit)
+
 
 # -------------------------------------------------
 # NUMERIC AGGREGATES
@@ -84,6 +104,32 @@ func get_def_bonus(unit) -> int:
 # -------------------------------------------------
 # FLAGS (e.g. prevent_move, prevent_arcana)
 # -------------------------------------------------
+func get_flags_for_unit(unit) -> Dictionary:
+	if unit == null:
+		return {}
+
+	var flags: Dictionary = {}
+	var list: Array = _get_status_list(unit)
+
+	for st in list:
+		if not (st is Dictionary):
+			continue
+
+		# These are the main boolean flags we care about for icons
+		if st.get("prevent_move", false):
+			flags["prevent_move"] = true
+		if st.get("prevent_arcana", false):
+			flags["prevent_arcana"] = true
+
+		# (Optional) if you want buff icons too:
+		if st.get("atk_mod", 0) != 0:
+			flags["atk_mod"] = true
+		if st.get("def_mod", 0) != 0:
+			flags["def_mod"] = true
+		# You can add more here (move_mod, mana_regen_mod, etc.)
+
+	return flags
+
 func unit_has_flag(unit, flag_name: String) -> bool:
 	if unit == null:
 		return false
@@ -105,3 +151,43 @@ func unit_has_flag(unit, flag_name: String) -> bool:
 				return true
 
 	return false
+	
+#STATUS ICON HELPER
+func get_statuses_for_unit(unit) -> Array:
+	if unit == null:
+		return []
+	var list: Array = _get_status_list(unit)
+	return list
+
+
+#TICK HELPER
+func refresh_icons_for_unit(unit, container: HBoxContainer) -> void:
+	if unit == null or container == null:
+		return
+
+	# Clear old icons
+	for child in container.get_children():
+		child.queue_free()
+
+	# Get combined flags for the unit
+	var flags: Dictionary = get_flags_for_unit(unit)
+
+	for key in flags.keys():
+		var value = flags[key]
+
+		if typeof(value) == TYPE_BOOL and value:
+			if STATUS_ICON_TEXTURES.has(key):
+				var tex: Texture2D = STATUS_ICON_TEXTURES[key]
+
+				var icon := TextureRect.new()
+				icon.texture = tex
+				icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				icon.custom_min_size = Vector2(12, 12)
+
+				container.add_child(icon)
+
+#MAP ICON HELPER CODE
+func get_icon_for_flag(flag_name: String) -> Texture2D:
+	if status_icon_map.has(flag_name):
+		return status_icon_map[flag_name]
+	return null

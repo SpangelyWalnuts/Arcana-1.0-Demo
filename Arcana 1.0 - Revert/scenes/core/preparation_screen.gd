@@ -268,7 +268,15 @@ func _populate_roster_lists() -> void:
 
 		var cls: UnitClass = data.unit_class
 		var label_text := "%s (Lv %d)" % [cls.display_name, data.level]
+
+		# Add item first
+		var item_index: int = roster_list.get_item_count()
 		roster_list.add_item(label_text)
+
+		# Then set icon if class has a portrait/icon texture
+		if cls.portrait_texture != null:
+			roster_list.set_item_icon(item_index, cls.portrait_texture)
+
 
 
 
@@ -311,7 +319,11 @@ func _refresh_lists() -> void:
 		if _deployed_indices.has(i):
 			text += " [DEPLOYED]"
 
+		var item_index: int = roster_list.get_item_count()
 		roster_list.add_item(text)
+
+		if cls.portrait_texture != null:
+			roster_list.set_item_icon(item_index, cls.portrait_texture)
 
 	# --- Rebuild deployed list in the same order as _deployed_indices ---
 	for roster_index in _deployed_indices:
@@ -323,7 +335,14 @@ func _refresh_lists() -> void:
 			continue
 
 		var cls: UnitClass = data.unit_class
-		deploy_list.add_item("%s (Lv %d)" % [cls.display_name, data.level])
+		var text := "%s (Lv %d)" % [cls.display_name, data.level]
+
+		var item_index: int = deploy_list.get_item_count()
+		deploy_list.add_item(text)
+
+		if cls.portrait_texture != null:
+			deploy_list.set_item_icon(item_index, cls.portrait_texture)
+
 
 
 func _on_start_battle_pressed() -> void:

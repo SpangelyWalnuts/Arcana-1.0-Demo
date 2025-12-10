@@ -1,9 +1,11 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=5 format=3 uid="uid://bwlb1xfhjqbtr"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=7 format=3 uid="uid://bwlb1xfhjqbtr"]
 
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_c58w8"]
+[ext_resource type="Texture2D" uid="uid://3fcgv16e3an7" path="res://art/units/Cryomancer/Cryomancer icon.png" id="1_t4jmv"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_nf8b4"]
 [ext_resource type="Resource" uid="uid://d0f52yih01fe" path="res://data/skills/cryomancer/frozenbody.tres" id="3_upeti"]
 [ext_resource type="Resource" uid="uid://vil0l2v0ery0" path="res://data/skills/cryomancer/Frozenspikes.tres" id="4_t4jmv"]
+[ext_resource type="Texture2D" uid="uid://cpb0iwxqmhhux" path="res://art/units/Cryomancer map.png" id="5_upeti"]
 
 [resource]
 script = ExtResource("1_c58w8")
@@ -15,4 +17,7 @@ skills = Array[ExtResource("2_nf8b4")]([ExtResource("3_upeti"), ExtResource("4_t
 growth_hp = 1.0
 growth_atk = 0.3
 growth_move = 0.0
+sprite_texture = ExtResource("5_upeti")
+portrait_texture = ExtResource("1_t4jmv")
+icon_texture = ExtResource("1_t4jmv")
 metadata/_custom_type_script = "uid://b823ipo4ebjd5"

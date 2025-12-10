@@ -1,4 +1,4 @@
-[gd_scene load_steps=66 format=3 uid="uid://n3fdkibgiero"]
+[gd_scene load_steps=65 format=3 uid="uid://n3fdkibgiero"]
 
 [ext_resource type="Script" uid="uid://h2yfgpr5nkon" path="res://scripts/core/Main.gd" id="1_v0fxp"]
 [ext_resource type="PackedScene" uid="uid://cdxb46fgjtu0c" path="res://scenes/units/Unit.tscn" id="2_dau2k"]
@@ -13,7 +13,6 @@
 [ext_resource type="PackedScene" uid="uid://cjxp8wde4exkv" path="res://scenes/Chunks/Snow/chunk_snow_roads.tscn" id="8_chcsr"]
 [ext_resource type="Texture2D" uid="uid://c0a00mrijdwrw" path="res://art/animations/highlight/Hightlight V2.png" id="8_ym1f7"]
 [ext_resource type="Texture2D" uid="uid://5wgt6knspj2r" path="res://art/animations/highlight/Hightlight V3.png" id="9_b7lq7"]
-[ext_resource type="Script" uid="uid://c2kfu4b3sbqbo" path="res://scripts/units/unit.gd" id="9_ship8"]
 [ext_resource type="Script" uid="uid://85x5ta0d1qgh" path="res://scripts/core/turn_manager.gd" id="10_d7485"]
 [ext_resource type="Texture2D" uid="uid://dq6d05m4ewvfi" path="res://art/animations/highlight/Hightlight V4.png" id="10_gm2h1"]
 [ext_resource type="Texture2D" uid="uid://cuj6spx1njmy1" path="res://art/animations/highlight/Hightlight V5.png" id="11_agh6m"]
@@ -196,7 +195,6 @@ frame = 1
 centered = false
 
 [node name="Units" type="Node2D" parent="."]
-script = ExtResource("9_ship8")
 
 [node name="Overlay" type="Node2D" parent="."]
 
@@ -229,9 +227,9 @@ theme_override_styles/panel = SubResource("StyleBoxTexture_tyork")
 [node name="ActionMenu" type="Control" parent="UI"]
 layout_mode = 3
 anchors_preset = 0
-offset_left = -10.0
+offset_left = 11.0
 offset_top = -30.0
-offset_right = 30.0
+offset_right = 51.0
 offset_bottom = 10.0
 script = ExtResource("14_founp")
 
@@ -272,12 +270,11 @@ custom_minimum_size = Vector2(200, 200)
 layout_mode = 3
 anchor_right = 0.721
 anchor_bottom = 0.76000005
-offset_left = 462.0
+offset_left = 483.0
 offset_top = 478.0
-offset_right = -260.88
+offset_right = -239.88
 offset_bottom = 130.79999
 script = ExtResource("15_tupnw")
-metadata/_edit_use_anchors_ = true
 
 [node name="Panel" type="Panel" parent="UI/SkillMenu"]
 texture_filter = 1
@@ -347,17 +344,36 @@ custom_minimum_size = Vector2(200, 100)
 layout_mode = 0
 offset_left = -1013.0
 offset_top = 47.0
-offset_right = -774.0
+offset_right = -757.0
 offset_bottom = 154.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxTexture_d7485")
 
+[node name="StatusIcons" type="HBoxContainer" parent="UI/TileInfoPanel/Panel2"]
+visible = false
+layout_mode = 0
+offset_left = 26.0
+offset_top = 63.0
+offset_right = 81.0
+offset_bottom = 81.0
+
+[node name="UnitPortrait" type="TextureRect" parent="UI/TileInfoPanel/Panel2"]
+texture_filter = 1
+texture_repeat = 1
+custom_minimum_size = Vector2(16, 16)
+layout_mode = 0
+offset_left = 25.0
+offset_top = 9.0
+offset_right = 81.0
+offset_bottom = 64.0
+stretch_mode = 5
+
 [node name="VBoxContainer" type="VBoxContainer" parent="UI/TileInfoPanel/Panel2"]
 layout_mode = 0
-offset_left = 50.0
-offset_top = 4.0
-offset_right = 90.0
-offset_bottom = 86.0
+offset_left = 82.0
+offset_top = 5.0
+offset_right = 122.0
+offset_bottom = 87.0
 mouse_filter = 2
 
 [node name="UnitNameLabel" type="Label" parent="UI/TileInfoPanel/Panel2/VBoxContainer"]

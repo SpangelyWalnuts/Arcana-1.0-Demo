@@ -28,7 +28,10 @@ var attack_range: int = 1
 
 @onready var hp_bg: ColorRect   = $HPBar/BG
 @onready var hp_fill: ColorRect = $HPBar/Fill
-var status_icons_root: HBoxContainer = null
+@onready var status_icons_root: HBoxContainer = $StatusIcons
+@onready var sprite: Sprite2D = $Sprite2D
+
+
 
 
 #HELPERS
@@ -129,11 +132,21 @@ func _ready() -> void:
 	# Cache status icon root if present
 	if has_node("StatusIcons"):
 		status_icons_root = $StatusIcons
+		
+	# 6.5) Set sprite based on UnitClass
+	if sprite != null and unit_class != null and unit_class.sprite_texture != null:
+		sprite.texture = unit_class.sprite_texture
 
 	_update_hp_bar()
 	refresh_status_icons()  # start empty, but keeps UI clean
 
+	# 🔹 Listen for status changes (to update icons)
+	if Engine.has_singleton("StatusManager"):
+		StatusManager.status_changed.connect(_on_status_changed)
 
+func _on_status_changed(changed_unit) -> void:
+	if changed_unit == self:
+		refresh_status_icons()
 
 func regenerate_mana() -> void:
 	var bonus_regen: int = 0
@@ -220,33 +233,38 @@ func refresh_status_icons() -> void:
 	if status_icons_root == null:
 		return
 
-	# Clear existing icons
-	for c in status_icons_root.get_children():
-		c.queue_free()
+	# Clear existing icons/labels
+	for child in status_icons_root.get_children():
+		child.queue_free()
 
-	for st in active_statuses:
-		var label := Label.new()
+	# Ask StatusManager for this unit's statuses
+	var statuses: Array = []
+	if Engine.has_singleton("StatusManager"):
+		statuses = StatusManager.get_statuses_for_unit(self)
 
-		var skill_name: String = ""
-		if st.has("source_skill") and st["source_skill"] is Skill:
-			skill_name = (st["source_skill"] as Skill).name
-		else:
-			skill_name = String(st.get("name", ""))
+	if statuses.is_empty():
+		return
 
-		if skill_name == "":
-			skill_name = "?"
+	# Combine flags (so we don't show duplicate icons for multiple statuses)
+	var flags := {
+		"prevent_arcana": false,
+		"prevent_move":   false
+	}
 
-		# Show first 2 letters as shorthand
-		label.text = skill_name.substr(0, 2)
+	for s in statuses:
+		if typeof(s) == TYPE_DICTIONARY:
+			if s.get("prevent_arcana", false):
+				flags["prevent_arcana"] = true
+			if s.get("prevent_move", false):
+				flags["prevent_move"] = true
 
-		# Color by buff/debuff
-		var is_buff: bool = bool(st.get("is_buff", false))
-		if is_buff:
-			label.add_theme_color_override("font_color", Color(0.2, 1.0, 0.2))  # green-ish
-		else:
-			label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))  # red-ish
+	# For now we show simple text labels; you can swap these for TextureRect icons later
+	if flags["prevent_arcana"]:
+		var lbl := Label.new()
+		lbl.text = "⛔ Arcana"
+		status_icons_root.add_child(lbl)
 
-		# Tooltip shows full name
-		label.tooltip_text = skill_name
-
-		status_icons_root.add_child(label)
+	if flags["prevent_move"]:
+		var lbl2 := Label.new()
+		lbl2.text = "⛔ Move"
+		status_icons_root.add_child(lbl2)

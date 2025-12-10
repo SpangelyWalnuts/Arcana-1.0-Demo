@@ -1,9 +1,12 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=5 format=3 uid="uid://dy0tp2axtcqvr"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=8 format=3 uid="uid://dy0tp2axtcqvr"]
 
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_7jeh2"]
+[ext_resource type="Texture2D" uid="uid://d36bvwxbwrmwp" path="res://art/units/pyromancer/pyromancer icon.png" id="1_sf8ri"]
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_7l1x5"]
 [ext_resource type="Resource" uid="uid://cs4lwh06yhvos" path="res://data/skills/Pyromancer/Fireball.tres" id="2_bpxdp"]
 [ext_resource type="Resource" uid="uid://bfrqsar2c8kjh" path="res://data/skills/Pyromancer/Firebolt.tres" id="3_0qsor"]
 [ext_resource type="Resource" uid="uid://dnkeiik2pogwi" path="res://data/skills/Pyromancer/HeatWave.tres" id="4_0qsor"]
+[ext_resource type="Texture2D" uid="uid://244yk4gforef" path="res://art/units/FIre Wizard repair.png" id="6_sf8ri"]
 
 [resource]
 script = ExtResource("1_7jeh2")
@@ -13,8 +16,11 @@ atk = 7
 defense = 0
 attack_range = 2
 max_mana = 10
-skills = Array[Resource]([ExtResource("2_bpxdp"), ExtResource("3_0qsor"), ExtResource("4_0qsor")])
+skills = Array[ExtResource("2_7l1x5")]([ExtResource("2_bpxdp"), ExtResource("3_0qsor"), ExtResource("4_0qsor")])
 growth_hp = 0.4
 growth_atk = 0.7
 growth_defense = 0.1
 growth_move = 0.0
+sprite_texture = ExtResource("6_sf8ri")
+portrait_texture = ExtResource("1_sf8ri")
+icon_texture = ExtResource("1_sf8ri")
