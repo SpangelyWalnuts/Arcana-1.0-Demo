@@ -1,8 +1,10 @@
-[gd_scene load_steps=65 format=3 uid="uid://n3fdkibgiero"]
+[gd_scene load_steps=67 format=3 uid="uid://n3fdkibgiero"]
 
 [ext_resource type="Script" uid="uid://h2yfgpr5nkon" path="res://scripts/core/Main.gd" id="1_v0fxp"]
+[ext_resource type="PackedScene" uid="uid://dtcrbthviju4m" path="res://scenes/ui/SelectionRing.tscn" id="2_8kqbm"]
 [ext_resource type="PackedScene" uid="uid://cdxb46fgjtu0c" path="res://scenes/units/Unit.tscn" id="2_dau2k"]
 [ext_resource type="Script" uid="uid://corb5o4r3fpqi" path="res://scripts/battle_objective.gd" id="2_j15km"]
+[ext_resource type="PackedScene" uid="uid://0sr0345y8pe3" path="res://scenes/ui/FloatingText.tscn" id="3_kylyq"]
 [ext_resource type="PackedScene" uid="uid://r6ncydstrjf5" path="res://scenes/RangeTile.tscn" id="3_ld2r7"]
 [ext_resource type="PackedScene" uid="uid://bar32phypb100" path="res://scenes/AttackTile.tscn" id="4_nxm05"]
 [ext_resource type="Script" uid="uid://bsqdk8ekr04j0" path="res://scripts/core/grid_controller.gd" id="5_x24xt"]
@@ -156,7 +158,9 @@ texture = ExtResource("39_leefl")
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_v0fxp")
+selection_ring_scene = ExtResource("2_8kqbm")
 use_procedural_map = true
+floating_text_scene = ExtResource("3_kylyq")
 battle_objective = SubResource("Resource_57s6d")
 unit_scene = ExtResource("2_dau2k")
 range_tile_scene = ExtResource("3_ld2r7")
@@ -350,10 +354,9 @@ mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxTexture_d7485")
 
 [node name="StatusIcons" type="HBoxContainer" parent="UI/TileInfoPanel/Panel2"]
-visible = false
 layout_mode = 0
 offset_left = 26.0
-offset_top = 63.0
+offset_top = 68.0
 offset_right = 81.0
 offset_bottom = 81.0
 

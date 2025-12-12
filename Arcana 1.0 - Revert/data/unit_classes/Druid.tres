@@ -1,9 +1,11 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=5 format=3 uid="uid://dr514xgg3ujki"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=7 format=3 uid="uid://dr514xgg3ujki"]
 
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_851fg"]
+[ext_resource type="Texture2D" uid="uid://dsl8culjlvove" path="res://art/units/druid/Druid Icon.png" id="1_fmy7s"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_nnrtr"]
 [ext_resource type="Resource" uid="uid://ci844ttgxgesx" path="res://data/skills/druid/Entangling Vines.tres" id="3_h63y4"]
 [ext_resource type="Resource" uid="uid://c7j2c7apo5id" path="res://data/skills/druid/Earths_Bounty.tres" id="4_jbx38"]
+[ext_resource type="Texture2D" uid="uid://5vs3tvwphfuf" path="res://art/units/druid/Druid Map.png" id="5_jbx38"]
 
 [resource]
 script = ExtResource("1_851fg")
@@ -17,3 +19,6 @@ growth_atk = 0.4
 growth_defense = 0.3
 growth_move = 0.0
 growth_mana = 0.2
+sprite_texture = ExtResource("5_jbx38")
+portrait_texture = ExtResource("1_fmy7s")
+icon_texture = ExtResource("1_fmy7s")

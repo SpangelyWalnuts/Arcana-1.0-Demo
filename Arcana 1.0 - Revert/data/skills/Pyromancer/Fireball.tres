@@ -4,8 +4,9 @@
 
 [resource]
 script = ExtResource("1_nak34")
-name = "FIreball"
+name = "Fireball"
 mana_cost = 4
 cast_range = 5
 aoe_radius = 2
+flat_power = 1
 target_type = 1

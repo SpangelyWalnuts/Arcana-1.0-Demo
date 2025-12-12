@@ -25,6 +25,14 @@ var atk: int = 4
 var defense: int = 1
 var attack_range: int = 1
 
+# --- Enemy intent icon support ---
+@onready var intent_icon: TextureRect = $IntentIcon
+
+@export var intent_attack_texture: Texture2D
+@export var intent_move_texture: Texture2D
+@export var intent_wait_texture: Texture2D
+
+var current_intent: String = ""  # "attack", "move", "wait", or ""
 
 @onready var hp_bg: ColorRect   = $HPBar/BG
 @onready var hp_fill: ColorRect = $HPBar/Fill
@@ -128,6 +136,9 @@ func _ready() -> void:
 		add_to_group("player_units")
 	elif team == "enemy":
 		add_to_group("enemy_units")
+	# Hide intent icon for player units by default
+	if team == "player":
+		set_intent_icon("")
 
 	# Cache status icon root if present
 	if has_node("StatusIcons"):
@@ -268,3 +279,34 @@ func refresh_status_icons() -> void:
 		var lbl2 := Label.new()
 		lbl2.text = "⛔ Move"
 		status_icons_root.add_child(lbl2)
+
+#Intent icon helper
+func set_intent_icon(intent: String) -> void:
+	current_intent = intent
+
+	if intent_icon == null:
+		return
+
+	var tex: Texture2D = null
+	var tooltip: String = ""
+
+	match intent:
+		"attack":
+			tex = intent_attack_texture
+			tooltip = "Will attack if in range."
+		"move":
+			tex = intent_move_texture
+			tooltip = "Will move toward the nearest target."
+		"wait":
+			tex = intent_wait_texture
+			tooltip = "Cannot move or will wait this turn."
+		_:
+			tex = null
+			tooltip = ""
+
+	intent_icon.texture = tex
+	intent_icon.visible = tex != null
+
+	# 🔹 Tooltip text (shown when you hover the icon)
+	if intent_icon is Control:
+		intent_icon.tooltip_text = tooltip

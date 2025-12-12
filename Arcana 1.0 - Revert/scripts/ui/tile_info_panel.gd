@@ -2,15 +2,15 @@ extends Control
 
 @export var grid: Node          # Assign Grid node in inspector
 
-@onready var terrain_label: Label     = $Panel/VBoxContainer/TerrainLabel
-@onready var move_cost_label: Label   = $Panel/VBoxContainer/MoveCostLabel
-@onready var defense_label: Label     = $Panel/VBoxContainer/DefenseLabel
+@onready var terrain_label: Label      = $Panel/VBoxContainer/TerrainLabel
+@onready var move_cost_label: Label    = $Panel/VBoxContainer/MoveCostLabel
+@onready var defense_label: Label      = $Panel/VBoxContainer/DefenseLabel
 
-@onready var unit_name_label: Label   = $Panel2/VBoxContainer/UnitNameLabel
-@onready var unit_hp_label: Label     = $Panel2/VBoxContainer/UnitHPLabel
-@onready var unit_stats_label: Label  = $Panel2/VBoxContainer/UnitStatsLabel
+@onready var unit_name_label: Label    = $Panel2/VBoxContainer/UnitNameLabel
+@onready var unit_hp_label: Label      = $Panel2/VBoxContainer/UnitHPLabel
+@onready var unit_stats_label: Label   = $Panel2/VBoxContainer/UnitStatsLabel
 @onready var unit_portrait: TextureRect = $Panel2/UnitPortrait
-@onready var status_icon_container: HBoxContainer = $Panel2/StatusIcons
+@onready var unit_status_icons: HBoxContainer = $Panel2/StatusIcons  # 🔹 NEW
 
 var _last_tile: Vector2i = Vector2i(-999, -999)
 
@@ -103,7 +103,7 @@ func _process(_delta: float) -> void:
 				tex = unit.unit_class.portrait_texture
 			unit_portrait.texture = tex
 
-		_update_status_icons(unit)
+		_update_status_icons(unit)   # 🔹 icons when there IS a unit
 	else:
 		unit_name_label.text = "Unit: -"
 		unit_hp_label.text = "HP: -"
@@ -111,7 +111,7 @@ func _process(_delta: float) -> void:
 		if unit_portrait != null:
 			unit_portrait.texture = null
 
-		_update_status_icons(null)
+		_update_status_icons(null)   # 🔹 clear icons when no unit
 
 
 func _get_unit_at_tile(tile: Vector2i):
@@ -128,35 +128,16 @@ func _get_unit_at_tile(tile: Vector2i):
 
 
 func _update_status_icons(unit) -> void:
-	if status_icon_container == null:
+	if unit_status_icons == null:
 		return
 
-	# Clear existing icons
-	for child in status_icon_container.get_children():
+	# Clear previous icons
+	for child in unit_status_icons.get_children():
 		child.queue_free()
 
 	if unit == null:
-		status_icon_container.visible = false
 		return
 
-	# Get flags from StatusManager (autoload)
-	var flags: Dictionary = StatusManager.get_flags_for_unit(unit)
-	if flags.is_empty():
-		status_icon_container.visible = false
-		return
-
-	for flag_name in flags.keys():
-		if not bool(flags[flag_name]):
-			continue
-
-		var tex: Texture2D = StatusManager.get_icon_for_flag(flag_name)
-		if tex == null:
-			continue
-
-		var icon_rect := TextureRect.new()
-		icon_rect.texture = tex
-		icon_rect.custom_min_size = Vector2(16, 16)
-		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		status_icon_container.add_child(icon_rect)
-
-	status_icon_container.visible = status_icon_container.get_child_count() > 0
+	# Delegate to StatusManager helper that uses STATUS_ICON_TEXTURES
+	if StatusManager != null and StatusManager.has_method("refresh_icons_for_unit"):
+		StatusManager.refresh_icons_for_unit(unit, unit_status_icons)

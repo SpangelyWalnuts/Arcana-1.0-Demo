@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dsdnvnnf21uqx"
-path="res://.godot/imported/buff_atk.png-bcaf85575f73753b9114b9620aa1e802.ctex"
+uid="uid://dohdap1fk0eus"
+path="res://.godot/imported/Alchemist_Map_Sprite.png-af53bc26aff36ccc175a54d55e6c5f58.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/ui/status_icons/buff_atk.png"
-dest_files=["res://.godot/imported/buff_atk.png-bcaf85575f73753b9114b9620aa1e802.ctex"]
+source_file="res://art/Alchemist_Map_Sprite.png"
+dest_files=["res://.godot/imported/Alchemist_Map_Sprite.png-af53bc26aff36ccc175a54d55e6c5f58.ctex"]
 
 [params]
 

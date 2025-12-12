@@ -1,6 +1,5 @@
 extends Node
 
-
 signal status_changed(unit)
 # We use the Unit script's active_statuses array as the storage.
 const STATUS_LIST_KEY := "active_statuses"
@@ -17,6 +16,26 @@ var STATUS_ICON_TEXTURES: Dictionary = {
 	# optional: buffs (if you want icons for them too)
 	"atk_mod": preload("res://art/ui/status_icons/buff_atk.png"),
 	"def_mod": preload("res://art/ui/status_icons/buff_def.png"),
+	"mov_mod": preload("res://art/ui/status_icons/buff_mov.png"),
+}
+# Human-readable info for each status flag (used for tooltips)
+var STATUS_FLAG_INFO: Dictionary = {
+	"prevent_move": {
+		"name": "Fatigued",
+		"description": "Cannot move this turn."
+	},
+	"prevent_arcana": {
+		"name": "Silenced",
+		"description": "Cannot cast arcana."
+	},
+	"atk_mod": {
+		"name": "Power Up",
+		"description": "Attack increased."
+	},
+	"def_mod": {
+		"name": "Guard Up",
+		"description": "Defense increased."
+	},
 }
 
 
@@ -182,9 +201,22 @@ func refresh_icons_for_unit(unit, container: HBoxContainer) -> void:
 				var icon := TextureRect.new()
 				icon.texture = tex
 				icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-				icon.custom_min_size = Vector2(12, 12)
+				icon.custom_minimum_size = Vector2(12, 12)
+
+				# 🔹 Tooltip: name + description
+				var info: Dictionary = STATUS_FLAG_INFO.get(key, {})
+				var label: String = String(info.get("name", key.capitalize()))
+				var desc: String  = String(info.get("description", ""))
+
+				var tooltip: String = label
+				if desc != "":
+					tooltip += "\n" + desc
+
+				icon.tooltip_text = tooltip
 
 				container.add_child(icon)
+
+
 
 #MAP ICON HELPER CODE
 func get_icon_for_flag(flag_name: String) -> Texture2D:

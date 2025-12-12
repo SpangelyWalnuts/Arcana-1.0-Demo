@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dsdnvnnf21uqx"
-path="res://.godot/imported/buff_atk.png-bcaf85575f73753b9114b9620aa1e802.ctex"
+uid="uid://dsl8culjlvove"
+path="res://.godot/imported/Druid Icon.png-4f51830d77cd7196e31067209a4d2926.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/ui/status_icons/buff_atk.png"
-dest_files=["res://.godot/imported/buff_atk.png-bcaf85575f73753b9114b9620aa1e802.ctex"]
+source_file="res://art/units/druid/Druid Icon.png"
+dest_files=["res://.godot/imported/Druid Icon.png-4f51830d77cd7196e31067209a4d2926.ctex"]
 
 [params]
 

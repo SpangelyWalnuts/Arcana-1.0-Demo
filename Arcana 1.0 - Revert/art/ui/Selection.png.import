@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dsdnvnnf21uqx"
-path="res://.godot/imported/buff_atk.png-bcaf85575f73753b9114b9620aa1e802.ctex"
+uid="uid://ptcjdkn0dv7q"
+path="res://.godot/imported/Selection.png-69c92431d4fd653ec58b76de802b93d0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/ui/status_icons/buff_atk.png"
-dest_files=["res://.godot/imported/buff_atk.png-bcaf85575f73753b9114b9620aa1e802.ctex"]
+source_file="res://art/ui/Selection.png"
+dest_files=["res://.godot/imported/Selection.png-69c92431d4fd653ec58b76de802b93d0.ctex"]
 
 [params]
 

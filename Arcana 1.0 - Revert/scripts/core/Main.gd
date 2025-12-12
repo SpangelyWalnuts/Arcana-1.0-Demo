@@ -19,6 +19,11 @@ var battle_finished: bool = false
 # Helper to avoid incrementing turn before the first real player phase
 var _first_player_phase_done: bool = false
 
+@export var selection_ring_scene: PackedScene
+
+var _selection_ring: Node2D = null
+var _selection_ring_tween: Tween = null
+
 @onready var skill_system: SkillSystem = $SkillSystem
 @export var use_procedural_map: bool = false
 @onready var map_generator: Node = $MapGenerator
@@ -72,6 +77,9 @@ var active_range_tiles: Array[Node2D] = []
 var active_attack_tiles: Array[Node2D] = []    # NEW: attack tiles
 var active_skill_preview_tiles: Array = []
 var last_preview_tile: Vector2i = Vector2i(-999, -999)
+# Enemy hover attack-preview tiles
+var active_enemy_attack_tiles: Array[Node2D] = []
+var _enemy_preview_unit: Node2D = null
 
 
 func _ready() -> void:
@@ -81,6 +89,13 @@ func _ready() -> void:
 	skill_menu.skill_selected.connect(_on_skill_menu_selected)
 	skill_menu.skill_selected.connect(_on_skill_menu_skill_selected)
 	_update_turn_label()
+	
+		# --- Selection ring setup ---
+	if selection_ring_scene != null:
+		_selection_ring = selection_ring_scene.instantiate()
+		overlay.add_child(_selection_ring)  # put it above the map
+		_selection_ring.visible = false
+		
 	if music_player != null:
 		music_player.play()
 		# Make sure end-of-battle panels start hidden
@@ -256,6 +271,7 @@ func _handle_attack_click(tile: Vector2i) -> void:
 
 	combat_manager.perform_attack(selected_unit, target)
 	selected_unit = null
+	_update_selection_ring(null)
 	input_mode = InputMode.FREE
 	clear_all_ranges()
 	action_menu.hide_menu()
@@ -295,6 +311,7 @@ func _handle_skill_target_click(tile: Vector2i) -> void:
 		selected_unit.has_acted = true
 		_play_deselect_fx(selected_unit)
 		selected_unit = null
+		_update_selection_ring(null)
 		clear_all_ranges()
 
 		if action_menu.has_method("hide_menu"):
@@ -337,6 +354,7 @@ func _handle_skill_target_click(tile: Vector2i) -> void:
 
 	_play_deselect_fx(selected_unit)
 	selected_unit = null
+	_update_selection_ring(null)
 	clear_all_ranges()
 
 	if action_menu.has_method("hide_menu"):
@@ -376,6 +394,7 @@ func _try_cast_skill_at_tile(tile: Vector2i) -> void:
 
 	# Clear selection and range after casting
 	selected_unit = null
+	_update_selection_ring(null)
 	clear_all_ranges()
 
 func _try_select_unit_at_tile(tile: Vector2i) -> void:
@@ -394,6 +413,7 @@ func _try_select_unit_at_tile(tile: Vector2i) -> void:
 			_play_deselect_fx(selected_unit)
 
 		selected_unit = unit
+		_update_selection_ring(selected_unit)
 		_focus_camera_on_unit(selected_unit)
 		input_mode = InputMode.AWAIT_ACTION
 		clear_all_ranges()
@@ -415,7 +435,8 @@ func _try_select_unit_at_tile(tile: Vector2i) -> void:
 		clear_all_ranges()
 		action_menu.hide_menu()
 		skill_menu.hide_menu()
-
+		# 🔹 Hide ring
+		_update_selection_ring(null)
 
 func _try_move_selected_unit_to_tile(tile: Vector2i) -> void:
 	if selected_unit == null:
@@ -442,6 +463,7 @@ func _try_move_selected_unit_to_tile(tile: Vector2i) -> void:
 		else:
 			print("Enemy is out of attack range.")
 			selected_unit = null
+			_update_selection_ring(null)
 			clear_all_ranges()
 		return
 
@@ -465,6 +487,7 @@ func _try_move_selected_unit_to_tile(tile: Vector2i) -> void:
 		selected_unit.get_node("Sprite2D").modulate = Color.WHITE
 
 	selected_unit = null
+	_update_selection_ring(null)
 	clear_all_ranges()
 
 	if _all_player_units_have_acted():
@@ -486,11 +509,19 @@ func _execute_skill_on_target(user, target, skill: Skill) -> void:
 			_apply_status_skill(user, target, skill)
 
 		Skill.EffectType.TERRAIN:
-			# Terrain manipulation skills (walls, vines, spikes, etc.)
-			print("debug")
+			# Terrain manipulation skills are usually handled via tile targeting
+			# (is_terrain_object_skill path). If a TERRAIN skill somehow targets
+			# a unit, we just log it for now.
+			print("Terrain skill targeted a unit; no direct unit effect implemented.")
 
-			# Default: DAMAGE
+		Skill.EffectType.DAMAGE:
+			# 🔹 This is what Fireball / Lightning Bolt / etc. need
 			_apply_skill_damage(user, target, skill)
+
+		_:
+			# Fallback: treat unknown types as damage, just in case.
+			_apply_skill_damage(user, target, skill)
+
 
 
 func _apply_skill_heal(user, target, skill: Skill) -> void:
@@ -519,18 +550,25 @@ func _apply_skill_damage(user, target, skill: Skill) -> void:
 	if user == null or target == null or skill == null:
 		return
 
-	# 🔹 Include atk buffs/debuffs
-	var atk_bonus: int = StatusManager.get_atk_bonus(user)
-	var base_attack: int = user.atk + atk_bonus
+	# Base offensive stat – later you can branch on magic vs physical
+	var base_attack: int = user.atk
 
 	var raw: float = float(base_attack) * skill.power_multiplier + float(skill.flat_power)
 	var amount: int = int(round(raw))
 	if amount < 1:
 		amount = 1
 
-	target.hp = max(target.hp - amount, 0)
-	if target.has_method("update_hp_bar"):
-		target.update_hp_bar()
+	# 🔹 Use the same damage pipeline as basic attacks
+	var survived: bool = target.take_damage(amount)
+
+	# Optional: print / popups / SFX
+	print(user.name, " hits ", target.name, " with ", skill.name, " for ", amount, " damage (skill).")
+
+	# If you want, you can branch on survived:
+	# if not survived:
+	#     # extra VFX or log on kill
+	#     pass
+
 
 
 
@@ -689,7 +727,10 @@ func _on_phase_changed(new_phase) -> void:
 			_advance_terrain_effects_one_turn()
 
 			_reset_player_units()
-
+			
+			# 🔹 NEW: recompute enemy intents at the start of player phase
+			_update_enemy_intents()
+			
 		turn_manager.Phase.ENEMY:
 			# Enemy's turn begins.
 			print("ENEMY PHASE")
@@ -736,6 +777,21 @@ func show_attack_range(unit) -> void:
 		at.position = grid.tile_to_world(tile)
 		active_attack_tiles.append(at)
 
+func _show_enemy_attack_preview(enemy: Node2D) -> void:
+	_clear_enemy_attack_preview()
+
+	if attack_tile_scene == null:
+		push_error("attack_tile_scene is not assigned in the inspector!")
+		return
+
+	# Reuse your FE-style attack range helper
+	var tiles: Array[Vector2i] = get_fe_attack_range(enemy)
+
+	for tile in tiles:
+		var at: Node2D = attack_tile_scene.instantiate()
+		overlay.add_child(at)
+		at.position = grid.tile_to_world(tile)
+		active_enemy_attack_tiles.append(at)
 
 
 func clear_attack_range() -> void:
@@ -743,11 +799,19 @@ func clear_attack_range() -> void:
 		if is_instance_valid(at):
 			at.queue_free()
 	active_attack_tiles.clear()
+	
+func _clear_enemy_attack_preview() -> void:
+	for at in active_enemy_attack_tiles:
+		if is_instance_valid(at):
+			at.queue_free()
+	active_enemy_attack_tiles.clear()
+	_enemy_preview_unit = null
 
 func clear_all_ranges() -> void:
 	clear_move_range()
 	clear_attack_range()
 	clear_skill_preview()
+	_clear_enemy_attack_preview()
 
 func clear_skill_preview() -> void:
 	for node in active_skill_preview_tiles:
@@ -957,11 +1021,6 @@ func _run_enemy_turn() -> void:
 	turn_manager.end_turn()
 
 
-
-
-
-
-
 func _on_unit_died(unit) -> void:
 	print("Unit died in Main:", unit.name, "team:", unit.team)
 
@@ -1039,6 +1098,49 @@ func spawn_units_from_run() -> void:
 	_initial_player_unit_count = get_tree().get_nodes_in_group("player_units").size()
 
 
+#ENEMY INTENT ICON HELPER
+func _update_enemy_intents() -> void:
+	var enemies: Array = _get_enemy_units()
+	var players: Array = _get_player_units()
+
+	if players.is_empty():
+		# No players → clear intents
+		for enemy in enemies:
+			if enemy != null and is_instance_valid(enemy):
+				if enemy.has_method("set_intent_icon"):
+					enemy.set_intent_icon("")
+		return
+
+	for enemy in enemies:
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		if enemy.hp <= 0:
+			if enemy.has_method("set_intent_icon"):
+				enemy.set_intent_icon("")
+			continue
+
+		var target = _find_closest_player(enemy)
+		if target == null or not is_instance_valid(target):
+			if enemy.has_method("set_intent_icon"):
+				enemy.set_intent_icon("")
+			continue
+
+		var dist: int = _distance(enemy.grid_position, target.grid_position)
+
+		var intent: String = ""
+
+		# If they could attack right now from their current tile
+		if dist <= enemy.attack_range:
+			intent = "attack"
+		else:
+			# If they are prevented from moving, they effectively "wait"
+			if StatusManager.unit_has_flag(enemy, "prevent_move"):
+				intent = "wait"
+			else:
+				intent = "move"
+
+		if enemy.has_method("set_intent_icon"):
+			enemy.set_intent_icon(intent)
 
 
 # Menu Handler
@@ -1088,6 +1190,7 @@ func _on_action_menu_selected(action_name: String) -> void:
 				selected_unit.get_node("Sprite2D").modulate = Color.WHITE
 
 			selected_unit = null
+			_update_selection_ring(null)
 			input_mode = InputMode.FREE
 			clear_all_ranges()
 			skill_menu.hide_menu()
@@ -1166,7 +1269,8 @@ func _process(_delta: float) -> void:
 			clear_skill_preview()
 	# --- Combat forecast logic ---
 	_update_combat_forecast()
-
+	#ENEMY HOVER ATTACK PREVIEW
+	_update_enemy_hover_preview()
 # Camera Helper
 func _focus_camera_on_unit(unit) -> void:
 	if unit == null:
@@ -1201,6 +1305,7 @@ func _cancel_current_action() -> void:
 				if selected_unit.has_node("Sprite2D"):
 					selected_unit.get_node("Sprite2D").modulate = Color.WHITE
 					_play_deselect_fx(selected_unit)
+					_update_selection_ring(null)
 				selected_unit = null
 				if action_menu.has_method("hide_menu"):
 					action_menu.hide_menu()
@@ -1217,6 +1322,7 @@ func _cancel_current_action() -> void:
 			action_menu.hide()
 
 	input_mode = InputMode.FREE
+	_update_selection_ring(null)
 
 func _update_combat_forecast() -> void:
 	# Only show forecast when we're in ATTACK mode with a selected unit
@@ -1234,6 +1340,32 @@ func _update_combat_forecast() -> void:
 	else:
 		if combat_forecast_panel != null:
 			combat_forecast_panel.hide_forecast()
+
+#ENEMY HOVER RANGE UPDATE HELPER
+func _update_enemy_hover_preview() -> void:
+	# Optional: disable enemy preview when in the middle of player actions
+	if input_mode == InputMode.ATTACK \
+	or input_mode == InputMode.MOVE \
+	or input_mode == InputMode.SKILL_TARGET:
+		_clear_enemy_attack_preview()
+		return
+
+	if grid == null:
+		return
+
+	var tile: Vector2i = grid.cursor_tile
+	var unit = _get_unit_at_tile(tile)
+
+	# Only preview enemies
+	if unit != null and unit.team == "enemy" and is_instance_valid(unit):
+		# If we're still hovering the same enemy, do nothing
+		if unit == _enemy_preview_unit:
+			return
+
+		_enemy_preview_unit = unit
+		_show_enemy_attack_preview(unit)
+	else:
+		_clear_enemy_attack_preview()
 
 #TURN LABEL HELPER
 func _update_turn_label() -> void:
@@ -1257,9 +1389,11 @@ func _select_unit_from_cycle(unit: Node) -> void:
 	if selected_unit != null and selected_unit.has_node("Sprite2D"):
 		selected_unit.get_node("Sprite2D").modulate = Color.WHITE
 		_play_deselect_fx(selected_unit)
+		
 
 
 	selected_unit = unit
+	_update_selection_ring(selected_unit)
 	_focus_camera_on_unit(selected_unit)
 	input_mode = InputMode.AWAIT_ACTION
 	clear_all_ranges()
@@ -1735,3 +1869,42 @@ func _advance_terrain_effects_one_turn() -> void:
 
 		# Duration handling
 		eff.tick_duration()
+
+#SLECTION RING HELPER
+func _update_selection_ring(unit: Node2D) -> void:
+	if _selection_ring == null:
+		return
+
+	# No unit → hide ring
+	if unit == null or not is_instance_valid(unit):
+		_selection_ring.visible = false
+		if _selection_ring_tween != null and _selection_ring_tween.is_running():
+			_selection_ring_tween.kill()
+		return
+
+	# Position ring
+	_selection_ring.global_position = unit.global_position
+	_selection_ring.visible = true
+
+	# Kill old tween if any
+	if _selection_ring_tween != null and _selection_ring_tween.is_running():
+		_selection_ring_tween.kill()
+
+	# Start a pulsing tween (scale in/out loop)
+	_selection_ring.scale = Vector2.ONE
+	_selection_ring_tween = create_tween()
+	_selection_ring_tween.set_loops()  # infinite loop
+
+	_selection_ring_tween.tween_property(
+		_selection_ring,
+		"scale",
+		Vector2(1.15, 1.15),
+		0.4
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+	_selection_ring_tween.tween_property(
+		_selection_ring,
+		"scale",
+		Vector2(0.95, 0.95),
+		0.4
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)

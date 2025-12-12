@@ -1,9 +1,10 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=5 format=3 uid="uid://bvkvy6vfo1ylc"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=6 format=3 uid="uid://bvkvy6vfo1ylc"]
 
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_i74ft"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_av64s"]
 [ext_resource type="Resource" uid="uid://83hx2jarskvu" path="res://data/skills/artificer/alacrity.tres" id="3_ash0m"]
 [ext_resource type="Resource" uid="uid://4p4g2olvpi2h" path="res://data/skills/artificer/insight.tres" id="4_p2xr4"]
+[ext_resource type="Texture2D" uid="uid://dohdap1fk0eus" path="res://art/Alchemist_Map_Sprite.png" id="5_ash0m"]
 
 [resource]
 script = ExtResource("1_i74ft")
@@ -17,3 +18,4 @@ growth_atk = 0.1
 growth_defense = 0.3
 growth_move = 0.0
 growth_mana = 1.0
+sprite_texture = ExtResource("5_ash0m")
