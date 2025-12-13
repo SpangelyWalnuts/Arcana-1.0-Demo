@@ -280,35 +280,26 @@ func _handle_attack_click(tile: Vector2i) -> void:
 
 func _handle_skill_target_click(tile: Vector2i) -> void:
 	print("DEBUG SKILL TARGET: selected_unit =", selected_unit, " _current_skill =", _current_skill)
+
 	if selected_unit == null or _current_skill == null:
 		print("Skill target click aborted: no selected_unit or _current_skill")
 		return
 
 	var skill: Skill = _current_skill
 	var target = _get_unit_at_tile(tile)
-	print("Skill click:", skill.name, " at tile:", tile, " target:", target)
 
-	# 🔹 If this is a terrain-object skill, we don't require a unit target.
-	if skill.is_terrain_object_skill:
-		# Range check (optional – you already handle cast_range in preview,
-		# but this is a nice safety net)
-		var dist_to_center: int = abs(selected_unit.grid_position.x - tile.x) \
-			+ abs(selected_unit.grid_position.y - tile.y)
-		if dist_to_center > skill.cast_range:
-			print("Tile is out of cast range for terrain-object skill.")
+	print("Skill click:", skill.name, "at tile:", tile, "target:", target)
+
+	# -------------------------------------------------
+	# TILE-TARGET SKILLS (Terrain objects + tile modifiers like vines/fire)
+	# -------------------------------------------------
+	if skill.target_type == Skill.TargetType.TILE or skill.effect_type == Skill.EffectType.TERRAIN:
+		if combat_manager == null:
+			push_error("Tile-skill cast failed: combat_manager is null.")
 			return
 
-		# Mana check
-		if selected_unit.mana < skill.mana_cost:
-			print("Not enough mana.")
-			return
+		combat_manager.execute_skill_on_tile(selected_unit, skill, tile)
 
-		# Spend mana and spawn the effect
-		selected_unit.mana -= skill.mana_cost
-		_spawn_terrain_effect(skill, tile, selected_unit)
-
-		# Mark as acted and cleanup
-		selected_unit.has_acted = true
 		_play_deselect_fx(selected_unit)
 		selected_unit = null
 		_update_selection_ring(null)
@@ -327,29 +318,52 @@ func _handle_skill_target_click(tile: Vector2i) -> void:
 		input_mode = InputMode.FREE
 		return
 
-	# 🔹 Otherwise: normal unit-target skill (heal, damage, buffs)
-	# Generic check (works for damage + heal)
+	# -------------------------------------------------
+	# AOE SKILLS (unit effects centered on tile)
+	# -------------------------------------------------
+	if skill.aoe_radius > 0:
+		if combat_manager == null:
+			push_error("AoE skill cast failed: combat_manager is null.")
+			return
+
+		combat_manager.use_skill(selected_unit, skill, tile)
+
+		_play_deselect_fx(selected_unit)
+		selected_unit = null
+		_update_selection_ring(null)
+		clear_all_ranges()
+
+		if action_menu.has_method("hide_menu"):
+			action_menu.hide_menu()
+		else:
+			action_menu.hide()
+
+		if skill_menu.has_method("hide_menu"):
+			skill_menu.hide_menu()
+		else:
+			skill_menu.hide()
+
+		input_mode = InputMode.FREE
+		return
+
+	# -------------------------------------------------
+	# SINGLE-TARGET UNIT SKILLS
+	# -------------------------------------------------
 	if not _is_valid_skill_target(selected_unit, target, skill):
 		print(" -> invalid target for this skill")
 		return
 
-	# Mana check
 	if selected_unit.mana < skill.mana_cost:
 		print("Not enough mana.")
 		return
 
-	# Spend mana
 	selected_unit.mana -= skill.mana_cost
 
-	# Execute the effect (damage or heal) via SkillSystem
 	if skill_system != null:
-		skill_system.execute_skill_on_target(selected_unit, target, _current_skill)
+		skill_system.execute_skill_on_target(selected_unit, target, skill)
 	else:
-		# Fallback: old inline function if SkillSystem is missing
-		_execute_skill_on_target(selected_unit, target, _current_skill)
+		_execute_skill_on_target(selected_unit, target, skill)
 
-
-	# Mark unit as having acted and clean up
 	selected_unit.has_acted = true
 
 	_play_deselect_fx(selected_unit)
@@ -368,6 +382,8 @@ func _handle_skill_target_click(tile: Vector2i) -> void:
 		skill_menu.hide()
 
 	input_mode = InputMode.FREE
+
+
 
 
 
@@ -685,29 +701,40 @@ func _on_phase_changed(new_phase) -> void:
 			# Tick player timed statuses at the start of their phase
 			if StatusManager != null and StatusManager.has_method("tick_team"):
 				StatusManager.tick_team("player")
+
+			# Tick tile effects at start of PLAYER phase (Option A)
+			if grid != null and grid.has_method("tick_tile_effects"):
+				grid.tick_tile_effects()
+
 			# Player's turn begins.
 			if _first_player_phase_done:
 				run_turns += 1
 			else:
 				_first_player_phase_done = true
-				
+
 			_reset_player_units()
 			print("PLAYER PHASE - Turn:", run_turns)
 
-			# 🔹 Tick terrain durations + per-turn hooks
+			# ⚠️ Legacy terrain-effect ticking:
+			# If this function also decrements vines/fire/etc durations,
+			# you should remove that logic to avoid double-ticking.
 			_advance_terrain_effects_one_turn()
-			
-			# 🔹 NEW: recompute enemy intents at the start of player phase
+
+			# Recompute enemy intents at the start of player phase
 			_update_enemy_intents()
-			
+
 		turn_manager.Phase.ENEMY:
-			# Tick enemy statuses at start of enemy phase
 			# Tick enemy timed statuses at the start of their phase
 			if StatusManager != null and StatusManager.has_method("tick_team"):
 				StatusManager.tick_team("enemy")
-			# Enemy's turn begins.
+
+			# Tick tile effects at start of ENEMY phase (Option A)
+			if grid != null and grid.has_method("tick_tile_effects"):
+				grid.tick_tile_effects()
+
 			print("ENEMY PHASE")
 			_run_enemy_turn()
+
 
 
 
@@ -897,12 +924,18 @@ func _is_tile_occupied(tile: Vector2i) -> bool:
 	if _get_unit_at_tile(tile) != null:
 		return true
 
-	# Terrain effects that block movement also block
+	# Non-walkable terrain blocks
+	if grid != null and grid.has_method("is_walkable"):
+		if not grid.is_walkable(tile):
+			return true
+
+	# Terrain effect scenes that block movement also block
 	var eff: TerrainEffect = _get_terrain_effect_at_tile(tile)
 	if eff != null and eff.blocks_movement:
 		return true
 
 	return false
+
 
 
 func _find_closest_player(enemy) -> Node:

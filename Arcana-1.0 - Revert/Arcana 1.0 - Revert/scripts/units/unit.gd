@@ -152,7 +152,7 @@ func _ready() -> void:
 	refresh_status_icons()  # start empty, but keeps UI clean
 
 	# 🔹 Listen for status changes (to update icons)
-	if Engine.has_singleton("StatusManager"):
+	if StatusManager != null:
 		StatusManager.status_changed.connect(_on_status_changed)
 
 func _on_status_changed(changed_unit) -> void:
@@ -161,7 +161,7 @@ func _on_status_changed(changed_unit) -> void:
 
 func regenerate_mana() -> void:
 	var bonus_regen: int = 0
-	if Engine.has_singleton("StatusManager"):
+	if StatusManager != null:
 		# If you use Autoload named StatusManager
 		bonus_regen = StatusManager.get_mana_regen_bonus(self)
 
@@ -243,42 +243,8 @@ func can_cast_arcana() -> bool:
 func refresh_status_icons() -> void:
 	if status_icons_root == null:
 		return
+	StatusManager.refresh_icons_for_unit(self, status_icons_root)
 
-	# Clear existing icons/labels
-	for child in status_icons_root.get_children():
-		child.queue_free()
-
-	# Ask StatusManager for this unit's statuses
-	var statuses: Array = []
-	if Engine.has_singleton("StatusManager"):
-		statuses = StatusManager.get_statuses_for_unit(self)
-
-	if statuses.is_empty():
-		return
-
-	# Combine flags (so we don't show duplicate icons for multiple statuses)
-	var flags := {
-		"prevent_arcana": false,
-		"prevent_move":   false
-	}
-
-	for s in statuses:
-		if typeof(s) == TYPE_DICTIONARY:
-			if s.get("prevent_arcana", false):
-				flags["prevent_arcana"] = true
-			if s.get("prevent_move", false):
-				flags["prevent_move"] = true
-
-	# For now we show simple text labels; you can swap these for TextureRect icons later
-	if flags["prevent_arcana"]:
-		var lbl := Label.new()
-		lbl.text = "⛔ Arcana"
-		status_icons_root.add_child(lbl)
-
-	if flags["prevent_move"]:
-		var lbl2 := Label.new()
-		lbl2.text = "⛔ Move"
-		status_icons_root.add_child(lbl2)
 
 #Intent icon helper
 func set_intent_icon(intent: String) -> void:

@@ -4,6 +4,20 @@ extends Node2D
 
 @onready var terrain: TileMap = $Terrain
 
+# --- Tile Effects (vines/fire/etc.) ---
+var tile_effects: Dictionary = {} 
+# tile_effects[tile: Vector2i] = {
+#   "key": StringName,
+#   "remaining": int,
+#   "orig_source": int,
+#   "orig_atlas": Vector2i
+# }
+
+var tile_overlay_key: Dictionary = {}
+# tile_overlay_key[tile: Vector2i] = StringName
+
+var tile_overlays: Dictionary = {}
+# tile_overlays[tile: Vector2i] = Array[Node]
 
 # We only have 1 atlas source, so we hardcode source_id = 0.
 const TERRAIN_SOURCE_ID: int = 1
@@ -12,7 +26,7 @@ const TERRAIN_SOURCE_ID: int = 1
 # 🔹 CHANGE these coords to match what you see in the TileSet editor.
 @export var terrain_atlas_coords: Dictionary = {
 	"wall": Vector2i(4, 5),   # example
-	"vines": Vector2i(5, 5),   # example
+	"vines": Vector2i(7, 5),   # example
 	"spikes": Vector2i(6, 5)   # example
 }
 
@@ -68,7 +82,10 @@ const TERRAIN_TABLE := {
 	Vector3i(1, 12, 5): { "name": "road", "move_cost": 1, "def": 0, "walkable": true },
 	Vector3i(1, 13, 5): { "name": "road", "move_cost": 1, "def": 0, "walkable": true },
 	
-
+	# WALL (blocks movement)
+	Vector3i(1, 4, 5): { "name": "wall", "move_cost": 99, "def": 0, "walkable": false },
+	# VINES
+	Vector3i(1, 7, 5): { "name": "vines", "move_cost": 3, "def": 0, "walkable": true },
 	# Forest
 	Vector3i(1, 6, 3): { "name": "forest", "move_cost": 2, "def": 1, "walkable": true },
 	Vector3i(1, 7, 3): { "name": "forest", "move_cost": 2, "def": 1, "walkable": true },
@@ -160,8 +177,87 @@ func apply_terrain_skill(tile: Vector2i, user, skill: Skill) -> void:
 		_:
 			print("apply_terrain_skill: Unsupported TerrainAction on skill", skill.name)
 
+#TILE EFFECTS STUff reverts tiles at end of duration
+func apply_tile_effect(tile: Vector2i, effect_key: StringName, duration_turns: int) -> void:
+	if duration_turns <= 0:
+		return
+
+	# If effect already exists on this tile, refresh duration WITHOUT overwriting original tile snapshot.
+	if tile_effects.has(tile):
+		var existing = tile_effects[tile]
+
+		# Same effect key => refresh duration only
+		if StringName(existing.get("key", &"")) == effect_key:
+			existing["remaining"] = duration_turns
+			tile_effects[tile] = existing
+			return
+
+		# Different effect key => replace effect, but keep "original tile" as whatever is currently there
+		# (this allows overwriting vines with fire, etc.)
+		# We intentionally fall through to capture current tile as original.
+	
+	# Capture original cell signature so we can revert later.
+	var orig_source: int = terrain.get_cell_source_id(0, tile)
+	var orig_atlas: Vector2i = terrain.get_cell_atlas_coords(0, tile)
+
+	tile_effects[tile] = {
+		"key": effect_key,
+		"remaining": duration_turns,
+		"orig_source": orig_source,
+		"orig_atlas": orig_atlas
+	}
+
+
+
+func register_tile_overlay(tile: Vector2i, overlay_node: Node, overlay_key: StringName) -> void:
+	if overlay_node == null:
+		return
+
+	if not tile_overlays.has(tile):
+		tile_overlays[tile] = []
+
+	(tile_overlays[tile] as Array).append(overlay_node)
+	tile_overlay_key[tile] = overlay_key
+
+func tick_tile_effects() -> void:
+	# Called once at the start of each side's phase.
+	if tile_effects.is_empty():
+		return
+
+	var tiles := tile_effects.keys()
+	for t in tiles:
+		var data = tile_effects.get(t, null)
+		if data == null:
+			continue
+
+		var remaining: int = int(data.get("remaining", 0)) - 1
+		data["remaining"] = remaining
+		tile_effects[t] = data
+
+		if remaining > 0:
+			continue
+
+		# Expired: revert the tile to what it was before the effect.
+		var orig_source: int = int(data.get("orig_source", -1))
+		var orig_atlas: Vector2i = data.get("orig_atlas", Vector2i(-1, -1))
+
+		if orig_source >= 0 and orig_atlas.x >= 0:
+			terrain.set_cell(0, t, orig_source, orig_atlas)
+		else:
+			terrain.erase_cell(0, t)
+
+		# Remove overlay visuals if we spawned any
+		if tile_overlays.has(t):
+			var arr: Array = tile_overlays[t]
+			for n in arr:
+				if is_instance_valid(n):
+					n.queue_free()
+			tile_overlays.erase(t)
+
+		tile_effects.erase(t)
 
 #TErrain skill helpers
+
 func _set_terrain_tile(tile: Vector2i, key: String) -> void:
 	if not terrain_atlas_coords.has(key):
 		print("Grid: Unknown terrain key:", key)
@@ -173,6 +269,17 @@ func _set_terrain_tile(tile: Vector2i, key: String) -> void:
 	terrain.set_cell(0, tile, TERRAIN_SOURCE_ID, atlas, 0)
 	print("Grid: set tile", tile, "to", key, "atlas:", atlas)
 
+func clear_tile_overlays(tile: Vector2i) -> void:
+	if tile_overlays.has(tile):
+		var arr: Array = tile_overlays[tile]
+		for n in arr:
+			if is_instance_valid(n):
+				n.queue_free()
+		tile_overlays.erase(tile)
+
+	if tile_overlay_key.has(tile):
+		tile_overlay_key.erase(tile)
+
 
 
 func _clear_terrain_tile(tile: Vector2i) -> void:
@@ -181,3 +288,16 @@ func _clear_terrain_tile(tile: Vector2i) -> void:
 	# Or you can set_cell with -1 to clear:
 	# terrain.set_cell(0, tile, -1)
 	print("Grid: cleared tile", tile)
+
+#TILE CLEAR HELPER FOR SAME EFFECT
+func clear_tile_overlays_if_key_diff(tile: Vector2i, new_key: StringName) -> void:
+	# If no overlays exist, nothing to do.
+	if not tile_overlay_key.has(tile):
+		return
+
+	var current_key: StringName = tile_overlay_key[tile]
+	if current_key != new_key:
+		clear_tile_overlays(tile)
+
+func has_overlay_key(tile: Vector2i, key: StringName) -> bool:
+	return tile_overlay_key.has(tile) and tile_overlay_key[tile] == key
