@@ -14,9 +14,13 @@ extends Control
 
 var _last_tile: Vector2i = Vector2i(-999, -999)
 
+var _last_status_unit_id: int = 0
+var _last_status_signature: String = ""
+
 var _home_position: Vector2
 var _hidden_position: Vector2
 var _current_tween: Tween = null
+
 
 
 func _ready() -> void:
@@ -32,6 +36,7 @@ func _ready() -> void:
 
 	position = _hidden_position
 	visible = false
+
 
 
 func show_panel() -> void:
@@ -131,13 +136,48 @@ func _update_status_icons(unit) -> void:
 	if unit_status_icons == null:
 		return
 
-	# Clear previous icons
+	# Clear if no unit
+	if unit == null:
+		_last_status_unit_id = 0
+		_last_status_signature = ""
+		for child in unit_status_icons.get_children():
+			child.queue_free()
+		return
+
+	# Build a small signature so we only refresh when statuses change
+	var unit_id: int = unit.get_instance_id()
+
+	var sig_parts: Array[String] = []
+	if StatusManager != null and StatusManager.has_method("get_statuses_for_unit"):
+		var statuses: Array = StatusManager.get_statuses_for_unit(unit)
+		for st in statuses:
+			if typeof(st) != TYPE_DICTIONARY:
+				continue
+			var turns: int = int(st.get("remaining_turns", -1))
+
+			# We include the key flags that drive icons
+			if bool(st.get("prevent_move", false)):
+				sig_parts.append("prevent_move:%d" % turns)
+			if bool(st.get("prevent_arcana", false)):
+				sig_parts.append("prevent_arcana:%d" % turns)
+			if int(st.get("atk_mod", 0)) != 0:
+				sig_parts.append("atk_mod:%d" % turns)
+			if int(st.get("def_mod", 0)) != 0:
+				sig_parts.append("def_mod:%d" % turns)
+
+	sig_parts.sort()
+	var signature: String = "|".join(sig_parts)
+
+	# If same unit + same signature, do nothing
+	if unit_id == _last_status_unit_id and signature == _last_status_signature:
+		return
+
+	_last_status_unit_id = unit_id
+	_last_status_signature = signature
+
+	# Rebuild icons
 	for child in unit_status_icons.get_children():
 		child.queue_free()
 
-	if unit == null:
-		return
-
-	# Delegate to StatusManager helper that uses STATUS_ICON_TEXTURES
 	if StatusManager != null and StatusManager.has_method("refresh_icons_for_unit"):
 		StatusManager.refresh_icons_for_unit(unit, unit_status_icons)

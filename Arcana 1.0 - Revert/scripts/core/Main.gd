@@ -603,48 +603,15 @@ func _apply_status_skill(user, target, skill: Skill) -> void:
 	if user == null or target == null or skill == null:
 		return
 
-	# Is this basically a buff or a debuff? (for UI)
-	var is_buff: bool = (user.team == target.team)
-
-	# 1) Send it to the central StatusManager so flags & bonuses work
-	if Engine.has_singleton("StatusManager") and StatusManager.has_method("apply_status_to_unit"):
+	# StatusManager should be an Autoload (Project Settings → Autoload)
+	if StatusManager != null and StatusManager.has_method("apply_status_to_unit"):
 		StatusManager.apply_status_to_unit(target, skill, user)
+	else:
+		push_warning("StatusManager missing or has no apply_status_to_unit(). Did you set it as an Autoload named 'StatusManager'?")
 
-	# 2) (Optional) mirror into the unit's active_statuses array
-	#    This keeps any old UI / logic that still looks at active_statuses working.
-	var status_dict := {
-		"name": skill.name,
-		"source_skill": skill,
-		"source_unit": user,
-		"turns_remaining": max(skill.duration_turns, 1),
-
-		# numeric buffs/debuffs
-		"atk_mod": skill.atk_mod,
-		"def_mod": skill.def_mod,
-		"move_mod": skill.move_mod,
-		"mana_regen_mod": skill.mana_regen_mod,
-
-		# lockout flags
-		"prevent_arcana": skill.prevent_arcana,
-		"prevent_move":  skill.prevent_move,
-
-		# one-shot modifiers
-		"next_attack_damage_mul":  skill.next_attack_damage_mul,
-		"next_arcana_aoe_bonus":   skill.next_arcana_aoe_bonus,
-
-		"is_buff": is_buff
-	}
-
-	# All combat units use unit.gd and have active_statuses, so we can safely do:
-	target.active_statuses.append(status_dict)
-
-	# If the unit has UI for status icons, let it refresh
+	# Optional immediate refresh (if your unit has such a method)
 	if target.has_method("refresh_status_icons"):
 		target.refresh_status_icons()
-
-
-
-
 
 
 func _all_player_units_have_acted() -> bool:
@@ -715,23 +682,29 @@ func clear_move_range() -> void:
 func _on_phase_changed(new_phase) -> void:
 	match new_phase:
 		turn_manager.Phase.PLAYER:
+			# Tick player timed statuses at the start of their phase
+			if StatusManager != null and StatusManager.has_method("tick_team"):
+				StatusManager.tick_team("player")
 			# Player's turn begins.
 			if _first_player_phase_done:
 				run_turns += 1
 			else:
 				_first_player_phase_done = true
-
+				
+			_reset_player_units()
 			print("PLAYER PHASE - Turn:", run_turns)
 
 			# 🔹 Tick terrain durations + per-turn hooks
 			_advance_terrain_effects_one_turn()
-
-			_reset_player_units()
 			
 			# 🔹 NEW: recompute enemy intents at the start of player phase
 			_update_enemy_intents()
 			
 		turn_manager.Phase.ENEMY:
+			# Tick enemy statuses at start of enemy phase
+			# Tick enemy timed statuses at the start of their phase
+			if StatusManager != null and StatusManager.has_method("tick_team"):
+				StatusManager.tick_team("enemy")
 			# Enemy's turn begins.
 			print("ENEMY PHASE")
 			_run_enemy_turn()
