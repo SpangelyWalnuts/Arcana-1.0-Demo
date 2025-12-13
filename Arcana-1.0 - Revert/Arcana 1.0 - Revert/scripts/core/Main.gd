@@ -73,6 +73,7 @@ var _pending_victory_reason: String = ""
 var player_unit
 var selected_unit
 
+@onready var enemy_ai: EnemyAI = $EnemyAI
 var active_range_tiles: Array[Node2D] = []
 var active_attack_tiles: Array[Node2D] = []    # NEW: attack tiles
 var active_skill_preview_tiles: Array = []
@@ -254,6 +255,28 @@ func _handle_move_click(tile: Vector2i) -> void:
 	input_mode = InputMode.FREE
 	action_menu.hide_menu()
 	skill_menu.hide_menu()
+	
+func get_current_objective_type() -> String:
+	if battle_objective == null:
+		return "rout"
+
+	# battle_objective is a Resource (BattleObjective), using victory_type enum
+	match battle_objective.victory_type:
+		BattleObjective.VictoryType.ROUT:
+			return "rout"
+		BattleObjective.VictoryType.DEFEAT_BOSS:
+			return "boss"
+		BattleObjective.VictoryType.DEFEAT_AMOUNT:
+			return "defeat_amount"
+		BattleObjective.VictoryType.ESCAPE:
+			return "escape"
+		BattleObjective.VictoryType.DEFEND:
+			return "defend"
+		BattleObjective.VictoryType.ACTIVATE:
+			return "activate"
+		_:
+			return "rout"
+
 
 
 func _handle_attack_click(tile: Vector2i) -> void:
@@ -936,38 +959,11 @@ func _is_tile_occupied(tile: Vector2i) -> bool:
 
 	return false
 
-
-
-func _find_closest_player(enemy) -> Node:
-	var players = _get_player_units()
-	var closest = null
-	var best_dist := 999999
-
-	for p in players:
-		var d: int = _distance(enemy.grid_position, p.grid_position)
-		if d < best_dist:
-			best_dist = d
-			closest = p
-
-	return closest
-
-func _get_step_toward(from: Vector2i, to: Vector2i) -> Vector2i:
-	var delta := to - from
-	var step := Vector2i.ZERO
-
-	# Move along the axis with greater distance first (simple heuristic)
-	if abs(delta.x) > abs(delta.y):
-		step.x = sign(delta.x)
-	elif abs(delta.y) > 0:
-		step.y = sign(delta.y)
-
-	return from + step
-
 func _run_enemy_turn() -> void:
 	print("Enemy phase: starting AI")
 
-	var enemies = _get_enemy_units()
-	var players = _get_player_units()
+	var enemies: Array = _get_enemy_units()
+	var players: Array = _get_player_units()
 
 	if players.is_empty():
 		print("No player units left.")
@@ -975,57 +971,11 @@ func _run_enemy_turn() -> void:
 		return
 
 	for enemy in enemies:
-		if not is_instance_valid(enemy):
-			continue
-		if enemy.hp <= 0:
-			continue
-
-		var target = _find_closest_player(enemy)
-		if target == null or not is_instance_valid(target):
-			continue
-
-		var dist_to_target: int = _distance(enemy.grid_position, target.grid_position)
-
-		# 1) If in attack range, attack
-		if dist_to_target <= enemy.attack_range:
-			print(enemy.name, "attacks", target.name, "during enemy phase.")
-			combat_manager.perform_attack(enemy, target)  # uses existing combat logic
-			continue
-
-		# 2) NEW: if enemy has "prevent_move" status, skip moving
-		if StatusManager.unit_has_flag(enemy, "prevent_move"):
-			print(enemy.name, "is prevented from moving by a status (e.g. Fatigue).")
-			continue
-
-		# 3) Try to move one step toward the target
-		var next_tile: Vector2i = _get_step_toward(enemy.grid_position, target.grid_position)
-
-		# Don't walk into occupied tiles
-		if _is_tile_occupied(next_tile):
-			print(enemy.name, "wanted to move, but tile", next_tile, "is occupied.")
-			continue
-
-		# Optional terrain-effect hooks, only if you already have these helpers:
-		var old_tile: Vector2i = enemy.grid_position
-		var old_eff = null
-		if has_method("_get_terrain_effect_at_tile"):
-			old_eff = _get_terrain_effect_at_tile(old_tile)
-		if old_eff != null:
-			old_eff.on_unit_exit(enemy)
-
-		enemy.grid_position = next_tile
-		enemy.position = grid.tile_to_world(next_tile)
-		print(enemy.name, "moves to", next_tile)
-
-		var new_eff = null
-		if has_method("_get_terrain_effect_at_tile"):
-			new_eff = _get_terrain_effect_at_tile(next_tile)
-		if new_eff != null:
-			new_eff.on_unit_enter(enemy)
+		if enemy_ai != null:
+			enemy_ai.take_turn(self, enemy, players)
 
 	print("Enemy phase done, back to player.")
 	turn_manager.end_turn()
-
 
 func _on_unit_died(unit) -> void:
 	print("Unit died in Main:", unit.name, "team:", unit.team)
@@ -1109,44 +1059,17 @@ func _update_enemy_intents() -> void:
 	var enemies: Array = _get_enemy_units()
 	var players: Array = _get_player_units()
 
-	if players.is_empty():
-		# No players → clear intents
-		for enemy in enemies:
-			if enemy != null and is_instance_valid(enemy):
-				if enemy.has_method("set_intent_icon"):
-					enemy.set_intent_icon("")
-		return
-
-	for enemy in enemies:
-		if enemy == null or not is_instance_valid(enemy):
-			continue
-		if enemy.hp <= 0:
-			if enemy.has_method("set_intent_icon"):
-				enemy.set_intent_icon("")
+	for e in enemies:
+		if e == null or e.hp <= 0:
 			continue
 
-		var target = _find_closest_player(enemy)
-		if target == null or not is_instance_valid(target):
-			if enemy.has_method("set_intent_icon"):
-				enemy.set_intent_icon("")
-			continue
+		var intent: String = "wait"
+		if enemy_ai != null:
+			intent = enemy_ai.get_intent(self, e, players)
 
-		var dist: int = _distance(enemy.grid_position, target.grid_position)
+		if e.has_method("set_intent_icon"):
+			e.set_intent_icon(intent)
 
-		var intent: String = ""
-
-		# If they could attack right now from their current tile
-		if dist <= enemy.attack_range:
-			intent = "attack"
-		else:
-			# If they are prevented from moving, they effectively "wait"
-			if StatusManager.unit_has_flag(enemy, "prevent_move"):
-				intent = "wait"
-			else:
-				intent = "move"
-
-		if enemy.has_method("set_intent_icon"):
-			enemy.set_intent_icon(intent)
 
 
 # Menu Handler

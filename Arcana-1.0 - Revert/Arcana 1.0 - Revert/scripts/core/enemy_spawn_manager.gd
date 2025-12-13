@@ -41,7 +41,12 @@ func spawn_enemies_for_floor(
 		return
 
 	for i in range(enemy_count):
-		var cls: UnitClass = _pick_class_for_floor(floor)
+		var pick := _pick_role_and_class_for_floor(floor)
+		if pick.is_empty():
+			continue
+
+		var role: String = String(pick.get("role", "offense"))
+		var cls: UnitClass = pick.get("class", null)
 		if cls == null:
 			continue
 
@@ -51,7 +56,7 @@ func spawn_enemies_for_floor(
 		var tile: Vector2i = _pick_spawn_tile(candidate_tiles)
 		var is_elite: bool = randf() < elite_chance
 
-		_spawn_enemy_at_tile(cls, tile, floor, is_elite, arcana_chance)
+		_spawn_enemy_at_tile(role, cls, tile, floor, is_elite, arcana_chance)
 
 
 # ----------------------------------------------------
@@ -93,7 +98,7 @@ func _get_arcana_chance_for_floor(floor: int) -> float:
 # ----------------------------------------------------
 #  ROLE-BASED CLASS PICKING
 # ----------------------------------------------------
-func _pick_class_for_floor(floor: int) -> UnitClass:
+func _pick_role_and_class_for_floor(floor: int) -> Dictionary:
 	var w_offense: float
 	var w_defense: float
 	var w_support: float
@@ -119,30 +124,31 @@ func _pick_class_for_floor(floor: int) -> UnitClass:
 		fallback.append_array(support_classes)
 		if fallback.is_empty():
 			push_error("EnemySpawnManager: no enemy classes configured!")
-			return null
-		return fallback[randi() % fallback.size()]
+			return {}
+		return {"role": "offense", "class": fallback[randi() % fallback.size()]}
 
 	var roll: float = randf() * total
 
 	if roll < w_offense and offense_classes.size() > 0:
-		return offense_classes[randi() % offense_classes.size()]
+		return {"role": "offense", "class": offense_classes[randi() % offense_classes.size()]}
 	roll -= w_offense
 
 	if roll < w_defense and defense_classes.size() > 0:
-		return defense_classes[randi() % defense_classes.size()]
+		return {"role": "defense", "class": defense_classes[randi() % defense_classes.size()]}
 	roll -= w_defense
 
 	if support_classes.size() > 0:
-		return support_classes[randi() % support_classes.size()]
+		return {"role": "support", "class": support_classes[randi() % support_classes.size()]}
 
+	# fallback
 	var all_classes: Array[UnitClass] = []
 	all_classes.append_array(offense_classes)
 	all_classes.append_array(defense_classes)
 	all_classes.append_array(support_classes)
 	if all_classes.is_empty():
 		push_error("EnemySpawnManager: no classes at all.")
-		return null
-	return all_classes[randi() % all_classes.size()]
+		return {}
+	return {"role": "offense", "class": all_classes[randi() % all_classes.size()]}
 
 
 # ----------------------------------------------------
@@ -163,7 +169,6 @@ func _collect_candidate_tiles(player_spawns: Array[Vector2i]) -> Array[Vector2i]
 	var used_cells: Array[Vector2i] = terrain.get_used_cells(0)
 
 	for cell in used_cells:
-		# Ask grid for terrain info
 		var info: Dictionary = grid.get_terrain_info(cell)
 
 		var name: String = "void"
@@ -201,19 +206,6 @@ func _collect_candidate_tiles(player_spawns: Array[Vector2i]) -> Array[Vector2i]
 
 		candidates.append(cell)
 
-	# Debug: sanity-check any suspicious candidates
-	var suspicious: int = 0
-	for cell in candidates:
-		var inf: Dictionary = grid.get_terrain_info(cell)
-		var nm: String = String(inf.get("name", "void"))
-		var wk: bool = bool(inf.get("walkable", false))
-		var mc: int = int(inf.get("move_cost", 99))
-		if nm == "void" or not wk or mc >= 50:
-			suspicious += 1
-			print("EnemySpawnManager: suspicious candidate", cell, "info:", inf)
-	if suspicious > 0:
-		print("EnemySpawnManager: WARNING –", suspicious, "suspicious candidates found after filtering.")
-
 	return candidates
 
 
@@ -231,10 +223,8 @@ func _has_unit_on_tile(tile: Vector2i) -> bool:
 		var u: Node2D = child as Node2D
 		if u == null:
 			continue
-		# Assume everything under Units is actually a Unit
 		if not u.has_method("take_damage"):
 			continue
-		# Our Unit script defines grid_position
 		if u.grid_position == tile:
 			return true
 
@@ -245,6 +235,7 @@ func _has_unit_on_tile(tile: Vector2i) -> bool:
 #  ENEMY INSTANTIATION
 # ----------------------------------------------------
 func _spawn_enemy_at_tile(
+	role: String,
 	cls: UnitClass,
 	tile: Vector2i,
 	floor: int,
@@ -290,11 +281,13 @@ func _spawn_enemy_at_tile(
 				if choice != null:
 					data.equipped_arcana.append(choice)
 
-	# Assign to enemy via set() so static typing doesn't complain
 	enemy.set("team", "enemy")
 	enemy.set("unit_class", cls)
 	enemy.set("unit_data", data)
 	enemy.set("grid_position", tile)
+
+	# ✅ Role assigned by spawn pack/group selection
+	enemy.set_meta("ai_role", role)
 
 	var world_pos: Vector2 = grid.tile_to_world(tile)
 	enemy.position = world_pos

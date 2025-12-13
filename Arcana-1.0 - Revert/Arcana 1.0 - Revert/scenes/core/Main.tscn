@@ -1,4 +1,4 @@
-[gd_scene load_steps=67 format=3 uid="uid://n3fdkibgiero"]
+[gd_scene load_steps=68 format=3 uid="uid://n3fdkibgiero"]
 
 [ext_resource type="Script" uid="uid://h2yfgpr5nkon" path="res://scripts/core/Main.gd" id="1_v0fxp"]
 [ext_resource type="PackedScene" uid="uid://dtcrbthviju4m" path="res://scenes/ui/SelectionRing.tscn" id="2_8kqbm"]
@@ -55,6 +55,7 @@
 [ext_resource type="Resource" uid="uid://cbmgvrsa3mg1a" path="res://data/unit_classes/Cleric.tres" id="51_oh68v"]
 [ext_resource type="Resource" uid="uid://vbbdbsfmfcwf" path="res://data/unit_classes/Shaman.tres" id="52_bwyab"]
 [ext_resource type="Script" uid="uid://jsplyi4dljps" path="res://scripts/systems/skill_system.gd" id="53_gnjag"]
+[ext_resource type="Script" uid="uid://b7slogfbvewic" path="res://scripts/EnemyAI.gd" id="56_kylyq"]
 
 [sub_resource type="Resource" id="Resource_57s6d"]
 script = ExtResource("2_j15km")
@@ -645,3 +646,6 @@ support_classes = Array[ExtResource("44_7m268")]([ExtResource("52_bwyab"), ExtRe
 
 [node name="SkillSystem" type="Node" parent="."]
 script = ExtResource("53_gnjag")
+
+[node name="EnemyAI" type="Node" parent="."]
+script = ExtResource("56_kylyq")
