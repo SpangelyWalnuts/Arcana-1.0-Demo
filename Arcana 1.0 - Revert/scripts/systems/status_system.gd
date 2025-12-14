@@ -58,6 +58,11 @@ func apply_status_to_unit(unit, skill: Skill, source_unit: Node = null) -> void:
 	}
 
 	list.append(status)
+	
+	if CombatLog != null:
+		var src_name: String = source_unit.name if source_unit != null else "<?>"
+		CombatLog.add("%s applies %s to %s (%d turns)" % [src_name, skill.name, unit.name, int(skill.duration_turns)],
+			{"type":"status_apply", "skill": skill.name, "target": unit.name, "duration": int(skill.duration_turns)})
 
 	# IMPORTANT: deferred emit avoids re-entrancy/stack overflow
 	call_deferred("_emit_status_changed", unit)

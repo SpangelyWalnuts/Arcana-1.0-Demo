@@ -1,0 +1,31 @@
+[gd_scene load_steps=2 format=3 uid="uid://5644a5ai3ea6"]
+
+[ext_resource type="Script" uid="uid://dc545s2dsiwej" path="res://combat_log_panel.gd" id="1_j7t1w"]
+
+[node name="CombatLogPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_j7t1w")
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="FilterOption" type="Button" parent="PanelContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="ClearButton" type="Button" parent="PanelContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Clear"
+
+[node name="LogText" type="RichTextLabel" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2

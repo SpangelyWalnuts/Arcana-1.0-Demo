@@ -1,4 +1,4 @@
-[gd_scene load_steps=66 format=3 uid="uid://n3fdkibgiero"]
+[gd_scene load_steps=68 format=3 uid="uid://n3fdkibgiero"]
 
 [ext_resource type="Script" uid="uid://h2yfgpr5nkon" path="res://scripts/core/Main.gd" id="1_v0fxp"]
 [ext_resource type="PackedScene" uid="uid://dtcrbthviju4m" path="res://scenes/ui/SelectionRing.tscn" id="2_8kqbm"]
@@ -44,6 +44,7 @@
 [ext_resource type="AudioStream" uid="uid://cabme2c0la5c" path="res://audio/music/Planar.wav" id="38_vyvfi"]
 [ext_resource type="PackedScene" uid="uid://daxq4r3e6lfcn" path="res://scenes/ui/LevelUpPanel.tscn" id="39_chcsr"]
 [ext_resource type="Texture2D" uid="uid://mdxd06352mgu" path="res://art/ui/Small Turn BAckground 48 x 32.png" id="39_leefl"]
+[ext_resource type="PackedScene" uid="uid://5644a5ai3ea6" path="res://scenes/ui/CombatLogPanel.tscn" id="42_8kqbm"]
 [ext_resource type="Script" uid="uid://bf87e28tdo73f" path="res://scripts/core/enemy_spawn_manager.gd" id="43_q8d2n"]
 [ext_resource type="Resource" uid="uid://dy0tp2axtcqvr" path="res://data/unit_classes/Pyromancer.tres" id="45_gnjag"]
 [ext_resource type="Resource" uid="uid://bjrnn7q0lcs5g" path="res://data/unit_classes/Electromancer.tres" id="46_leefl"]
@@ -154,6 +155,8 @@ texture = ExtResource("32_leefl")
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_gm2h1"]
 texture = ExtResource("39_leefl")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8kqbm"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_v0fxp")
@@ -615,6 +618,38 @@ layout_mode = 2
 text = "Return to Title"
 
 [node name="LevelUpPanel" parent="UI" instance=ExtResource("39_chcsr")]
+
+[node name="CombatLogPanel" parent="UI" instance=ExtResource("42_8kqbm")]
+offset_left = 1122.0
+offset_top = 258.0
+offset_right = 1278.0
+offset_bottom = 408.0
+
+[node name="PanelContainer2" type="PanelContainer" parent="UI/CombatLogPanel"]
+layout_mode = 0
+offset_right = 155.0
+offset_bottom = 149.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_8kqbm")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/CombatLogPanel/PanelContainer2"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UI/CombatLogPanel/PanelContainer2/VBoxContainer"]
+layout_mode = 2
+
+[node name="FilterOption" type="OptionButton" parent="UI/CombatLogPanel/PanelContainer2/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="ClearButton" type="Button" parent="UI/CombatLogPanel/PanelContainer2/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Clear"
+
+[node name="LogText" type="RichTextLabel" parent="UI/CombatLogPanel/PanelContainer2/VBoxContainer"]
+clip_contents = false
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
 
 [node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("terrain")]
 zoom = Vector2(1.5, 1.5)

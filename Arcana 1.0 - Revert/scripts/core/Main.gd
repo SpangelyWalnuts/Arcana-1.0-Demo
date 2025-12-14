@@ -73,6 +73,7 @@ var _pending_victory_reason: String = ""
 var player_unit
 var selected_unit
 
+@onready var combat_log_panel: Control = $UI/CombatLogPanel
 @onready var enemy_ai: EnemyAI = $EnemyAI
 var active_range_tiles: Array[Node2D] = []
 var active_attack_tiles: Array[Node2D] = []    # NEW: attack tiles
@@ -122,7 +123,7 @@ func _ready() -> void:
 	# Make sure victory/defeat panels are hidden initially
 	victory_panel.visible = false
 	defeat_panel.visible = false
-	
+	combat_log_panel.visible = false
 	
 	if use_procedural_map and map_generator != null:
 		map_generator.build_random_map()
@@ -158,6 +159,10 @@ func spawn_test_units() -> void:
 
 
 func _input(event: InputEvent) -> void:
+		# ✅ Always allow toggling combat log (even during enemy turn / UI hover / battle end)
+	if event.is_action_pressed("toggle_combat_log"):
+		_toggle_combat_log()
+		return
 		# If battle is finished, ignore gameplay input
 	if battle_finished:
 		return
@@ -184,6 +189,10 @@ func _input(event: InputEvent) -> void:
 		# ENTER → End turn
 		if event is InputEventKey and event.keycode == KEY_ENTER:
 			turn_manager.end_turn()
+			return
+			
+		if event.is_action_pressed("toggle_combat_log"):
+			_toggle_combat_log()
 			return
 
 	# -----------------------------------------
@@ -233,6 +242,14 @@ func _input(event: InputEvent) -> void:
 				_try_select_unit_at_tile(tile)
 				return
 
+func _toggle_combat_log() -> void:
+	if combat_log_panel == null:
+		return
+	combat_log_panel.visible = not combat_log_panel.visible
+	
+	if combat_log_panel.visible and combat_log_panel.has_method("refresh_now"):
+		combat_log_panel.refresh_now()
+	
 func _debug_tilemap_identity(grid: Node, map_generator: Node) -> void:
 	var grid_tm: TileMap = grid.get_node("Terrain") as TileMap
 	var mg_tm: TileMap = null
@@ -739,32 +756,40 @@ func clear_move_range() -> void:
 func _on_phase_changed(new_phase) -> void:
 	match new_phase:
 		turn_manager.Phase.PLAYER:
+			
 			# Tick player timed statuses at the start of their phase
 			if StatusManager != null and StatusManager.has_method("tick_team"):
 				StatusManager.tick_team("player")
-
+				
 			# Tick tile effects at start of PLAYER phase (Option A)
 			if grid != null and grid.has_method("tick_tile_effects"):
 				grid.tick_tile_effects()
 
+
 			# Player's turn begins.
 			if _first_player_phase_done:
 				run_turns += 1
+
 			else:
 				_first_player_phase_done = true
-
+				
+			if CombatLog != null:
+				CombatLog.set_turn_index(run_turns)
+				print("PLAYER PHASE - Turn:", run_turns)
+				
 			_reset_player_units()
-			print("PLAYER PHASE - Turn:", run_turns)
-
 			# ⚠️ Legacy terrain-effect ticking:
 			# If this function also decrements vines/fire/etc durations,
 			# you should remove that logic to avoid double-ticking.
 			_advance_terrain_effects_one_turn()
-
+			_log_turn_banner("PLAYER")
 			# Recompute enemy intents at the start of player phase
 			_update_enemy_intents()
 
 		turn_manager.Phase.ENEMY:
+			if CombatLog != null:
+				CombatLog.set_turn_index(run_turns)
+			_log_turn_banner("ENEMY")
 			# Tick enemy timed statuses at the start of their phase
 			if StatusManager != null and StatusManager.has_method("tick_team"):
 				StatusManager.tick_team("enemy")
@@ -772,6 +797,8 @@ func _on_phase_changed(new_phase) -> void:
 			# Tick tile effects at start of ENEMY phase (Option A)
 			if grid != null and grid.has_method("tick_tile_effects"):
 				grid.tick_tile_effects()
+
+
 
 			print("ENEMY PHASE")
 			_run_enemy_turn()
@@ -997,7 +1024,11 @@ func _run_enemy_turn() -> void:
 
 func _on_unit_died(unit) -> void:
 	print("Unit died in Main:", unit.name, "team:", unit.team)
-
+	if unit == null:
+		return
+	if CombatLog != null:
+		CombatLog.add("%s has fallen!" % unit.name, {"type":"ko"})
+		
 	if unit.team == "enemy":
 		enemies_defeated += 1
 	elif unit.team == "player":
@@ -1052,6 +1083,7 @@ func spawn_units_from_run() -> void:
 
 		units.add_child(u)
 		i += 1
+		_hook_unit_for_combat_log(u)
 
 	# ✅ After all player units are spawned, ask EnemySpawnManager to spawn enemies.
 	if enemy_spawner != null:
@@ -1870,3 +1902,21 @@ func _queue_enemy_intents_refresh() -> void:
 func _do_enemy_intents_refresh() -> void:
 	_enemy_intents_refresh_queued = false
 	_update_enemy_intents()
+
+# TURN LOG BANNER HELPER
+func _log_turn_banner(phase_name: String) -> void:
+	if CombatLog == null:
+		return
+	CombatLog.add("==== TURN %d — %s PHASE ====" % [run_turns, phase_name], {"type":"turn"})
+
+func _hook_unit_for_combat_log(unit: Node) -> void:
+	if unit == null:
+		return
+	if not unit.has_signal("died"):
+		return
+
+	# Connect once with a bound parameter so we know who died.
+	var cb: Callable = Callable(self, "_on_unit_died").bind(unit)
+	# Godot 4: use is_connected(signal_name, callable)
+	if not unit.is_connected("died", cb):
+		unit.connect("died", cb)

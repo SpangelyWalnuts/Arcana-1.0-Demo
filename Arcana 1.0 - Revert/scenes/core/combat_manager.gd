@@ -40,9 +40,19 @@ func perform_attack(attacker, defender, is_counter: bool = false) -> void:
 		" for ", damage, " dmg (atk=", effective_atk,
 		", def=", effective_def, ", terrain def +", terrain_def, ")")
 
+	if CombatLog != null:
+		var tag: String = "COUNTER " if is_counter else ""
+		CombatLog.add("%s%s attacks %s for %d (atk=%d, def=%d, terrain=%d)" % [
+			tag, attacker.name, defender.name, damage, effective_atk, effective_def, terrain_def
+			], {"type":"attack", "counter": is_counter})
+
 	unit_attacked.emit(attacker, defender, damage, is_counter)
 
 	var defender_survived: bool = defender.take_damage(damage)
+	
+	if CombatLog != null and not defender_survived:
+		CombatLog.add("%s is defeated!" % defender.name, {"type":"ko"})
+
 
 	if not is_counter:
 		attacker.has_acted = true
@@ -113,6 +123,10 @@ func use_skill(caster, skill: Skill, center_tile: Vector2i) -> void:
 	print(caster.name, "casts", skill.name, "on", center_tile,
 		" (mana:", caster.mana, "/", caster.max_mana, ")")
 
+	if CombatLog != null:
+		CombatLog.add("%s casts %s at %s" % [caster.name, skill.name, str(center_tile)],
+			{"type":"cast", "skill": skill.name, "tile": center_tile, "aoe": int(skill.aoe_radius)})
+
 	# Apply effect per unit using the SAME pipeline as unit-target skills.
 	for target in units_in_area:
 		if not _skill_can_affect_target(caster, target, skill):
@@ -121,6 +135,9 @@ func use_skill(caster, skill: Skill, center_tile: Vector2i) -> void:
 		# Terrain skills shouldn't resolve "on units" here (tile-terrain handled elsewhere)
 		if skill.effect_type == Skill.EffectType.TERRAIN:
 			continue
+
+		if CombatLog != null:
+			CombatLog.add("  -> affects %s" % target.name, {"type":"cast_hit", "skill": skill.name})
 
 		execute_skill_on_target(caster, target, skill)
 
@@ -155,6 +172,17 @@ func execute_skill_on_target(user, target, skill: Skill) -> void:
 	if user == null or target == null or skill == null:
 		return
 
+	# Combat log headline (one line per resolved target)
+	if CombatLog != null:
+		var kind: String = str(skill.effect_type)
+		CombatLog.add("%s uses %s on %s" % [user.name, skill.name, target.name], {
+			"type": "skill_resolve",
+			"skill": skill.name,
+			"effect_type": kind,
+			"user": user.name,
+			"target": target.name
+		})
+
 	match skill.effect_type:
 		Skill.EffectType.HEAL:
 			_apply_skill_heal(user, target, skill)
@@ -164,28 +192,44 @@ func execute_skill_on_target(user, target, skill: Skill) -> void:
 			_apply_skill_damage(user, target, skill)
 		Skill.EffectType.TERRAIN:
 			print("CombatManager: Terrain skill targeted a unit; ignored.")
+			if CombatLog != null:
+				CombatLog.add("  -> terrain skill ignored (unit-target)", {"type":"terrain_ignored", "skill": skill.name})
 		_:
 			_apply_skill_damage(user, target, skill)
 
 
+
 func _apply_skill_heal(user, target, skill: Skill) -> void:
-	if target == null or skill == null:
+	if user == null or target == null or skill == null:
 		return
 
 	var base_magic: int = user.atk
-	var raw: float = float(base_magic) * skill.power_multiplier + float(skill.flat_power)
+	var raw: float = float(base_magic) * float(skill.power_multiplier) + float(skill.flat_power)
 	var amount: int = int(round(raw))
 	if amount < 1:
 		amount = 1
 
-	var new_hp: int = min(target.hp + amount, target.max_hp)
-	var actual_heal: int = new_hp - target.hp
+	var before_hp: int = int(target.hp)
+	var new_hp: int = min(before_hp + amount, int(target.max_hp))
+	var actual_heal: int = new_hp - before_hp
 	if actual_heal <= 0:
+		# Optional: log wasted heals for debugging
+		if CombatLog != null:
+			CombatLog.add("  -> %s is already full HP" % target.name, {"type":"heal_waste", "skill": skill.name})
 		return
 
 	target.hp = new_hp
 	if target.has_method("update_hp_bar"):
 		target.update_hp_bar()
+
+	if CombatLog != null:
+		CombatLog.add("  -> heals %s for %d (HP %d/%d → %d/%d)" % [
+			target.name,
+			actual_heal,
+			before_hp, int(target.max_hp),
+			int(target.hp), int(target.max_hp)
+		], {"type":"heal", "skill": skill.name, "amount": actual_heal})
+
 
 
 func _apply_skill_damage(user, target, skill: Skill) -> void:
@@ -194,13 +238,26 @@ func _apply_skill_damage(user, target, skill: Skill) -> void:
 
 	# NOTE: simple formula for now: atk * mult + flat
 	var base_attack: int = user.atk
-	var raw: float = float(base_attack) * skill.power_multiplier + float(skill.flat_power)
+	var raw: float = float(base_attack) * float(skill.power_multiplier) + float(skill.flat_power)
 	var amount: int = int(round(raw))
 	if amount < 1:
 		amount = 1
 
-	target.take_damage(amount)
+	var before_hp: int = int(target.hp)
+	var survived: bool = target.take_damage(amount)
+
+	# Keep your print if you want it in the console too
 	print(user.name, " hits ", target.name, " with ", skill.name, " for ", amount, " damage (skill).")
+
+	if CombatLog != null:
+		CombatLog.add("  -> hits %s for %d (HP %d/%d → %d/%d)%s" % [
+			target.name,
+			amount,
+			before_hp, int(target.max_hp),
+			int(target.hp), int(target.max_hp),
+			"" if survived else " (KO)"
+		], {"type":"damage", "skill": skill.name, "amount": amount, "killed": not survived})
+
 
 
 func _apply_status_skill(user, target, skill: Skill) -> void:
@@ -209,11 +266,17 @@ func _apply_status_skill(user, target, skill: Skill) -> void:
 
 	if StatusManager != null and StatusManager.has_method("apply_status_to_unit"):
 		StatusManager.apply_status_to_unit(target, skill, user)
+
+		if CombatLog != null:
+			CombatLog.add("  -> applies %s to %s (%d turns)" % [
+				skill.name, target.name, int(skill.duration_turns)
+			], {"type":"status", "skill": skill.name, "target": target.name, "duration": int(skill.duration_turns)})
 	else:
 		push_warning("StatusManager missing or has no apply_status_to_unit(). Did you set it as an Autoload named 'StatusManager'?")
 
 	if target.has_method("refresh_status_icons"):
 		target.refresh_status_icons()
+
 
 
 # ------------------------------------------------------------
@@ -241,6 +304,10 @@ func execute_skill_on_tile(caster, skill: Skill, center_tile: Vector2i) -> void:
 
 	# Spend mana
 	caster.mana -= skill.mana_cost
+	
+	if CombatLog != null:
+		CombatLog.add("%s casts %s at %s" % [caster.name, skill.name, str(center_tile)],
+		{"type":"cast_tile", "skill": skill.name, "tile": center_tile})
 
 	# Resolve AoE tiles (supports future AoE terrain/modifiers)
 	var tiles: Array[Vector2i] = _get_aoe_tiles(center_tile, skill.aoe_radius)
@@ -254,9 +321,17 @@ func execute_skill_on_tile(caster, skill: Skill, center_tile: Vector2i) -> void:
 
 			# 2) Spawn the terrain object scene (visual/destructible/etc.)
 			_spawn_terrain_object_on_tile(skill, t, caster)
+			
+			if CombatLog != null:
+				CombatLog.add("  -> %s modifies tile %s" % [skill.name, str(t)],
+				{"type":"terrain", "skill": skill.name, "tile": t})
 
 		caster.has_acted = true
 		return
+
+	if CombatLog != null:
+		CombatLog.add("%s applies %s modifier to %d tiles" % [caster.name, skill.name, tiles.size()],
+		{"type":"tile_modifier", "skill": skill.name, "count": tiles.size()})
 
 	# Otherwise: tile modifier (vines now; later fire, ice, poison, etc.)
 	_apply_tile_modifier_on_tiles(skill, tiles, caster)
