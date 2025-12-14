@@ -9,6 +9,7 @@ var input_mode: InputMode = InputMode.FREE
 var pending_skill = null
 var _current_skill: Skill = null
 var _initial_player_unit_count: int = 0
+var _hitstop_in_progress: bool = false
 
 # --- Run statistics for summary panel ---
 var run_turns: int = 1              # Turn count (starts at player phase 1)
@@ -60,6 +61,10 @@ var _selection_ring_tween: Tween = null
 @onready var enemy_spawner: EnemySpawnManager = $EnemySpawnManager
 
 @export var floating_text_scene: PackedScene
+@export var hitstop_duration: float = 0.06
+@export var hitstop_time_scale: float = 0.05
+@export var hit_shake_strength: float = 8.0
+@export var hit_shake_duration: float = 0.12
 
 @export var enemy_think_delay: float = 0.30
 @export var enemy_between_enemies_delay: float = 0.18
@@ -93,6 +98,9 @@ func _ready() -> void:
 	skill_menu.skill_selected.connect(_on_skill_menu_skill_selected)
 	_update_turn_label()
 	
+	if combat_manager != null and combat_manager.has_signal("unit_attacked"):
+		combat_manager.unit_attacked.connect(_on_unit_attacked_feedback)
+
 		# --- Selection ring setup ---
 	if selection_ring_scene != null:
 		_selection_ring = selection_ring_scene.instantiate()
@@ -1034,7 +1042,7 @@ func _run_enemy_turn() -> void:
 		if enemy_ai != null:
 			# Soft focus camera on the acting enemy (if the camera supports it)
 			if camera != null and camera.has_method("soft_focus_unit"):
-				camera.soft_focus_unit(enemy, 0.92, 0.18)
+				camera.soft_focus_unit(enemy, 1.78, 0.18)
 			# small "thinking" pause before this enemy acts
 			await get_tree().create_timer(enemy_think_delay).timeout
 			# ✅ SEQUENTIAL: wait for this enemy's move/attack/cast to finish
@@ -1042,7 +1050,7 @@ func _run_enemy_turn() -> void:
 			# readability pause between enemies
 			await get_tree().create_timer(enemy_between_enemies_delay).timeout
 		# small readability pause between enemies (tweak to taste)
-		await get_tree().create_timer(0.15).timeout
+		await get_tree().create_timer(0.30).timeout
 
 	print("Enemy phase done, back to player.")
 	# Give control back to player camera (if supported)
@@ -1955,3 +1963,37 @@ func _hook_unit_for_combat_log(unit: Node) -> void:
 	# Godot 4: use is_connected(signal_name, callable)
 	if not unit.is_connected("died", cb):
 		unit.connect("died", cb)
+
+# HIt stop HANDLER
+func _on_unit_attacked_feedback(attacker, defender, damage: int, is_counter: bool) -> void:
+	if battle_finished:
+		return
+	if damage <= 0:
+		return
+
+	# Camera shake (non-invasive)
+	if camera != null and camera.has_method("shake"):
+		camera.shake(hit_shake_strength, hit_shake_duration)
+
+	# Hit-stop (brief freeze)
+	_do_hitstop(hitstop_duration, hitstop_time_scale)
+
+func _do_hitstop(duration: float, scale: float) -> void:
+	if _hitstop_in_progress:
+		return
+	_hitstop_in_progress = true
+	_hitstop_async(duration, scale)
+
+func _hitstop_async(duration: float, scale: float) -> void:
+	# Run async without blocking callers
+	await _hitstop_coroutine(duration, scale)
+
+func _hitstop_coroutine(duration: float, scale: float) -> void:
+	var prev := Engine.time_scale
+	Engine.time_scale = scale
+
+	# ✅ ignore_time_scale=true so this timer still counts down while frozen
+	await get_tree().create_timer(duration, false, false, true).timeout
+
+	Engine.time_scale = prev
+	_hitstop_in_progress = false

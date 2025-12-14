@@ -10,6 +10,10 @@ var map_rect: Rect2 = Rect2()             # world-space rect covering the map
 var _cam_tween: Tween
 var _default_zoom: Vector2
 var _controls_locked: bool = false
+var _shake_time_left: float = 0.0
+var _shake_duration: float = 0.0
+var _shake_strength: float = 0.0
+var _shake_rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
@@ -73,7 +77,17 @@ func _process(delta: float) -> void:
 		global_position += dir * pan_speed * delta
 		_clamp_camera()
 
-
+	
+	# ✅ Shake applies regardless of lock state (uses offset so it won't fight soft focus)
+	if _shake_time_left > 0.0:
+		_shake_time_left -= delta
+		offset = Vector2(
+			_shake_rng.randf_range(-_shake_strength, _shake_strength),
+			_shake_rng.randf_range(-_shake_strength, _shake_strength)
+		)
+	else:
+		offset = Vector2.ZERO
+	
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		var mb: InputEventMouseButton = event as InputEventMouseButton
@@ -124,7 +138,8 @@ func soft_focus_world_pos(world_pos: Vector2, zoom_in: float = 0.92, duration: f
 		.set_trans(Tween.TRANS_SINE)\
 		.set_ease(Tween.EASE_IN_OUT)
 
-func soft_focus_unit(unit: Node, zoom_in: float = 0.92, duration: float = 0.18) -> void:
+#ADJUST ENEMY TURN CAMERA SOFT FOCUS SYNC WITH PATCH IN MAIN
+func soft_focus_unit(unit: Node, zoom_in: float = 1.78, duration: float = 0.18) -> void:
 	if unit == null or not is_instance_valid(unit):
 		return
 	if unit is Node2D:
@@ -141,3 +156,11 @@ func restore_player_control(duration: float = 0.18) -> void:
 
 	# unlock after the tween completes
 	_cam_tween.finished.connect(func(): _controls_locked = false)
+
+#CAMERA SHAKE
+func shake(strength: float = 8.0, duration: float = 0.12) -> void:
+	_shake_strength = max(strength, 0.0)
+	_shake_duration = max(duration, 0.0)
+	_shake_time_left = _shake_duration
+	if _shake_rng.seed == 0:
+		_shake_rng.randomize()

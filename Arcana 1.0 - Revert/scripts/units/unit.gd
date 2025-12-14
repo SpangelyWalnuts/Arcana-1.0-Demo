@@ -12,6 +12,7 @@ var unit_data: UnitData = null
 @export var unit_class: UnitClass
 @export var is_active: bool = true
 
+var _is_dying: bool = false
 var grid_position: Vector2i
 var move_range: int = 4
 var active_statuses: Array = []  # list of Dictionaries for now
@@ -202,18 +203,47 @@ func take_damage(amount: int) -> bool:
 signal died
 
 func die() -> void:
+	if _is_dying:
+		return
+	_is_dying = true
+
 	print(name, " has been defeated.")
 
 	# Notify listeners (Main.gd, etc.)
 	died.emit()
 
-	# Make sure we are no longer in unit groups
+	# Make sure we are no longer in unit groups (important for victory checks)
 	if team == "enemy":
 		remove_from_group("enemy_units")
 	elif team == "player":
 		remove_from_group("player_units")
 
-	# Finally destroy the node
+	# Prevent further interactions
+	set_process(false)
+	set_physics_process(false)
+	has_acted = true
+
+	# Play KO effect without blocking callers
+	_death_fx_sequence()
+
+func _death_fx_sequence() -> void:
+	# If we don't have a sprite, just vanish quickly
+	if sprite == null or not is_instance_valid(sprite):
+		queue_free()
+		return
+
+	var original: Color = sprite.modulate
+
+	# Flash white (bright) then fade out
+	var tween := create_tween()
+	tween.tween_property(sprite, "modulate", Color(2, 2, 2, 1), 0.05)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(sprite, "modulate", original, 0.05)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tween.tween_property(self, "modulate", Color(1, 1, 1, 0), 0.15)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+
+	await tween.finished
 	queue_free()
 
 
