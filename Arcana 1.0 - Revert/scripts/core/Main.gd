@@ -159,6 +159,8 @@ func spawn_test_units() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if battle_finished:
+		return
 		# ✅ Always allow toggling combat log (even during enemy turn / UI hover / battle end)
 	if event.is_action_pressed("toggle_combat_log"):
 		_toggle_combat_log()
@@ -266,11 +268,11 @@ func _debug_tilemap_identity(grid: Node, map_generator: Node) -> void:
 
 
 func _connect_unit_signals(u: Node) -> void:
-	# Only connect if the unit actually has the signal
-	if u.has_signal("died"):
-		# Avoid double-connecting in case this is called more than once
-		if not u.died.is_connected(_on_unit_died):
-			u.died.connect(_on_unit_died.bind(u))
+	if not u.has_signal("died"):
+		return
+	var c := Callable(self, "_on_unit_died").bind(u)
+	if not u.died.is_connected(c):
+		u.died.connect(c)
 
 
 func _handle_move_click(tile: Vector2i) -> void:
@@ -756,6 +758,9 @@ func clear_move_range() -> void:
 func _on_phase_changed(new_phase) -> void:
 	match new_phase:
 		turn_manager.Phase.PLAYER:
+			if battle_finished:
+				return
+
 			
 			# Tick player timed statuses at the start of their phase
 			if StatusManager != null and StatusManager.has_method("tick_team"):
@@ -787,6 +792,8 @@ func _on_phase_changed(new_phase) -> void:
 			_update_enemy_intents()
 
 		turn_manager.Phase.ENEMY:
+			if battle_finished:
+				return
 			if CombatLog != null:
 				CombatLog.set_turn_index(run_turns)
 			_log_turn_banner("ENEMY")
@@ -1085,13 +1092,18 @@ func spawn_units_from_run() -> void:
 		i += 1
 		_hook_unit_for_combat_log(u)
 
-	# ✅ After all player units are spawned, ask EnemySpawnManager to spawn enemies.
+# After all player units are spawned, spawn enemies.
 	if enemy_spawner != null:
-		enemy_spawner.spawn_enemies_for_floor(
-			RunManager.current_floor,
-			spawn_tiles      # we treat these as player spawn tiles
-		)
+		enemy_spawner.spawn_enemies_for_floor(RunManager.current_floor, spawn_tiles)
+
+		# ✅ IMPORTANT: EnemySpawnManager awaits a frame before add_child(),
+		# so connect signals *after* that frame.
+		await get_tree().process_frame
+		for child in units.get_children():
+			_connect_unit_signals(child)
 	else:
+	# existing fallback...
+
 		# Fallback: spawn a single generic enemy so you can still test combat
 		var enemy_tile := Vector2i(8, 4)
 		var e: Node2D = unit_scene.instantiate()
@@ -1100,6 +1112,7 @@ func spawn_units_from_run() -> void:
 		e.grid_position = enemy_tile
 		e.position = grid.tile_to_world(enemy_tile)
 		units.add_child(e)
+	
 
 	_initial_player_unit_count = get_tree().get_nodes_in_group("player_units").size()
 
