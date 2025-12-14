@@ -65,6 +65,10 @@ var _selection_ring_tween: Tween = null
 @export var hitstop_time_scale: float = 0.05
 @export var hit_shake_strength: float = 8.0
 @export var hit_shake_duration: float = 0.12
+@export var final_ko_slowmo_scale: float = 0.20
+@export var final_ko_slowmo_duration: float = 0.25
+
+var _final_ko_slowmo_played: bool = false
 
 @export var enemy_think_delay: float = 0.30
 @export var enemy_between_enemies_delay: float = 0.18
@@ -1550,6 +1554,11 @@ func _on_victory(reason: String) -> void:
 		return
 	battle_finished = true
 
+# If this victory is specifically “all enemies defeated”, do the slow-mo
+	if reason == "All enemies defeated.":
+		_play_final_ko_slowmo_then_show_victory(reason)
+	else:
+		_show_victory_ui()
 	print("VICTORY:", reason)
 
 	_pending_victory_reason = reason
@@ -1997,3 +2006,24 @@ func _hitstop_coroutine(duration: float, scale: float) -> void:
 
 	Engine.time_scale = prev
 	_hitstop_in_progress = false
+
+#FINAL KO SLOW MO HELPER
+func _play_final_ko_slowmo_then_show_victory(reason: String) -> void:
+	# Don’t play twice
+	if _final_ko_slowmo_played:
+		_show_victory_ui()
+		return
+	_final_ko_slowmo_played = true
+
+	# If hit-stop is currently active, wait it out so we don't fight time_scale
+	while _hitstop_in_progress:
+		await get_tree().process_frame
+
+	var prev := Engine.time_scale
+	Engine.time_scale = final_ko_slowmo_scale
+
+	# ignore_time_scale=true so we always restore
+	await get_tree().create_timer(final_ko_slowmo_duration, false, false, true).timeout
+
+	Engine.time_scale = prev
+	_show_victory_ui()
