@@ -1,16 +1,18 @@
-[gd_scene load_steps=6 format=3 uid="uid://cdxb46fgjtu0c"]
+[gd_scene load_steps=7 format=3 uid="uid://cdxb46fgjtu0c"]
 
 [ext_resource type="Script" uid="uid://c2kfu4b3sbqbo" path="res://scripts/units/unit.gd" id="1_fqlnf"]
 [ext_resource type="Texture2D" uid="uid://nhlhj45xxg6w" path="res://art/ui/status_icons/Attacking.png" id="2_5uit4"]
 [ext_resource type="Texture2D" uid="uid://cpb0iwxqmhhux" path="res://art/units/Cryomancer map.png" id="2_gocqw"]
 [ext_resource type="Texture2D" uid="uid://bd1vjbh0qxb" path="res://art/ui/status_icons/Moving.png" id="3_e2ob1"]
 [ext_resource type="Texture2D" uid="uid://b78urms4wqv82" path="res://art/ui/status_icons/fatigue.png" id="4_5uit4"]
+[ext_resource type="Texture2D" uid="uid://bdfsoh5vtjom7" path="res://art/ui/status_icons/Arcana Casting.png" id="5_e2ob1"]
 
 [node name="Units" type="Node2D"]
 script = ExtResource("1_fqlnf")
 intent_attack_texture = ExtResource("2_5uit4")
 intent_move_texture = ExtResource("3_e2ob1")
 intent_wait_texture = ExtResource("4_5uit4")
+intent_cast_texture = ExtResource("5_e2ob1")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture_filter = 1

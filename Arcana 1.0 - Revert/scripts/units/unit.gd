@@ -31,6 +31,8 @@ var attack_range: int = 1
 @export var intent_attack_texture: Texture2D
 @export var intent_move_texture: Texture2D
 @export var intent_wait_texture: Texture2D
+@export var intent_cast_texture: Texture2D  # NEW
+
 
 var current_intent: String = ""  # "attack", "move", "wait", or ""
 
@@ -260,6 +262,9 @@ func set_intent_icon(intent: String) -> void:
 		"attack":
 			tex = intent_attack_texture
 			tooltip = "Will attack if in range."
+		"cast":
+			tex = intent_cast_texture
+			tooltip = "Will cast Arcana."
 		"move":
 			tex = intent_move_texture
 			tooltip = "Will move toward the nearest target."
@@ -273,6 +278,5 @@ func set_intent_icon(intent: String) -> void:
 	intent_icon.texture = tex
 	intent_icon.visible = tex != null
 
-	# 🔹 Tooltip text (shown when you hover the icon)
 	if intent_icon is Control:
 		intent_icon.tooltip_text = tooltip

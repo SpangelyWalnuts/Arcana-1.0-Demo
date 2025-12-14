@@ -233,6 +233,20 @@ func _input(event: InputEvent) -> void:
 				_try_select_unit_at_tile(tile)
 				return
 
+func _debug_tilemap_identity(grid: Node, map_generator: Node) -> void:
+	var grid_tm: TileMap = grid.get_node("Terrain") as TileMap
+	var mg_tm: TileMap = null
+	if "terrain" in map_generator:
+		mg_tm = map_generator.terrain as TileMap
+
+	print("--- TILEMAP IDENTITY DEBUG ---")
+	print("Grid Terrain:", grid_tm.get_path(), " id:", grid_tm.get_instance_id(), " global:", grid_tm.global_position)
+	if mg_tm != null:
+		print("MapGen Terrain:", mg_tm.get_path(), " id:", mg_tm.get_instance_id(), " global:", mg_tm.global_position)
+	else:
+		print("MapGen terrain is null or not present.")
+	print("------------------------------")
+
 
 func _connect_unit_signals(u: Node) -> void:
 	# Only connect if the unit actually has the signal
@@ -255,7 +269,7 @@ func _handle_move_click(tile: Vector2i) -> void:
 	input_mode = InputMode.FREE
 	action_menu.hide_menu()
 	skill_menu.hide_menu()
-	
+	_queue_enemy_intents_refresh()
 func get_current_objective_type() -> String:
 	if battle_objective == null:
 		return "rout"
@@ -299,7 +313,7 @@ func _handle_attack_click(tile: Vector2i) -> void:
 	clear_all_ranges()
 	action_menu.hide_menu()
 	skill_menu.hide_menu()
-
+	_queue_enemy_intents_refresh()
 
 func _handle_skill_target_click(tile: Vector2i) -> void:
 	print("DEBUG SKILL TARGET: selected_unit =", selected_unit, " _current_skill =", _current_skill)
@@ -339,6 +353,7 @@ func _handle_skill_target_click(tile: Vector2i) -> void:
 			skill_menu.hide()
 
 		input_mode = InputMode.FREE
+		_queue_enemy_intents_refresh()
 		return
 
 	# -------------------------------------------------
@@ -367,6 +382,7 @@ func _handle_skill_target_click(tile: Vector2i) -> void:
 			skill_menu.hide()
 
 		input_mode = InputMode.FREE
+		_queue_enemy_intents_refresh()
 		return
 
 	# -------------------------------------------------
@@ -405,6 +421,7 @@ func _handle_skill_target_click(tile: Vector2i) -> void:
 		skill_menu.hide()
 
 	input_mode = InputMode.FREE
+	_queue_enemy_intents_refresh()
 
 
 
@@ -521,6 +538,7 @@ func _try_move_selected_unit_to_tile(tile: Vector2i) -> void:
 	selected_unit.grid_position = tile
 	selected_unit.position = grid.tile_to_world(tile)
 	selected_unit.has_acted = true
+	_queue_enemy_intents_refresh()
 
 	if selected_unit.has_node("Sprite2D"):
 		selected_unit.get_node("Sprite2D").modulate = Color.WHITE
@@ -1112,6 +1130,7 @@ func _on_action_menu_selected(action_name: String) -> void:
 		"wait":
 			selected_unit.has_acted = true
 			
+			
 			# 🔹 Apply hazard when the unit ends its action on this tile
 			_apply_tile_hazard_for_unit(selected_unit)
 	
@@ -1124,6 +1143,7 @@ func _on_action_menu_selected(action_name: String) -> void:
 			clear_all_ranges()
 			skill_menu.hide_menu()
 			action_menu.hide_menu()
+			_queue_enemy_intents_refresh()
 
 			if _all_player_units_have_acted():
 				turn_manager.end_turn()
@@ -1837,3 +1857,16 @@ func _update_selection_ring(unit: Node2D) -> void:
 		Vector2(0.95, 0.95),
 		0.4
 	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+#INTENT DEBOUNCER 
+var _enemy_intents_refresh_queued: bool = false
+
+func _queue_enemy_intents_refresh() -> void:
+	if _enemy_intents_refresh_queued:
+		return
+	_enemy_intents_refresh_queued = true
+	call_deferred("_do_enemy_intents_refresh")
+
+func _do_enemy_intents_refresh() -> void:
+	_enemy_intents_refresh_queued = false
+	_update_enemy_intents()
