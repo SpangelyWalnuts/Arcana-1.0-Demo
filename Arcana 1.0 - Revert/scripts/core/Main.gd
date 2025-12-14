@@ -61,7 +61,8 @@ var _selection_ring_tween: Tween = null
 
 @export var floating_text_scene: PackedScene
 
-
+@export var enemy_think_delay: float = 0.30
+@export var enemy_between_enemies_delay: float = 0.18
 @export var battle_objective: BattleObjective
 @export var unit_scene: PackedScene
 @export var range_tile_scene: PackedScene
@@ -1023,11 +1024,32 @@ func _run_enemy_turn() -> void:
 		return
 
 	for enemy in enemies:
+		if battle_finished:
+			return
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		if enemy.hp <= 0:
+			continue
+
 		if enemy_ai != null:
-			enemy_ai.take_turn(self, enemy, players)
+			# Soft focus camera on the acting enemy (if the camera supports it)
+			if camera != null and camera.has_method("soft_focus_unit"):
+				camera.soft_focus_unit(enemy, 0.92, 0.18)
+			# small "thinking" pause before this enemy acts
+			await get_tree().create_timer(enemy_think_delay).timeout
+			# ✅ SEQUENTIAL: wait for this enemy's move/attack/cast to finish
+			await enemy_ai.take_turn(self, enemy, players)
+			# readability pause between enemies
+			await get_tree().create_timer(enemy_between_enemies_delay).timeout
+		# small readability pause between enemies (tweak to taste)
+		await get_tree().create_timer(0.15).timeout
 
 	print("Enemy phase done, back to player.")
+	# Give control back to player camera (if supported)
+	if camera != null and camera.has_method("restore_player_control"):
+		camera.restore_player_control(0.18)
 	turn_manager.end_turn()
+
 
 func _on_unit_died(unit) -> void:
 	print("Unit died in Main:", unit.name, "team:", unit.team)

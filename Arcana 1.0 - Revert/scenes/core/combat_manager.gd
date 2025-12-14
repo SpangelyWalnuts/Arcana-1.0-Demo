@@ -9,6 +9,8 @@ extends Node
 
 signal unit_died(unit)
 signal unit_attacked(attacker, defender, damage, is_counter)
+signal attack_sequence_finished(attacker)
+signal skill_sequence_finished(caster)
 
 
 func _ready() -> void:
@@ -69,6 +71,9 @@ func perform_attack(attacker, defender, is_counter: bool = false) -> void:
 		if _all_player_units_have_acted():
 			turn_manager.end_turn()
 
+# ✅ tell AI (or anyone) the attack chain is finished
+		if not is_counter:
+			attack_sequence_finished.emit(attacker)
 
 func _is_in_attack_range(attacker, target) -> bool:
 	var dist: int = abs(attacker.grid_position.x - target.grid_position.x) + abs(attacker.grid_position.y - target.grid_position.y)
@@ -149,6 +154,8 @@ func use_skill(caster, skill: Skill, center_tile: Vector2i) -> void:
 	if _all_player_units_have_acted():
 		turn_manager.end_turn()
 
+	skill_sequence_finished.emit(caster)
+
 
 func _skill_can_affect_target(caster, target, skill: Skill) -> bool:
 	match skill.target_type:
@@ -196,6 +203,8 @@ func execute_skill_on_target(user, target, skill: Skill) -> void:
 				CombatLog.add("  -> terrain skill ignored (unit-target)", {"type":"terrain_ignored", "skill": skill.name})
 		_:
 			_apply_skill_damage(user, target, skill)
+		# tell AI / turn sequencer this skill resolution is complete
+			skill_sequence_finished.emit(user)
 
 
 
@@ -327,6 +336,7 @@ func execute_skill_on_tile(caster, skill: Skill, center_tile: Vector2i) -> void:
 				{"type":"terrain", "skill": skill.name, "tile": t})
 
 		caster.has_acted = true
+		skill_sequence_finished.emit(caster)
 		return
 
 	if CombatLog != null:

@@ -7,13 +7,16 @@ extends Camera2D
 @export var max_zoom: float = 3.0         # farther
 
 var map_rect: Rect2 = Rect2()             # world-space rect covering the map
+var _cam_tween: Tween
+var _default_zoom: Vector2
+var _controls_locked: bool = false
 
 
 func _ready() -> void:
 	if terrain == null:
 		push_error("Camera2D: 'terrain' is not assigned.")
 		return
-
+	_default_zoom = zoom
 	_compute_map_rect()
 	_center_on_map()
 
@@ -51,6 +54,9 @@ func _center_on_map() -> void:
 
 
 func _process(delta: float) -> void:
+	if _controls_locked:
+		return
+
 	var dir: Vector2 = Vector2.ZERO
 
 	if Input.is_action_pressed("camera_left"):
@@ -102,3 +108,36 @@ func _clamp_camera() -> void:
 
 	global_position.x = clamp(global_position.x, min_x, max_x)
 	global_position.y = clamp(global_position.y, min_y, max_y)
+
+#SOFT CAMERA PAN ON ENEMY TURN
+func soft_focus_world_pos(world_pos: Vector2, zoom_in: float = 0.92, duration: float = 0.18) -> void:
+	_controls_locked = true
+
+	if _cam_tween != null and _cam_tween.is_running():
+		_cam_tween.kill()
+
+	_cam_tween = create_tween()
+	_cam_tween.tween_property(self, "global_position", world_pos, duration)\
+		.set_trans(Tween.TRANS_SINE)\
+		.set_ease(Tween.EASE_IN_OUT)
+	_cam_tween.tween_property(self, "zoom", Vector2(zoom_in, zoom_in), duration)\
+		.set_trans(Tween.TRANS_SINE)\
+		.set_ease(Tween.EASE_IN_OUT)
+
+func soft_focus_unit(unit: Node, zoom_in: float = 0.92, duration: float = 0.18) -> void:
+	if unit == null or not is_instance_valid(unit):
+		return
+	if unit is Node2D:
+		soft_focus_world_pos((unit as Node2D).global_position, zoom_in, duration)
+
+func restore_player_control(duration: float = 0.18) -> void:
+	if _cam_tween != null and _cam_tween.is_running():
+		_cam_tween.kill()
+
+	_cam_tween = create_tween()
+	_cam_tween.tween_property(self, "zoom", _default_zoom, duration)\
+		.set_trans(Tween.TRANS_SINE)\
+		.set_ease(Tween.EASE_IN_OUT)
+
+	# unlock after the tween completes
+	_cam_tween.finished.connect(func(): _controls_locked = false)

@@ -50,6 +50,22 @@ func take_turn(main: Node, enemy: Node, players: Array) -> void:
 		var cm: Node = _get_child_or_prop(main, "combat_manager")
 		if cm != null and cm.has_method("perform_attack"):
 			cm.perform_attack(enemy, target)
+			var cm_wait: Node = _get_child_or_prop(main, "combat_manager")
+			if cm_wait != null and cm_wait.has_signal("skill_sequence_finished"):
+				while true:
+					var emitted = await cm_wait.skill_sequence_finished
+
+					# Godot: if the signal emits one arg, `emitted` is that arg.
+					# If it emits multiple args, `emitted` is an Array.
+					var caster = emitted
+					if emitted is Array and emitted.size() > 0:
+						caster = emitted[0]
+
+					if caster == enemy:
+						break
+			else:
+				# fallback if signal missing (shouldn't happen once you add it)
+				await get_tree().create_timer(0.25).timeout
 		return
 
 	# 2) If prevented from moving, wait
@@ -214,6 +230,19 @@ func _execute_cast_plan(main: Node, enemy: Node, plan: Dictionary) -> void:
 		var cm: Node = _get_child_or_prop(main, "combat_manager")
 		if cm != null and cm.has_method("use_skill"):
 			cm.use_skill(enemy, skill, center_tile)
+			var cm_wait: Node = _get_child_or_prop(main, "combat_manager")
+			if cm_wait != null and cm_wait.has_signal("skill_sequence_finished"):
+				while true:
+					var emitted = await cm_wait.skill_sequence_finished
+
+					# Godot: if the signal emits one arg, `emitted` is that arg.
+					# If it emits multiple args, `emitted` is an Array.
+					var caster = emitted
+					if emitted is Array and emitted.size() > 0:
+						caster = emitted[0]
+
+					if caster == enemy:
+						break
 			return
 
 	# Single-target: route through SkillSystem if available
@@ -222,6 +251,19 @@ func _execute_cast_plan(main: Node, enemy: Node, plan: Dictionary) -> void:
 		var ss: Node = _get_child_or_prop(main, "skill_system")
 		if ss != null and ss.has_method("execute_skill_on_target"):
 			ss.execute_skill_on_target(enemy, target_unit, skill)
+			var cm_wait: Node = _get_child_or_prop(main, "combat_manager")
+			if cm_wait != null and cm_wait.has_signal("skill_sequence_finished"):
+				while true:
+					var emitted = await cm_wait.skill_sequence_finished
+
+					# Godot: if the signal emits one arg, `emitted` is that arg.
+					# If it emits multiple args, `emitted` is an Array.
+					var caster = emitted
+					if emitted is Array and emitted.size() > 0:
+						caster = emitted[0]
+
+					if caster == enemy:
+						break
 			return
 
 	# Fallback: basic attack if we have CombatManager
@@ -229,6 +271,8 @@ func _execute_cast_plan(main: Node, enemy: Node, plan: Dictionary) -> void:
 	if cm2 != null and cm2.has_method("perform_attack") and plan.has("target_unit"):
 		cm2.perform_attack(enemy, plan["target_unit"])
 
+	# small readability pause after casting
+	await get_tree().create_timer(0.2).timeout
 
 # -----------------------------
 # Role Profiles
@@ -483,21 +527,34 @@ func _get_move_budget(enemy: Node) -> int:
 func _move_enemy_to_tile(main: Node, enemy: Node, tile: Vector2i) -> void:
 	var old_tile: Vector2i = _get_v2i(enemy, "grid_position", Vector2i.ZERO)
 
+	# exit effects immediately
 	if main != null and main.has_method("_get_terrain_effect_at_tile"):
 		var old_eff = main._get_terrain_effect_at_tile(old_tile)
 		if old_eff != null and old_eff.has_method("on_unit_exit"):
 			old_eff.on_unit_exit(enemy)
 
+	# update logical position immediately (so occupancy/pathing stays correct)
 	enemy.set("grid_position", tile)
 
 	var grid_node: Node = _get_child_or_prop(main, "grid")
 	if grid_node != null and grid_node.has_method("tile_to_world") and enemy is Node2D:
-		(enemy as Node2D).global_position = grid_node.tile_to_world(tile)
+		var n2 := enemy as Node2D
+		var target_pos: Vector2 = grid_node.tile_to_world(tile)
 
+		# ✅ tween movement (duration tweakable)
+		var tween := n2.create_tween()
+		tween.tween_property(n2, "global_position", target_pos, 0.18)\
+			.set_trans(Tween.TRANS_SINE)\
+			.set_ease(Tween.EASE_IN_OUT)
+
+		await tween.finished
+
+	# enter effects after arriving
 	if main != null and main.has_method("_get_terrain_effect_at_tile"):
 		var new_eff = main._get_terrain_effect_at_tile(tile)
 		if new_eff != null and new_eff.has_method("on_unit_enter"):
 			new_eff.on_unit_enter(enemy)
+
 
 
 # -----------------------------
@@ -573,3 +630,15 @@ func _get_child_or_prop(obj: Object, name: String) -> Node:
 			return n.get_node(name) as Node
 
 	return null
+
+#HELPER  FOR SIGNAL WAITNG
+func _await_signal_for_unit(emitter: Object, signal_name: StringName, unit: Object) -> void:
+	if emitter == null:
+		return
+	while true:
+		var emitted = await emitter.get(signal_name)
+		var first = emitted
+		if emitted is Array and emitted.size() > 0:
+			first = emitted[0]
+		if first == unit:
+			return
