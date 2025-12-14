@@ -40,10 +40,11 @@ var current_intent: String = ""  # "attack", "move", "wait", or ""
 @onready var hp_bg: ColorRect   = $HPBar/BG
 @onready var hp_fill: ColorRect = $HPBar/Fill
 @onready var status_icons_root: HBoxContainer = $StatusIcons
-@onready var sprite: Sprite2D = $Sprite2D
+@onready var sprite_static: Sprite2D = $Sprite2D
+@onready var sprite_anim: AnimatedSprite2D = $AnimatedSprite2D
 
-
-
+# Used for KO FX; works with both Sprite2D and AnimatedSprite2D
+var sprite: CanvasItem
 
 #HELPERS
 func add_status(status: Dictionary) -> void:
@@ -55,6 +56,27 @@ func has_status_flag(flag: String) -> bool:
 		if st is Dictionary and st.get(flag, false):
 			return true
 	return false
+
+#CLASS SPRITE HELPER
+func _apply_class_visuals() -> void:
+	# Prefer animation if provided by the class
+	if unit_class != null and unit_class.idle_frames != null:
+		sprite_anim.sprite_frames = unit_class.idle_frames
+		sprite_anim.animation = unit_class.idle_anim_name
+		sprite_anim.visible = true
+		sprite_anim.play()
+
+		sprite_static.visible = false
+		sprite = sprite_anim
+		return
+
+	# Fallback: static sprite texture (or whatever is already in Sprite2D)
+	if unit_class != null and unit_class.sprite_texture != null:
+		sprite_static.texture = unit_class.sprite_texture
+
+	sprite_static.visible = true
+	sprite_anim.visible = false
+	sprite = sprite_static
 
 func _ready() -> void:
 	if not is_active:
@@ -148,8 +170,8 @@ func _ready() -> void:
 		status_icons_root = $StatusIcons
 		
 	# 6.5) Set sprite based on UnitClass
-	if sprite != null and unit_class != null and unit_class.sprite_texture != null:
-		sprite.texture = unit_class.sprite_texture
+	_apply_class_visuals()
+
 
 	_update_hp_bar()
 	refresh_status_icons()  # start empty, but keeps UI clean

@@ -34,3 +34,5 @@ class_name UnitClass
 @export var sprite_texture: Texture2D    # used for the in-battle Sprite2D
 @export var portrait_texture: Texture2D  # optional, for UI (prep, etc.)
 @export var icon_texture: Texture2D      # optional, small class icon
+@export var idle_frames: SpriteFrames  # optional per-class idle animation
+@export var idle_anim_name: StringName = &"idle"

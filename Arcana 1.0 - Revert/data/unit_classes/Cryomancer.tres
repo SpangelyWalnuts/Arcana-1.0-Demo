@@ -1,11 +1,51 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=7 format=3 uid="uid://bwlb1xfhjqbtr"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=16 format=3 uid="uid://bwlb1xfhjqbtr"]
 
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_c58w8"]
 [ext_resource type="Texture2D" uid="uid://3fcgv16e3an7" path="res://art/units/Cryomancer/Cryomancer icon.png" id="1_t4jmv"]
+[ext_resource type="Texture2D" uid="uid://0xn8gtms2ju7" path="res://art/units/Cryomancer/Animations/Idle Animation/Cryomancer Idle Animation1.png" id="2_3dpi8"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_nf8b4"]
+[ext_resource type="Texture2D" uid="uid://fh48m368b35h" path="res://art/units/Cryomancer/Animations/Idle Animation/Cryomancer Idle Animation2.png" id="3_h018i"]
 [ext_resource type="Resource" uid="uid://d0f52yih01fe" path="res://data/skills/cryomancer/frozenbody.tres" id="3_upeti"]
+[ext_resource type="Texture2D" uid="uid://ddohaifyawotr" path="res://art/units/Cryomancer/Animations/Idle Animation/Cryomancer Idle Animation3.png" id="4_pdx8l"]
 [ext_resource type="Resource" uid="uid://vil0l2v0ery0" path="res://data/skills/cryomancer/Frozenspikes.tres" id="4_t4jmv"]
+[ext_resource type="Texture2D" uid="uid://bbqv07rnxqjmn" path="res://art/units/Cryomancer/Animations/Idle Animation/Cryomancer Idle Animation4.png" id="5_ub8d2"]
 [ext_resource type="Texture2D" uid="uid://cpb0iwxqmhhux" path="res://art/units/Cryomancer map.png" id="5_upeti"]
+[ext_resource type="Texture2D" uid="uid://c1b5tepdjex3s" path="res://art/units/Cryomancer/Animations/Idle Animation/Cryomancer Idle Animation5.png" id="6_esorq"]
+[ext_resource type="Texture2D" uid="uid://dayg8xnomnm32" path="res://art/units/Cryomancer/Animations/Idle Animation/Cryomancer Idle Animation6.png" id="7_qp10e"]
+[ext_resource type="Texture2D" uid="uid://brbaxodocmaq2" path="res://art/units/Cryomancer/Animations/Idle Animation/Cryomancer Idle Animation7.png" id="8_1u6xd"]
+[ext_resource type="Texture2D" uid="uid://ce4i7uit6bw8c" path="res://art/units/Cryomancer/Animations/Idle Animation/Cryomancer Idle Animation8.png" id="9_d0icy"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_o6rfk"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_3dpi8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_h018i")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_pdx8l")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_ub8d2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_esorq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_qp10e")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_1u6xd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_d0icy")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 7.0
+}]
 
 [resource]
 script = ExtResource("1_c58w8")
@@ -20,4 +60,5 @@ growth_move = 0.0
 sprite_texture = ExtResource("5_upeti")
 portrait_texture = ExtResource("1_t4jmv")
 icon_texture = ExtResource("1_t4jmv")
+idle_frames = SubResource("SpriteFrames_o6rfk")
 metadata/_custom_type_script = "uid://b823ipo4ebjd5"
