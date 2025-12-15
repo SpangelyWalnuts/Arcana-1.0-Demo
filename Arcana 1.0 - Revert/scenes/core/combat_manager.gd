@@ -83,12 +83,14 @@ func perform_attack(attacker, defender, is_counter: bool = false) -> void:
 
 # ✅ tell AI (or anyone) the attack chain is finished
 		if not is_counter:
-			attack_sequence_finished.emit(attacker)
+			call_deferred("_emit_attack_sequence_finished_deferred", attacker)
 
 func _is_in_attack_range(attacker, target) -> bool:
 	var dist: int = abs(attacker.grid_position.x - target.grid_position.x) + abs(attacker.grid_position.y - target.grid_position.y)
 	return dist <= attacker.attack_range
 
+func _emit_attack_sequence_finished_deferred(attacker) -> void:
+	attack_sequence_finished.emit(attacker)
 
 func _all_player_units_have_acted() -> bool:
 	for child in units_root.get_children():

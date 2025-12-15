@@ -58,6 +58,16 @@ func _center_on_map() -> void:
 
 
 func _process(delta: float) -> void:
+	# ✅ Shake should update even when controls are locked
+	if _shake_time_left > 0.0:
+		_shake_time_left -= delta
+		offset = Vector2(
+			_shake_rng.randf_range(-_shake_strength, _shake_strength),
+			_shake_rng.randf_range(-_shake_strength, _shake_strength)
+		)
+	else:
+		offset = Vector2.ZERO
+
 	if _controls_locked:
 		return
 
@@ -164,3 +174,9 @@ func shake(strength: float = 8.0, duration: float = 0.12) -> void:
 	_shake_time_left = _shake_duration
 	if _shake_rng.seed == 0:
 		_shake_rng.randomize()
+
+	# ✅ immediate nudge so it doesn't “wait” for next process tick
+	offset = Vector2(
+		_shake_rng.randf_range(-_shake_strength, _shake_strength),
+		_shake_rng.randf_range(-_shake_strength, _shake_strength)
+	)

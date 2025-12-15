@@ -49,24 +49,27 @@ func take_turn(main: Node, enemy: Node, players: Array) -> void:
 	if dist_to_target <= attack_range:
 		var cm: Node = _get_child_or_prop(main, "combat_manager")
 		if cm != null and cm.has_method("perform_attack"):
+			print("[AI] %s BASIC ATTACK start -> %s" % [enemy.name, target.name])
 			cm.perform_attack(enemy, target)
-			var cm_wait: Node = _get_child_or_prop(main, "combat_manager")
-			if cm_wait != null and cm_wait.has_signal("skill_sequence_finished"):
+
+			if cm.has_signal("attack_sequence_finished"):
+				# Timeout safety so we never hard-hang during debugging.
+				var timeout := get_tree().create_timer(1.0)
 				while true:
-					var emitted = await cm_wait.skill_sequence_finished
-
-					# Godot: if the signal emits one arg, `emitted` is that arg.
-					# If it emits multiple args, `emitted` is an Array.
-					var caster = emitted
-					if emitted is Array and emitted.size() > 0:
-						caster = emitted[0]
-
-					if caster == enemy:
+					var emitted_attacker = await cm.attack_sequence_finished
+					print("[AI] attack_sequence_finished emitted for:", emitted_attacker)
+					if emitted_attacker == enemy:
+						print("[AI] %s BASIC ATTACK end (signal)" % enemy.name)
+						break
+					if timeout.time_left <= 0.0:
+						print("[AI] %s BASIC ATTACK end (TIMEOUT FALLBACK)" % enemy.name)
 						break
 			else:
-				# fallback if signal missing (shouldn't happen once you add it)
+				print("[AI] %s no attack_sequence_finished signal; using timer fallback" % enemy.name)
 				await get_tree().create_timer(0.25).timeout
+				print("[AI] %s BASIC ATTACK end (timer)" % enemy.name)
 		return
+
 
 	# 2) If prevented from moving, wait
 	if StatusManager != null and StatusManager.has_method("unit_has_flag") and StatusManager.unit_has_flag(enemy, "prevent_move"):
