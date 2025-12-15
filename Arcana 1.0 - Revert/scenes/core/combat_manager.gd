@@ -49,6 +49,16 @@ func perform_attack(attacker, defender, is_counter: bool = false) -> void:
 			], {"type":"attack", "counter": is_counter})
 
 	unit_attacked.emit(attacker, defender, damage, is_counter)
+# ✅ Procedural attack lunge
+	if attacker != null and attacker.has_method("play_attack_anim"):
+		var target_pos: Vector2 = Vector2.ZERO
+		if defender is Node2D:
+			target_pos = (defender as Node2D).global_position
+			attacker.play_attack_anim(target_pos)
+
+# ✅ Hit react on defender (only if damage > 0)
+	if damage > 0 and defender != null and defender.has_method("play_hit_react"):
+		defender.play_hit_react()
 
 	var defender_survived: bool = defender.take_damage(damage)
 	
@@ -127,10 +137,16 @@ func use_skill(caster, skill: Skill, center_tile: Vector2i) -> void:
 	caster.mana -= skill.mana_cost
 	print(caster.name, "casts", skill.name, "on", center_tile,
 		" (mana:", caster.mana, "/", caster.max_mana, ")")
+		
+	if caster != null and caster.has_method("play_cast_anim"):
+		caster.play_cast_anim()
 
 	if CombatLog != null:
 		CombatLog.add("%s casts %s at %s" % [caster.name, skill.name, str(center_tile)],
 			{"type":"cast", "skill": skill.name, "tile": center_tile, "aoe": int(skill.aoe_radius)})
+	if caster != null and caster.has_method("play_cast_anim"):
+		caster.play_cast_anim()
+
 
 	# Apply effect per unit using the SAME pipeline as unit-target skills.
 	for target in units_in_area:
@@ -145,6 +161,9 @@ func use_skill(caster, skill: Skill, center_tile: Vector2i) -> void:
 			CombatLog.add("  -> affects %s" % target.name, {"type":"cast_hit", "skill": skill.name})
 
 		execute_skill_on_target(caster, target, skill)
+		if target != null and target.has_method("play_hit_react"):
+			target.play_hit_react()
+
 
 	# Using a skill consumes the action (for now)
 	caster.has_acted = true
@@ -203,8 +222,8 @@ func execute_skill_on_target(user, target, skill: Skill) -> void:
 				CombatLog.add("  -> terrain skill ignored (unit-target)", {"type":"terrain_ignored", "skill": skill.name})
 		_:
 			_apply_skill_damage(user, target, skill)
-		# tell AI / turn sequencer this skill resolution is complete
-			skill_sequence_finished.emit(user)
+	# tell AI / turn sequencer this skill resolution is complete
+	skill_sequence_finished.emit(user)
 
 
 

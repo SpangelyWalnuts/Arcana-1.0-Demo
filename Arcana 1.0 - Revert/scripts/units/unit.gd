@@ -332,3 +332,60 @@ func set_intent_icon(intent: String) -> void:
 
 	if intent_icon is Control:
 		intent_icon.tooltip_text = tooltip
+
+#ANIMATION HELPERS
+func play_attack_anim(target_world_pos: Vector2) -> void:
+	# Need a visual to move
+	if sprite == null or not is_instance_valid(sprite):
+		return
+
+	# We need the sprite to be a Node2D to tween its local position
+	if not (sprite is Node2D):
+		return
+
+	var spr := sprite as Node2D
+	var start_local := spr.position
+
+	# Direction from unit to target in world space (normalized)
+	var unit_world := (self as Node2D).global_position
+	var dir := target_world_pos - unit_world
+	if dir.length() > 0.001:
+		dir = dir.normalized()
+	else:
+		dir = Vector2.RIGHT
+
+	var lunge_dist := 14.0 # tweak: 12–20 usually feels good
+	var lunge_local := start_local + dir * lunge_dist
+
+	var tween := create_tween()
+	tween.tween_property(spr, "position", lunge_local, 0.06).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(spr, "position", start_local, 0.08).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+
+
+
+func play_cast_anim() -> void:
+	if sprite == null or not is_instance_valid(sprite):
+		return
+
+	var s := sprite as CanvasItem
+	var orig := s.modulate
+
+	var tween := create_tween()
+	tween.tween_property(s, "modulate", Color(orig.r * 1.4, orig.g * 1.4, orig.b * 1.4, orig.a), 0.08)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(s, "modulate", orig, 0.10)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+
+
+func play_hit_react() -> void:
+	if sprite == null or not is_instance_valid(sprite):
+		return
+
+	var s := sprite as CanvasItem
+	var orig := s.modulate
+
+	var tween := create_tween()
+	tween.tween_property(s, "modulate", Color(1.6, 0.8, 0.8, orig.a), 0.04)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(s, "modulate", orig, 0.08)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
