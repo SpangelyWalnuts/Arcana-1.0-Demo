@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://b8r2pbfow66ih"]
+[gd_scene load_steps=3 format=3 uid="uid://b8r2pbfow66ih"]
 
 [ext_resource type="Script" uid="uid://ds1orwapqxdbi" path="res://scenes/ui/draft_screen.gd" id="1_dgf36"]
+[ext_resource type="PackedScene" uid="uid://b0lw8xp3nat3b" path="res://scenes/ui/DraftCard.tscn" id="2_nel26"]
 
 [node name="DraftScreen" type="Control"]
 layout_mode = 3
@@ -33,20 +34,21 @@ layout_mode = 2
 layout_mode = 2
 size_flags_vertical = 4
 
-[node name="Card0" type="Button" parent="MarginContainer/VBoxContainer/CardsRow"]
+[node name="Card0" parent="MarginContainer/VBoxContainer/CardsRow" instance=ExtResource("2_nel26")]
 layout_mode = 2
 
-[node name="Card1" type="Button" parent="MarginContainer/VBoxContainer/CardsRow"]
+[node name="Card1" parent="MarginContainer/VBoxContainer/CardsRow" instance=ExtResource("2_nel26")]
 layout_mode = 2
 
-[node name="Card2" type="Button" parent="MarginContainer/VBoxContainer/CardsRow"]
+[node name="Card2" parent="MarginContainer/VBoxContainer/CardsRow" instance=ExtResource("2_nel26")]
 layout_mode = 2
 
-[node name="Card3" type="Button" parent="MarginContainer/VBoxContainer/CardsRow"]
+[node name="Card3" parent="MarginContainer/VBoxContainer/CardsRow" instance=ExtResource("2_nel26")]
 layout_mode = 2
 
 [node name="HintLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 
 [node name="ContinueButton" type="Button" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 64)
 layout_mode = 2

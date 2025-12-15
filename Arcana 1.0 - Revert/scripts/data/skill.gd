@@ -75,3 +75,5 @@ enum TerrainAction {
 @export var terrain_object_duration: int = -1    # -1 = permanent
 @export var terrain_object_blocks_movement: bool = false
 @export var terrain_object_move_cost_bonus: int = 0
+
+@export var icon_texture: Texture2D  # optional UI icon

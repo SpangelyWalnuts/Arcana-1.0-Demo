@@ -1,5 +1,6 @@
-[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://bfrqsar2c8kjh"]
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://bfrqsar2c8kjh"]
 
+[ext_resource type="Texture2D" uid="uid://dlr3fl5n0voot" path="res://art/ui/spell icons/Firebolt.png" id="1_cst6a"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_wejox"]
 
 [resource]
@@ -8,3 +9,4 @@ name = "Firebolt"
 mana_cost = 3
 power_multiplier = 2.0
 flat_power = 1
+icon_texture = ExtResource("1_cst6a")

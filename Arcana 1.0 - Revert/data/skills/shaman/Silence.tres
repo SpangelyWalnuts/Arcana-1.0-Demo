@@ -1,5 +1,6 @@
-[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://b0v87lx6vohwf"]
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://b0v87lx6vohwf"]
 
+[ext_resource type="Texture2D" uid="uid://0dpth2sxb7hi" path="res://art/ui/spell icons/Silence.png" id="1_53880"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_o8ma3"]
 
 [resource]
@@ -12,3 +13,4 @@ power_multiplier = 0.0
 target_type = 1
 duration_turns = 2
 prevent_arcana = true
+icon_texture = ExtResource("1_53880")

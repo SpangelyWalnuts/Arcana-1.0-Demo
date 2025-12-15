@@ -17,64 +17,61 @@ var _cards: Array[Button] = []
 func _ready() -> void:
 	_cards = [card0, card1, card2, card3]
 
-	# Set static texts
-	title_label.text = "Choose Your Unit"
-	hint_label.text  = "Pick 1 of 4. You will build a party of %d units." % RunManager.max_draft_picks
+	for i in range(_cards.size()):
+		var btn := _cards[i]
+		if btn == null:
+			continue
 
-	# Connect card signals
-	card0.pressed.connect(_on_card_pressed.bind(0))
-	card1.pressed.connect(_on_card_pressed.bind(1))
-	card2.pressed.connect(_on_card_pressed.bind(2))
-	card3.pressed.connect(_on_card_pressed.bind(3))
+		# Avoid double-connecting if the scene reloads
+		if btn.pressed.is_connected(_on_card_pressed.bind(i)):
+			continue
+		btn.pressed.connect(_on_card_pressed.bind(i))
 
-	continue_button.pressed.connect(_on_continue_pressed)
+	if continue_button != null and not continue_button.pressed.is_connected(_on_continue_pressed):
+		continue_button.pressed.connect(_on_continue_pressed)
 
 	_refresh_cards()
 
 
+
 func _refresh_cards() -> void:
-	var round_num: int = RunManager.draft_round
-	if round_num <= 0:
-		round_num = 1
-
-	subtitle_label.text = "Draft pick %d of %d" % [round_num, RunManager.max_draft_picks]
-
-	var options: Array = RunManager.current_draft_options
+	var opts: Array = []
+	if RunManager != null:
+		opts = RunManager.current_draft_options
 
 	for i in range(_cards.size()):
 		var btn: Button = _cards[i]
-
-		if i >= options.size():
-			btn.text = "No option"
-			btn.disabled = true
+		if btn == null:
 			continue
 
-		var cls: UnitClass = options[i]
-		if cls == null:
-			btn.text = "???"
-			btn.disabled = true
+		if i >= opts.size():
+			btn.visible = false
 			continue
 
-		var line1 := cls.display_name
-		var line2 := "HP %d  ATK %d  DEF %d  MOV %d" % [
-			cls.max_hp,
-			cls.atk,
-			cls.defense,
-			cls.move_range
-		]
+		btn.visible = true
+		var cls: UnitClass = opts[i]
 
-		btn.disabled = false
-		btn.text = "%s\n%s" % [line1, line2]
+		# If this is a DraftCard instance, populate visuals
+		if btn is DraftCard:
+			(btn as DraftCard).set_data(cls)
+		else:
+			# Fallback: plain text button
+			var line1 := cls.display_name
+			var line2 := "HP %d  ATK %d  DEF %d  MOV %d" % [
+				cls.max_hp,
+				cls.atk,
+				cls.defense,
+				cls.move_range
+			]
+			btn.text = "%s\n%s" % [line1, line2]
+			btn.disabled = false
 
 
-func _on_card_pressed(index: int) -> void:
-	if index < 0 or index >= RunManager.current_draft_options.size():
-		return
 
-	RunManager.choose_draft_unit(index)
-	# After calling choose_draft_unit, RunManager will either:
-	#  - start the next draft round (and reload DraftScreen), or
-	#  - go to the Preparation screen once draft is finished.
+
+func _on_card_pressed(idx: int) -> void:
+	if RunManager != null and RunManager.has_method("choose_draft_unit"):
+		RunManager.choose_draft_unit(idx)
 
 
 func _on_continue_pressed() -> void:

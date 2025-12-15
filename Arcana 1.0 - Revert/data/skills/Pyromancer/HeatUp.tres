@@ -1,5 +1,6 @@
-[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://dnkeiik2pogwi"]
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://dnkeiik2pogwi"]
 
+[ext_resource type="Texture2D" uid="uid://d2b1n7f1lt82c" path="res://art/ui/spell icons/HeatUp.png" id="1_lhxql"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_qf6cw"]
 
 [resource]
@@ -12,3 +13,4 @@ target_type = 3
 can_target_self = true
 atk_mod = 3
 duration_turns = 3
+icon_texture = ExtResource("1_lhxql")

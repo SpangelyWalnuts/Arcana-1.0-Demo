@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://cvgvpxwwcs7ye"]
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://cvgvpxwwcs7ye"]
 
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_cnhk2"]
+[ext_resource type="Texture2D" uid="uid://bnthm8sq42hmj" path="res://art/ui/spell icons/Lightning Bolt.png" id="1_n4eae"]
 
 [resource]
 script = ExtResource("1_cnhk2")
@@ -9,3 +10,4 @@ description = "A bolt of lightning strikes target area."
 mana_cost = 3
 cast_range = 6
 flat_power = 1
+icon_texture = ExtResource("1_n4eae")

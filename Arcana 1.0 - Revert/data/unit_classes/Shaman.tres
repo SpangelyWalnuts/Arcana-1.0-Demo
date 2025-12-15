@@ -1,10 +1,50 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=6 format=3 uid="uid://vbbdbsfmfcwf"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=15 format=3 uid="uid://vbbdbsfmfcwf"]
 
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_e1wvc"]
+[ext_resource type="Texture2D" uid="uid://csopmcpdhiy3a" path="res://art/units/shaman/animations/idle/Shaman Orc Idle Animation1.png" id="1_h6wsp"]
+[ext_resource type="Texture2D" uid="uid://b47igjpqkvct1" path="res://art/units/shaman/animations/idle/Shaman Orc Idle Animation2.png" id="2_dm6je"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_m4r6v"]
 [ext_resource type="Resource" uid="uid://bjl3kwcsocmoq" path="res://data/skills/shaman/fatigue.tres" id="3_nh5gg"]
+[ext_resource type="Texture2D" uid="uid://occuop31upgm" path="res://art/units/shaman/animations/idle/Shaman Orc Idle Animation3.png" id="3_tx38m"]
+[ext_resource type="Texture2D" uid="uid://b5u5ad2dd7qv2" path="res://art/units/shaman/animations/idle/Shaman Orc Idle Animation4.png" id="4_2ies0"]
 [ext_resource type="Resource" uid="uid://b0v87lx6vohwf" path="res://data/skills/shaman/Silence.tres" id="4_43fsw"]
-[ext_resource type="Texture2D" uid="uid://cdgj2ioiw1fnc" path="res://art/units/shaman/Shaman.png" id="5_43fsw"]
+[ext_resource type="Texture2D" uid="uid://tqu41w1552g4" path="res://art/units/shaman/animations/idle/Shaman Orc Idle Animation5.png" id="5_byyew"]
+[ext_resource type="Texture2D" uid="uid://dcursb1txgl81" path="res://art/units/shaman/animations/idle/Shaman Orc Idle Animation6.png" id="6_1rjrt"]
+[ext_resource type="Texture2D" uid="uid://b3goccjuu3b0x" path="res://art/units/shaman/animations/idle/Shaman Orc Idle Animation7.png" id="7_k3b3v"]
+[ext_resource type="Texture2D" uid="uid://cjn2c6thx1067" path="res://art/units/shaman/animations/idle/Shaman Orc Idle Animation8.png" id="8_t7236"]
+[ext_resource type="Texture2D" uid="uid://ec6y77e5orhh" path="res://art/units/shaman/Shaman Orc.png" id="13_tj1y1"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_rv78c"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_h6wsp")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_dm6je")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_tx38m")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_2ies0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_byyew")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_1rjrt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_k3b3v")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_t7236")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}]
 
 [resource]
 script = ExtResource("1_e1wvc")
@@ -20,4 +60,5 @@ growth_atk = 0.4
 growth_defense = 0.4
 growth_move = 0.0
 growth_mana = 0.25
-sprite_texture = ExtResource("5_43fsw")
+sprite_texture = ExtResource("13_tj1y1")
+idle_frames = SubResource("SpriteFrames_rv78c")
