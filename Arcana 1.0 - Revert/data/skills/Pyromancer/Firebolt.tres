@@ -6,3 +6,5 @@
 script = ExtResource("1_wejox")
 name = "Firebolt"
 mana_cost = 3
+power_multiplier = 2.0
+flat_power = 1

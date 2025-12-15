@@ -149,7 +149,7 @@ func soft_focus_world_pos(world_pos: Vector2, zoom_in: float = 0.92, duration: f
 		.set_ease(Tween.EASE_IN_OUT)
 
 #ADJUST ENEMY TURN CAMERA SOFT FOCUS SYNC WITH PATCH IN MAIN
-func soft_focus_unit(unit: Node, zoom_in: float = 1.78, duration: float = 0.18) -> void:
+func soft_focus_unit(unit: Node, zoom_in: float = 2.2, duration: float = 0.18) -> void:
 	if unit == null or not is_instance_valid(unit):
 		return
 	if unit is Node2D:

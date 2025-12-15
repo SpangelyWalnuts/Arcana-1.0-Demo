@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://brij0i2ochohl"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_sc0cj"]
+
+[resource]
+script = ExtResource("1_sc0cj")
+name = "Healing Spores"
+mana_cost = 3
+effect_type = 1
+is_heal = true
+cast_range = 1
+flat_power = 2
+target_type = 2
+duration_turns = 0

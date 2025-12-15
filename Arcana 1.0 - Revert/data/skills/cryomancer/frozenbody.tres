@@ -4,14 +4,12 @@
 
 [resource]
 script = ExtResource("1_swxdy")
-name = "Frozen Body"
+name = "Ice Form"
 mana_cost = 4
 effect_type = 2
 cast_range = 0
-power_multiplier = 0.5
-flat_power = 5
 target_type = 3
 can_target_self = true
-def_mod = 3
-move_mod = -1
-duration_turns = 3
+def_mod = 5
+move_mod = -2
+duration_turns = 4

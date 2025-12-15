@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1_p2o75")
-name = "Mage's Starting Gear"
+name = "Adventurer's Starting Gear"
 rarity = "Rare"
 bonus_max_hp = 3
 bonus_atk = 1

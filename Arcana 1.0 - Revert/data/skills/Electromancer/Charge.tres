@@ -5,11 +5,10 @@
 [resource]
 script = ExtResource("1_k7ocy")
 name = "Charge"
-mana_cost = 3
 effect_type = 2
 cast_range = 0
-power_multiplier = 1.5
 target_type = 3
 can_target_self = true
-duration_turns = 2
+duration_turns = 4
 next_attack_damage_mul = 2.0
+next_arcana_aoe_bonus = 1

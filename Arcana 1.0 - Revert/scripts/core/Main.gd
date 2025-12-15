@@ -1046,7 +1046,7 @@ func _run_enemy_turn() -> void:
 		if enemy_ai != null:
 			# Soft focus camera on the acting enemy (if the camera supports it)
 			if camera != null and camera.has_method("soft_focus_unit"):
-				camera.soft_focus_unit(enemy, 1.78, 0.18)
+				camera.soft_focus_unit(enemy, 2.2, 0.18)
 			# small "thinking" pause before this enemy acts
 			await get_tree().create_timer(enemy_think_delay).timeout
 			# ✅ SEQUENTIAL: wait for this enemy's move/attack/cast to finish

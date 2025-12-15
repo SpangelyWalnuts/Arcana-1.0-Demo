@@ -1,16 +1,19 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=5 format=3 uid="uid://r0vriv0j5ote"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=6 format=3 uid="uid://r0vriv0j5ote"]
 
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_phwwh"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_du10u"]
 [ext_resource type="Resource" uid="uid://boccsnr552fws" path="res://data/skills/geomancer/RaiseWall.tres" id="3_du10u"]
 [ext_resource type="Resource" uid="uid://cpgycncjb4er5" path="res://data/skills/geomancer/DestroyWall.tres" id="4_8f8no"]
+[ext_resource type="Resource" uid="uid://c2nejpl8rd3w" path="res://data/skills/geomancer/Stoneflesh.tres" id="5_l41ud"]
 
 [resource]
 script = ExtResource("1_phwwh")
 display_name = "Geomancer"
 max_hp = 15
+atk = 3
+defense = 2
 max_mana = 10
-skills = Array[ExtResource("2_du10u")]([ExtResource("3_du10u"), ExtResource("4_8f8no")])
+skills = Array[ExtResource("2_du10u")]([ExtResource("3_du10u"), ExtResource("4_8f8no"), ExtResource("5_l41ud")])
 growth_atk = 0.3
 growth_defense = 0.6
 growth_move = 0.0

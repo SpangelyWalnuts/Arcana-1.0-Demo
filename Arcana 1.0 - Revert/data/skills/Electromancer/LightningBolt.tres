@@ -6,4 +6,6 @@
 script = ExtResource("1_cnhk2")
 name = "Lightning Bolt"
 description = "A bolt of lightning strikes target area."
-cast_range = 4
+mana_cost = 3
+cast_range = 6
+flat_power = 1

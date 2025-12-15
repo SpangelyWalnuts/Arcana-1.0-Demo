@@ -79,8 +79,13 @@ const ITEM_DEF_PATHS := [
 ]
 
 const EQUIPMENT_DEF_PATHS := [
-	"res://data/equipment/Steel_Shield.tres",
+	"res://data/equipment/Book.tres",
 	"res://data/equipment/Boots.tres",
+	"res://data/equipment/RefinedRing.tres",
+	"res://data/equipment/ProtectionStone.tres",
+	"res://data/equipment/ParallelThought.tres",
+	"res://data/equipment/StartingGear.tres",
+	"res://data/equipment/VitalityStone.tres",
 ]
 
 var item_defs: Array[Item] = []

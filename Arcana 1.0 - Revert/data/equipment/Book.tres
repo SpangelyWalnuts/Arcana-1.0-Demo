@@ -4,5 +4,5 @@
 
 [resource]
 script = ExtResource("1_584gu")
-name = "Guide to Magical Practices"
+name = "Basic Magical Practices"
 bonus_atk = 2

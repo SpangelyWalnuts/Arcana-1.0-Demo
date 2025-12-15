@@ -12,3 +12,4 @@ power_multiplier = 0.5
 target_type = 2
 can_target_self = true
 atk_mod = 2
+duration_turns = 2
