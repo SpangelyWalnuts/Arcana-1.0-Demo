@@ -7,6 +7,8 @@ extends Node
 @onready var units_root   = $"../Units"
 @onready var terrain_effects_root: Node = $"../TerrainEffects"
 
+@export var heal_circle_vfx_scene: PackedScene
+
 signal unit_died(unit)
 signal unit_attacked(attacker, defender, damage, is_counter)
 signal attack_sequence_finished(attacker)
@@ -146,9 +148,22 @@ func use_skill(caster, skill: Skill, center_tile: Vector2i) -> void:
 	if CombatLog != null:
 		CombatLog.add("%s casts %s at %s" % [caster.name, skill.name, str(center_tile)],
 			{"type":"cast", "skill": skill.name, "tile": center_tile, "aoe": int(skill.aoe_radius)})
-	if caster != null and caster.has_method("play_cast_anim"):
-		caster.play_cast_anim()
+# VFX: healing circle at AoE center (plays once)
+	if skill.effect_type == Skill.EffectType.HEAL and heal_circle_vfx_scene != null:
+		var vfx := heal_circle_vfx_scene.instantiate()
 
+		var world_pos: Vector2 = Vector2.ZERO
+		if grid != null and grid.has_method("tile_to_world"):
+			world_pos = grid.tile_to_world(center_tile)
+
+		if vfx is Node2D:
+			(vfx as Node2D).global_position = world_pos
+
+	# ✅ IMPORTANT: add it to the scene tree so it renders
+		if terrain_effects_root != null:
+			terrain_effects_root.add_child(vfx)
+		else:
+			add_child(vfx)
 
 	# Apply effect per unit using the SAME pipeline as unit-target skills.
 	for target in units_in_area:

@@ -1,0 +1,151 @@
+[gd_scene load_steps=35 format=3 uid="uid://nlciohyc66th"]
+
+[ext_resource type="Script" uid="uid://bcmp5loxa3yvq" path="res://healingcircleanim.gd" id="1_qgl5a"]
+[ext_resource type="Texture2D" uid="uid://bruhqn58kc7ys" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle1.png" id="2_f4d1m"]
+[ext_resource type="Texture2D" uid="uid://b3p4s5p7w80gb" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle2.png" id="3_s02c5"]
+[ext_resource type="Texture2D" uid="uid://cw317kd31ghds" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle3.png" id="4_gmd00"]
+[ext_resource type="Texture2D" uid="uid://c3kfrbgc0vb4i" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle4.png" id="5_5dcsk"]
+[ext_resource type="Texture2D" uid="uid://bm4dvuf0cljo4" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle5.png" id="6_nrmxj"]
+[ext_resource type="Texture2D" uid="uid://bw7ho474bi2dk" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle6.png" id="7_yp50j"]
+[ext_resource type="Texture2D" uid="uid://85i7oga02oqe" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle7.png" id="8_3pxhq"]
+[ext_resource type="Texture2D" uid="uid://ccv0ircj58fvb" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle8.png" id="9_t3q6u"]
+[ext_resource type="Texture2D" uid="uid://dmx0rdlsv83ej" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle9.png" id="10_yqbjy"]
+[ext_resource type="Texture2D" uid="uid://8yyghoocx153" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle10.png" id="11_e5qx6"]
+[ext_resource type="Texture2D" uid="uid://c8ygcjebnq4sj" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle11.png" id="12_ygd7x"]
+[ext_resource type="Texture2D" uid="uid://ixejgppav0r6" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle12.png" id="13_7oc08"]
+[ext_resource type="Texture2D" uid="uid://ck3sjfuhygj22" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle13.png" id="14_je3ce"]
+[ext_resource type="Texture2D" uid="uid://dicw1ttafflx4" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle14.png" id="15_lci6y"]
+[ext_resource type="Texture2D" uid="uid://b1rxw2db5qp1h" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle15.png" id="16_vyswr"]
+[ext_resource type="Texture2D" uid="uid://bhhjnmoj1w5yf" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle16.png" id="17_yxtcj"]
+[ext_resource type="Texture2D" uid="uid://ipynnbysj81b" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle17.png" id="18_5idq1"]
+[ext_resource type="Texture2D" uid="uid://bcog2cghvnpcd" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle18.png" id="19_piskj"]
+[ext_resource type="Texture2D" uid="uid://n5kf0f485ee" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle19.png" id="20_2c38m"]
+[ext_resource type="Texture2D" uid="uid://q871q3hmyklm" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle20.png" id="21_cvxwb"]
+[ext_resource type="Texture2D" uid="uid://ribqr6g4a041" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle21.png" id="22_83eh0"]
+[ext_resource type="Texture2D" uid="uid://ievl3ygpe6u0" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle22.png" id="23_gt3pa"]
+[ext_resource type="Texture2D" uid="uid://cmo67ubf8vj0y" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle23.png" id="24_c021j"]
+[ext_resource type="Texture2D" uid="uid://bbwagg2xsgmhy" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle24.png" id="25_blts8"]
+[ext_resource type="Texture2D" uid="uid://cobuq6mcm8frw" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle25.png" id="26_fhr8g"]
+[ext_resource type="Texture2D" uid="uid://djot8y4wh06vt" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle26.png" id="27_6g153"]
+[ext_resource type="Texture2D" uid="uid://bwcljnfb7efev" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle27.png" id="28_0yiam"]
+[ext_resource type="Texture2D" uid="uid://b2kebluc1gv2f" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle28.png" id="29_m28yn"]
+[ext_resource type="Texture2D" uid="uid://god0v2d55hht" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle29.png" id="30_qjapc"]
+[ext_resource type="Texture2D" uid="uid://cohtt7qlh6ipr" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle30.png" id="31_1tq7f"]
+[ext_resource type="Texture2D" uid="uid://c5hjniungfn8o" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle31.png" id="32_di3cp"]
+[ext_resource type="Texture2D" uid="uid://b4buiqg22onjq" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle32.png" id="33_2h0al"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_6xc77"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_f4d1m")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_s02c5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_gmd00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_5dcsk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_nrmxj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_yp50j")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_3pxhq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_t3q6u")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_yqbjy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_e5qx6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_ygd7x")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_7oc08")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_je3ce")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_lci6y")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_vyswr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_yxtcj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_5idq1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_piskj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_2c38m")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_cvxwb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_83eh0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_gt3pa")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_c021j")
+}, {
+"duration": 1.0,
+"texture": ExtResource("25_blts8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("26_fhr8g")
+}, {
+"duration": 1.0,
+"texture": ExtResource("27_6g153")
+}, {
+"duration": 1.0,
+"texture": ExtResource("28_0yiam")
+}, {
+"duration": 1.0,
+"texture": ExtResource("29_m28yn")
+}, {
+"duration": 1.0,
+"texture": ExtResource("30_qjapc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("31_1tq7f")
+}, {
+"duration": 1.0,
+"texture": ExtResource("32_di3cp")
+}, {
+"duration": 1.0,
+"texture": ExtResource("33_2h0al")
+}],
+"loop": false,
+"name": &"healingcircle",
+"speed": 8.0
+}]
+
+[node name="Node2D" type="Node2D"]
+script = ExtResource("1_qgl5a")
+
+[node name="Anim" type="AnimatedSprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(16, 16)
+sprite_frames = SubResource("SpriteFrames_6xc77")
+animation = &"healingcircle"
+frame = 31
+speed_scale = 0.5

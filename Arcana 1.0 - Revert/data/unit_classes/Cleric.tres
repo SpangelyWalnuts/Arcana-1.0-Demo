@@ -1,9 +1,50 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=5 format=3 uid="uid://cbmgvrsa3mg1a"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=15 format=3 uid="uid://cbmgvrsa3mg1a"]
 
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_2eepk"]
+[ext_resource type="Texture2D" uid="uid://drckfap24vie4" path="res://art/units/cleric/animations/Idle/Cleric Idle Animation1.png" id="1_7mukn"]
 [ext_resource type="Resource" uid="uid://3o3npcfpxsw4" path="res://data/skills/Cleric/Heal.tres" id="2_ue7aj"]
+[ext_resource type="Texture2D" uid="uid://decnuq06xucvq" path="res://art/units/cleric/animations/Idle/Cleric Idle Animation2.png" id="2_vil0h"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_xbxok"]
 [ext_resource type="Resource" uid="uid://cnohu8yxch23o" path="res://data/skills/Cleric/HealingCircle.tres" id="3_d2whj"]
+[ext_resource type="Texture2D" uid="uid://bfh4l7r4cb8qn" path="res://art/units/cleric/animations/Idle/Cleric Idle Animation3.png" id="3_ocn8h"]
+[ext_resource type="Texture2D" uid="uid://fss8s2xuiuni" path="res://art/units/cleric/animations/Idle/Cleric Idle Animation4.png" id="4_o20bc"]
+[ext_resource type="Texture2D" uid="uid://dcc0hkyjgm8e" path="res://art/units/cleric/Cleric Map.png" id="5_a62u6"]
+[ext_resource type="Texture2D" uid="uid://w27x8ippmbmg" path="res://art/units/cleric/animations/Idle/Cleric Idle Animation5.png" id="5_ukgn1"]
+[ext_resource type="Texture2D" uid="uid://qyvm5vfif6ou" path="res://art/units/cleric/animations/Idle/Cleric Idle Animation6.png" id="6_7re2t"]
+[ext_resource type="Texture2D" uid="uid://b7anub181xrfr" path="res://art/units/cleric/animations/Idle/Cleric Idle Animation7.png" id="7_dp4yk"]
+[ext_resource type="Texture2D" uid="uid://jlhdctvr7076" path="res://art/units/cleric/animations/Idle/Cleric Idle Animation8.png" id="8_hrxs0"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_fcnc6"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_7mukn")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_vil0h")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_ocn8h")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_o20bc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_ukgn1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_7re2t")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_dp4yk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_hrxs0")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}]
 
 [resource]
 script = ExtResource("1_2eepk")
@@ -19,3 +60,5 @@ growth_atk = 0.4
 growth_defense = 0.15
 growth_move = 0.05
 growth_mana = 0.8
+sprite_texture = ExtResource("5_a62u6")
+idle_frames = SubResource("SpriteFrames_fcnc6")

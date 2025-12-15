@@ -1,4 +1,4 @@
-[gd_scene load_steps=68 format=3 uid="uid://n3fdkibgiero"]
+[gd_scene load_steps=69 format=3 uid="uid://n3fdkibgiero"]
 
 [ext_resource type="Script" uid="uid://h2yfgpr5nkon" path="res://scripts/core/Main.gd" id="1_v0fxp"]
 [ext_resource type="PackedScene" uid="uid://dtcrbthviju4m" path="res://scenes/ui/SelectionRing.tscn" id="2_8kqbm"]
@@ -36,6 +36,7 @@
 [ext_resource type="Texture2D" uid="uid://drqmvrfcpbg2u" path="res://art/animations/highlight/Hightlight V14.png" id="20_ewl0u"]
 [ext_resource type="Texture2D" uid="uid://cwjdyuracromf" path="res://art/animations/highlight/Hightlight V15.png" id="21_1hc2n"]
 [ext_resource type="Texture2D" uid="uid://tb530gvt00wn" path="res://art/animations/highlight/Hightlight V16.png" id="22_klg8m"]
+[ext_resource type="PackedScene" uid="uid://nlciohyc66th" path="res://scenes/arcana/HealingCircle.tscn" id="31_kylyq"]
 [ext_resource type="Texture2D" uid="uid://rp2hu8jppu4k" path="res://art/ui/Big Square Background 96 by 64.png" id="32_leefl"]
 [ext_resource type="Script" uid="uid://bey8xgcuxldtv" path="res://scenes/core/phase_banner.gd" id="33_b7lq7"]
 [ext_resource type="Script" uid="uid://bqvyfnnwwd26t" path="res://scenes/core/combat_forecast_panel.gd" id="34_gm2h1"]
@@ -203,6 +204,7 @@ frame = 1
 centered = false
 
 [node name="Units" type="Node2D" parent="."]
+position = Vector2(0, -8)
 
 [node name="Overlay" type="Node2D" parent="."]
 
@@ -211,6 +213,7 @@ script = ExtResource("10_d7485")
 
 [node name="CombatManager" type="Node" parent="."]
 script = ExtResource("11_dau2k")
+heal_circle_vfx_scene = ExtResource("31_kylyq")
 
 [node name="UI" type="CanvasLayer" parent="."]
 

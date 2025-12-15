@@ -11,6 +11,8 @@ var unit_data: UnitData = null
 
 @export var unit_class: UnitClass
 @export var is_active: bool = true
+@export var attack_anim_name: StringName = &"attack"
+@export var cast_anim_name: StringName = &"cast"
 
 var _is_dying: bool = false
 var grid_position: Vector2i
@@ -335,35 +337,77 @@ func set_intent_icon(intent: String) -> void:
 
 #ANIMATION HELPERS
 func play_attack_anim(target_world_pos: Vector2) -> void:
-	# Need a visual to move
+	# Prefer sprite-sheet attack animation if we have one
+	if sprite != null and is_instance_valid(sprite) and sprite is AnimatedSprite2D:
+		var a := sprite as AnimatedSprite2D
+		if a.sprite_frames != null and a.sprite_frames.has_animation(attack_anim_name):
+			# Play attack once, then blend back to idle
+			a.play(attack_anim_name)
+
+			# one-shot return to idle (avoid stacking connections)
+			if a.animation_finished.is_connected(_on_attack_anim_finished):
+				a.animation_finished.disconnect(_on_attack_anim_finished)
+			a.animation_finished.connect(_on_attack_anim_finished, CONNECT_ONE_SHOT)
+			return
+
+	# Fallback: sprite-only lunge (works for Sprite2D OR AnimatedSprite2D)
 	if sprite == null or not is_instance_valid(sprite):
 		return
-
-	# We need the sprite to be a Node2D to tween its local position
 	if not (sprite is Node2D):
 		return
 
 	var spr := sprite as Node2D
 	var start_local := spr.position
 
-	# Direction from unit to target in world space (normalized)
-	var unit_world := (self as Node2D).global_position
+	var unit_world := global_position
 	var dir := target_world_pos - unit_world
 	if dir.length() > 0.001:
 		dir = dir.normalized()
 	else:
 		dir = Vector2.RIGHT
 
-	var lunge_dist := 14.0 # tweak: 12–20 usually feels good
+	var lunge_dist := 14.0
 	var lunge_local := start_local + dir * lunge_dist
 
 	var tween := create_tween()
 	tween.tween_property(spr, "position", lunge_local, 0.06).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	tween.tween_property(spr, "position", start_local, 0.08).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 
+#ATTACK ANIM HELPER
+func _on_attack_anim_finished() -> void:
+	if sprite == null or not is_instance_valid(sprite):
+		return
+	if not (sprite is AnimatedSprite2D):
+		return
+
+	var a := sprite as AnimatedSprite2D
+
+	# Return to class idle if defined, else "idle"
+	var idle_name: StringName = &"idle"
+	if unit_class != null and unit_class.idle_anim_name != StringName():
+		idle_name = unit_class.idle_anim_name
+
+	if a.sprite_frames != null and a.sprite_frames.has_animation(idle_name):
+		a.play(idle_name)
+	else:
+		# If no idle exists, stop on last frame
+		a.stop()
 
 
 func play_cast_anim() -> void:
+	# Prefer sprite-sheet cast animation if we have one
+	if sprite != null and is_instance_valid(sprite) and sprite is AnimatedSprite2D:
+		var a := sprite as AnimatedSprite2D
+		if a.sprite_frames != null and a.sprite_frames.has_animation(cast_anim_name):
+			a.play(cast_anim_name)
+
+			# one-shot return to idle (avoid stacking connections)
+			if a.animation_finished.is_connected(_on_cast_anim_finished):
+				a.animation_finished.disconnect(_on_cast_anim_finished)
+			a.animation_finished.connect(_on_cast_anim_finished, CONNECT_ONE_SHOT)
+			return
+
+	# Fallback: glow pulse (your existing behavior)
 	if sprite == null or not is_instance_valid(sprite):
 		return
 
@@ -375,6 +419,25 @@ func play_cast_anim() -> void:
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	tween.tween_property(s, "modulate", orig, 0.10)\
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+
+#CAST ANIM HELPER
+func _on_cast_anim_finished() -> void:
+	if sprite == null or not is_instance_valid(sprite):
+		return
+	if not (sprite is AnimatedSprite2D):
+		return
+
+	var a := sprite as AnimatedSprite2D
+
+	# Return to class idle if defined, else "idle"
+	var idle_name: StringName = &"idle"
+	if unit_class != null and unit_class.idle_anim_name != StringName():
+		idle_name = unit_class.idle_anim_name
+
+	if a.sprite_frames != null and a.sprite_frames.has_animation(idle_name):
+		a.play(idle_name)
+	else:
+		a.stop()
 
 
 func play_hit_react() -> void:
