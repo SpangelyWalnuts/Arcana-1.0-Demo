@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_715ll")
 name = "Curse"
+description = "Prevent movement and casting of arcana of target unit for 1 turn."
 mana_cost = 7
 effect_type = 3
 cast_range = 5

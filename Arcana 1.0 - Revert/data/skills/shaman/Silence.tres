@@ -6,6 +6,7 @@
 [resource]
 script = ExtResource("1_o8ma3")
 name = "Silence"
+description = "Prevent target from casting briefly."
 mana_cost = 3
 effect_type = 3
 cast_range = 6

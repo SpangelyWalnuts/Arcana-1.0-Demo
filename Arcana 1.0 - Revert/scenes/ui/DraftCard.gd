@@ -8,6 +8,7 @@ class_name DraftCard
 @onready var viewport: SubViewport = $HBoxContainer/UnitPreview/SubViewport
 @onready var pivot: Node2D = $HBoxContainer/UnitPreview/SubViewport/Pivot
 @onready var stats_label: Label = $VBoxContainer/StatsLabel
+var _tooltip: SkillTooltip
 
 func _ready() -> void:
 	_center_preview()
@@ -54,5 +55,24 @@ func set_data(unit_class: UnitClass) -> void:
 		icon.custom_minimum_size = Vector2(32, 32)
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.texture = s.icon_texture
-		icon.tooltip_text = s.name
+		# Hover -> show panel tooltip
+		icon.mouse_entered.connect(func():
+			var tip := _find_tooltip()
+			if tip != null:
+				tip.show_skill(s, get_viewport().get_mouse_position())
+)
+# Exit -> hide panel tooltip
+		icon.mouse_exited.connect(func():
+			var tip := _find_tooltip()
+			if tip != null:
+				tip.hide_tooltip()
+)
+
 		skills_row.add_child(icon)
+
+#TOOLTIP HELPER
+func _find_tooltip() -> SkillTooltip:
+	if _tooltip != null and is_instance_valid(_tooltip):
+		return _tooltip
+	_tooltip = get_tree().root.get_node_or_null("DraftScreen/SkillTooltip") as SkillTooltip
+	return _tooltip

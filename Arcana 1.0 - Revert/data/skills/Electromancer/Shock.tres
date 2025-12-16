@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_6orty")
 name = "Electrocute"
+description = "Deal great damage to adjacent enemy."
 mana_cost = 5
 cast_range = 1
 power_multiplier = 3.0

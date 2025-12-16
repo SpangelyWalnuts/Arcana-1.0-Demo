@@ -6,6 +6,7 @@
 [resource]
 script = ExtResource("1_x654m")
 name = "Raise Wall"
+description = "Create a wall at target location."
 effect_type = 4
 target_type = 4
 duration_turns = 0

@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://b8r2pbfow66ih"]
+[gd_scene load_steps=5 format=3 uid="uid://b8r2pbfow66ih"]
 
 [ext_resource type="Script" uid="uid://ds1orwapqxdbi" path="res://scenes/ui/draft_screen.gd" id="1_dgf36"]
+[ext_resource type="Texture2D" uid="uid://ch25b3rinwv8r" path="res://art/screens/Title Screen.png" id="2_58kud"]
 [ext_resource type="PackedScene" uid="uid://b0lw8xp3nat3b" path="res://scenes/ui/DraftCard.tscn" id="2_nel26"]
+[ext_resource type="PackedScene" uid="uid://bi56ji8wv6258" path="res://scenes/ui/SkillTooltip.tscn" id="3_50ulm"]
 
 [node name="DraftScreen" type="Control"]
 layout_mode = 3
@@ -11,6 +13,18 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_dgf36")
+
+[node name="TextureRect" type="TextureRect" parent="."]
+texture_filter = 1
+texture_repeat = 1
+custom_minimum_size = Vector2(1280, 720)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_58kud")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 0
@@ -52,3 +66,6 @@ layout_mode = 2
 [node name="ContinueButton" type="Button" parent="MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
+
+[node name="SkillTooltip" parent="." instance=ExtResource("3_50ulm")]
+layout_mode = 0

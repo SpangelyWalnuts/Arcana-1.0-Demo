@@ -1,0 +1,33 @@
+[gd_scene load_steps=2 format=3 uid="uid://bi56ji8wv6258"]
+
+[ext_resource type="Script" uid="uid://tukbfxregcg2" path="res://SkillTooltip.gd" id="1_fbk62"]
+
+[node name="SkillTooltip" type="PanelContainer"]
+offset_right = 51.0
+offset_bottom = 41.0
+script = ExtResource("1_fbk62")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="VBoxContainer/HBoxContainer"]
+texture_filter = 1
+texture_repeat = 1
+custom_minimum_size = Vector2(24, 16)
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="VBoxContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="MetaLabel" type="Label" parent="VBoxContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="DescLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+autowrap_mode = 2

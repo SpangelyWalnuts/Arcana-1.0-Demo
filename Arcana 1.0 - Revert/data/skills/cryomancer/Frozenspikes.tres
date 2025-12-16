@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://vil0l2v0ery0"]
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://vil0l2v0ery0"]
 
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_0qmn4"]
+[ext_resource type="Texture2D" uid="uid://beadg54ebla0n" path="res://data/unit_classes/Ice Spikes.png" id="1_u3x4l"]
 
 [resource]
 script = ExtResource("1_0qmn4")
@@ -13,3 +14,4 @@ flat_power = 2
 target_type = 4
 duration_turns = 3
 terrain_tile_key = "spikes"
+icon_texture = ExtResource("1_u3x4l")

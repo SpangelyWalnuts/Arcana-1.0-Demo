@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_2wkiv")
 name = "Fatigue"
+description = "Prevent movement of target breifly."
 mana_cost = 3
 effect_type = 3
 cast_range = 6

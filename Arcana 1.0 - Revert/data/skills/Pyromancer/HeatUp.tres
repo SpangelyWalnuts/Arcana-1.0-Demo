@@ -5,7 +5,8 @@
 
 [resource]
 script = ExtResource("1_qf6cw")
-name = "HeatUp"
+name = "Heat Up"
+description = "Buff casters ATK by 3 for 1 turn."
 mana_cost = 4
 effect_type = 2
 cast_range = 0

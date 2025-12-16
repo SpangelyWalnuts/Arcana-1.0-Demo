@@ -6,6 +6,7 @@
 [resource]
 script = ExtResource("1_hxlcp")
 name = "Entangling Vines"
+description = "Create a patch of vines that are harder to traverse."
 mana_cost = 4
 effect_type = 4
 aoe_radius = 1

@@ -1,10 +1,12 @@
-[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://brij0i2ochohl"]
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://brij0i2ochohl"]
 
+[ext_resource type="Texture2D" uid="uid://dqcu0kol51r4c" path="res://art/ui/spell icons/Healing Spores.png" id="1_iocfx"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_sc0cj"]
 
 [resource]
 script = ExtResource("1_sc0cj")
-name = "Healing Spores"
+name = "Healing Pollen"
+description = "Caster heals adjacent ally for a small amount."
 mana_cost = 3
 effect_type = 1
 is_heal = true
@@ -12,3 +14,4 @@ cast_range = 1
 flat_power = 2
 target_type = 2
 duration_turns = 0
+icon_texture = ExtResource("1_iocfx")

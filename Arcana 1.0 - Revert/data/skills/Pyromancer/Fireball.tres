@@ -6,6 +6,7 @@
 [resource]
 script = ExtResource("1_nak34")
 name = "Fireball"
+description = "Cast a Fireball the exlodes on collision with a target for big damage."
 mana_cost = 5
 cast_range = 5
 aoe_radius = 2

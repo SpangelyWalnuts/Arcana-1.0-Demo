@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_n8g84")
 name = "Destroy Wall"
+description = "Destroy target wall."
 mana_cost = 1
 effect_type = 4
 target_type = 4

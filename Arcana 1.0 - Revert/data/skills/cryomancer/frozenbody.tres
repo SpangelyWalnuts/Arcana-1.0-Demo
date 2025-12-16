@@ -1,5 +1,6 @@
-[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://d0f52yih01fe"]
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://d0f52yih01fe"]
 
+[ext_resource type="Texture2D" uid="uid://cnowsrw2y5dx0" path="res://art/ui/spell icons/Ice Form.png" id="1_0i57u"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_swxdy"]
 
 [resource]
@@ -13,3 +14,4 @@ can_target_self = true
 def_mod = 5
 move_mod = -2
 duration_turns = 4
+icon_texture = ExtResource("1_0i57u")

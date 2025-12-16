@@ -1,10 +1,12 @@
-[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://3o3npcfpxsw4"]
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://3o3npcfpxsw4"]
 
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_11ljw"]
+[ext_resource type="Texture2D" uid="uid://b7p74xpmbdjk0" path="res://art/ui/spell icons/Heal.png" id="1_in24f"]
 
 [resource]
 script = ExtResource("1_11ljw")
 name = "Heal"
+description = "Heal a single ally near the caster."
 effect_type = 1
 is_heal = true
 cast_range = 2
@@ -12,3 +14,4 @@ flat_power = 5
 target_type = 2
 can_target_self = true
 duration_turns = 0
+icon_texture = ExtResource("1_in24f")

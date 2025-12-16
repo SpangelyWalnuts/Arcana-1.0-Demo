@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_k7ocy")
 name = "Charge"
+description = "Buff up caster to multiply next basic attack by 2 for 2 turns."
 effect_type = 2
 cast_range = 0
 target_type = 3

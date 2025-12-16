@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_7q8dg")
 name = "Stoneflesh"
+description = "Increase casters DEF by 2 for 1 turn."
 mana_cost = 3
 effect_type = 2
 cast_range = 0

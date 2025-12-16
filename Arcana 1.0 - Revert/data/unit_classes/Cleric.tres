@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=15 format=3 uid="uid://cbmgvrsa3mg1a"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=16 format=3 uid="uid://cbmgvrsa3mg1a"]
 
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_2eepk"]
 [ext_resource type="Texture2D" uid="uid://drckfap24vie4" path="res://art/units/cleric/animations/Idle/Cleric Idle Animation1.png" id="1_7mukn"]
@@ -13,6 +13,7 @@
 [ext_resource type="Texture2D" uid="uid://qyvm5vfif6ou" path="res://art/units/cleric/animations/Idle/Cleric Idle Animation6.png" id="6_7re2t"]
 [ext_resource type="Texture2D" uid="uid://b7anub181xrfr" path="res://art/units/cleric/animations/Idle/Cleric Idle Animation7.png" id="7_dp4yk"]
 [ext_resource type="Texture2D" uid="uid://jlhdctvr7076" path="res://art/units/cleric/animations/Idle/Cleric Idle Animation8.png" id="8_hrxs0"]
+[ext_resource type="Resource" uid="uid://dm78bsmnkdk1k" path="res://data/skills/Cleric/grace.tres" id="13_vil0h"]
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_fcnc6"]
 animations = [{
@@ -54,7 +55,7 @@ atk = 2
 defense = 0
 max_mana = 12
 mana_regen_per_turn = 3
-skills = Array[ExtResource("2_xbxok")]([ExtResource("2_ue7aj"), ExtResource("3_d2whj")])
+skills = Array[ExtResource("2_xbxok")]([ExtResource("2_ue7aj"), ExtResource("3_d2whj"), ExtResource("13_vil0h")])
 growth_hp = 0.35
 growth_atk = 0.4
 growth_defense = 0.15

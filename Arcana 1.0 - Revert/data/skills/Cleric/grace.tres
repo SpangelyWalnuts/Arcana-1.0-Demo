@@ -1,10 +1,12 @@
-[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://dm78bsmnkdk1k"]
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://dm78bsmnkdk1k"]
 
+[ext_resource type="Texture2D" uid="uid://748c5slwautt" path="res://art/ui/spell icons/Grace.png" id="1_bdh1g"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_p170w"]
 
 [resource]
 script = ExtResource("1_p170w")
 name = "Grace"
+description = "Heal an ally from a great distance."
 mana_cost = 6
 effect_type = 1
 is_heal = true
@@ -13,3 +15,4 @@ flat_power = 5
 target_type = 2
 can_target_self = true
 duration_turns = 0
+icon_texture = ExtResource("1_bdh1g")

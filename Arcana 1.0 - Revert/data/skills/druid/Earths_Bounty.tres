@@ -1,13 +1,16 @@
-[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://c7j2c7apo5id"]
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://c7j2c7apo5id"]
 
+[ext_resource type="Texture2D" uid="uid://dj3llep4ljmfq" path="res://art/ui/spell icons/Natures Bounty.png" id="1_kqqpt"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_xbk6i"]
 
 [resource]
 script = ExtResource("1_xbk6i")
-name = "Earths Bounty"
+name = "Natures Bounty"
+description = "Caster heals self for a small amount of hp."
 effect_type = 1
 is_heal = true
-cast_range = 1
+cast_range = 0
 flat_power = 3
 target_type = 3
 can_target_self = true
+icon_texture = ExtResource("1_kqqpt")
