@@ -35,6 +35,8 @@ var attack_range: int = 1
 @export var intent_move_texture: Texture2D
 @export var intent_wait_texture: Texture2D
 @export var intent_cast_texture: Texture2D  # NEW
+var _intent_tween: Tween = null
+var _intent_last_shown: String = ""
 
 
 var current_intent: String = ""  # "attack", "move", "wait", or ""
@@ -326,8 +328,23 @@ func set_intent_icon(intent: String) -> void:
 			tex = intent_attack_texture
 			tooltip = "Will attack if in range."
 		"cast":
-			tex = intent_cast_texture
-			tooltip = "Will cast Arcana."
+			# If AI stored a specific Arcana skill, show its icon
+			var s = null
+			if has_meta("intent_skill"):
+				s = get_meta("intent_skill")
+
+			if s != null and s.has_method("get"):
+				var icon_tex = s.get("icon_texture")
+				if icon_tex is Texture2D:
+					tex = icon_tex
+				else:
+					tex = intent_cast_texture
+
+				var nm = s.get("name")
+				tooltip = "Will cast: %s" % str(nm)
+			else:
+				tex = intent_cast_texture
+				tooltip = "Will cast Arcana."
 		"move":
 			tex = intent_move_texture
 			tooltip = "Will move toward the nearest target."
@@ -338,11 +355,63 @@ func set_intent_icon(intent: String) -> void:
 			tex = null
 			tooltip = ""
 
+	# Apply texture + tooltip
 	intent_icon.texture = tex
-	intent_icon.visible = tex != null
-
 	if intent_icon is Control:
 		intent_icon.tooltip_text = tooltip
+
+	# Stop old tween cleanly
+	if _intent_tween != null and is_instance_valid(_intent_tween):
+		_intent_tween.kill()
+		_intent_tween = null
+
+	# If clearing intent -> fade out then hide
+	if tex == null:
+		_intent_last_shown = ""
+		if intent_icon.visible:
+			_intent_tween = create_tween()
+			_intent_tween.tween_property(intent_icon, "modulate:a", 0.0, 0.12)\
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			_intent_tween.finished.connect(func():
+				if intent_icon != null and is_instance_valid(intent_icon):
+					intent_icon.visible = false
+					intent_icon.modulate.a = 1.0
+					intent_icon.scale = Vector2.ONE
+			, CONNECT_ONE_SHOT)
+		else:
+			intent_icon.visible = false
+		return
+
+# If same intent as last time, just ensure visible (no re-pop spam)
+# ✅ Also force full alpha/scale in case a previous tween got interrupted (hit-stop/time_scale)
+	if intent == _intent_last_shown and intent_icon.visible:
+		intent_icon.modulate.a = 1.0
+		intent_icon.scale = Vector2.ONE
+		return
+
+
+	_intent_last_shown = intent
+
+	# Pop in: show + fade from 0 + small scale bounce
+	intent_icon.modulate = Color(1, 1, 1, 1)
+	intent_icon.visible = true
+	intent_icon.modulate.a = 0.0
+	intent_icon.scale = Vector2.ONE * 0.85
+
+	_intent_tween = create_tween()
+	_intent_tween.set_parallel(true)
+
+	_intent_tween.tween_property(intent_icon, "modulate:a", 1.0, 0.12)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+	_intent_tween.tween_property(intent_icon, "scale", Vector2.ONE * 1.08, 0.12)\
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+	# settle back to 1.0
+	var settle := create_tween()
+	settle.tween_property(intent_icon, "scale", Vector2.ONE, 0.08)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
 
 #ANIMATION HELPERS
 func play_attack_anim(target_world_pos: Vector2) -> void:

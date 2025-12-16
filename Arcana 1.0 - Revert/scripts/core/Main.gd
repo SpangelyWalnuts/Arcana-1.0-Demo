@@ -1026,6 +1026,7 @@ func _is_tile_occupied(tile: Vector2i) -> bool:
 
 func _run_enemy_turn() -> void:
 	print("Enemy phase: starting AI")
+	_clear_enemy_intents()
 
 	var enemies: Array = _get_enemy_units()
 	var players: Array = _get_player_units()
@@ -1060,6 +1061,7 @@ func _run_enemy_turn() -> void:
 	# Give control back to player camera (if supported)
 	if camera != null and camera.has_method("restore_player_control"):
 		camera.restore_player_control(0.18)
+	_update_enemy_intents()
 	turn_manager.end_turn()
 
 
@@ -2027,3 +2029,14 @@ func _play_final_ko_slowmo_then_show_victory(reason: String) -> void:
 
 	Engine.time_scale = prev
 	_show_victory_ui()
+
+#NO ENEMY INTENTS ON ENEMY TURN
+func _clear_enemy_intents() -> void:
+	var enemies: Array = _get_enemy_units()
+	for e in enemies:
+		if e == null or not is_instance_valid(e):
+			continue
+		if e.has_method("set_intent_icon"):
+			e.set_intent_icon("")  # hides via your new fade-out logic
+		if e.has_meta("intent_skill"):
+			e.remove_meta("intent_skill")

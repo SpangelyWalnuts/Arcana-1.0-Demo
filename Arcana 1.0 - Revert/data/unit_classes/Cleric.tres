@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=16 format=3 uid="uid://cbmgvrsa3mg1a"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=17 format=3 uid="uid://cbmgvrsa3mg1a"]
 
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_2eepk"]
 [ext_resource type="Texture2D" uid="uid://drckfap24vie4" path="res://art/units/cleric/animations/Idle/Cleric Idle Animation1.png" id="1_7mukn"]
+[ext_resource type="Texture2D" uid="uid://br6s3m2xtj5h1" path="res://art/units/cleric/cleric icon.png" id="1_ocn8h"]
 [ext_resource type="Resource" uid="uid://3o3npcfpxsw4" path="res://data/skills/Cleric/Heal.tres" id="2_ue7aj"]
 [ext_resource type="Texture2D" uid="uid://decnuq06xucvq" path="res://art/units/cleric/animations/Idle/Cleric Idle Animation2.png" id="2_vil0h"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_xbxok"]
@@ -62,4 +63,6 @@ growth_defense = 0.15
 growth_move = 0.05
 growth_mana = 0.8
 sprite_texture = ExtResource("5_a62u6")
+portrait_texture = ExtResource("1_ocn8h")
+icon_texture = ExtResource("1_ocn8h")
 idle_frames = SubResource("SpriteFrames_fcnc6")

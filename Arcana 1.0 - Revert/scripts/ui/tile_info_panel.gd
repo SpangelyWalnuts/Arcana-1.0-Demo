@@ -14,6 +14,7 @@ extends Control
 @onready var unit_arcana_icons: HBoxContainer = $Panel2/ArcanaIcons
 
 var _last_tile: Vector2i = Vector2i(-999, -999)
+var _last_hovered_unit: Node = null
 
 var _last_status_unit_id: int = 0
 var _last_status_signature: String = ""
@@ -97,23 +98,36 @@ func _process(_delta: float) -> void:
 	move_cost_label.text = "Move Cost: %d" % move_cost
 	defense_label.text = "Defense: +%d" % defense
 
-	# --- Unit info ---
-	var unit = _get_unit_at_tile(tile)
+# --- Unit info (sticky last hovered) ---
+	var hovered_unit = _get_unit_at_tile(tile)
+
+# Update last hovered if we are currently on a unit
+	if hovered_unit != null and is_instance_valid(hovered_unit) and hovered_unit.hp > 0:
+		_last_hovered_unit = hovered_unit
+
+# If no unit currently hovered, show last hovered (if still valid)
+	var unit = hovered_unit
+	if unit == null:
+		if _last_hovered_unit != null and is_instance_valid(_last_hovered_unit) and _last_hovered_unit.hp > 0:
+			unit = _last_hovered_unit
+		else:
+			_last_hovered_unit = null
+			unit = null
+
 	if unit != null:
 		unit_name_label.text = "Unit: %s" % unit.name
 		unit_hp_label.text = "HP: %d / %d" % [unit.hp, unit.max_hp]
 		unit_stats_label.text = "ATK: %d   DEF: %d" % [unit.atk, unit.defense]
 
-		# Portrait from unit_class (if set)
+	# Portrait from unit_class (if set)
 		if unit_portrait != null:
 			var tex: Texture2D = null
 			if unit.unit_class != null and unit.unit_class.portrait_texture != null:
 				tex = unit.unit_class.portrait_texture
 			unit_portrait.texture = tex
 
-		_update_status_icons(unit)   # 🔹 icons when there IS a unit
+		_update_status_icons(unit)
 		_update_arcana_icons(unit)
-
 	else:
 		unit_name_label.text = "Unit: -"
 		unit_hp_label.text = "HP: -"
@@ -121,8 +135,9 @@ func _process(_delta: float) -> void:
 		if unit_portrait != null:
 			unit_portrait.texture = null
 
-		_update_status_icons(null)   # 🔹 clear icons when no unit
+		_update_status_icons(null)
 		_update_arcana_icons(null)
+
 
 
 func _get_unit_at_tile(tile: Vector2i):

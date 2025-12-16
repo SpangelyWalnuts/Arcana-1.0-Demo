@@ -90,11 +90,17 @@ func get_intent(main: Node, enemy: Node, players: Array) -> String:
 	if players.is_empty():
 		return ""
 
-	# If we can/plan to cast, show cast intent
+# Clear intent payload by default
+	_set_intent_skill(enemy, null)
+
+# If we can/plan to cast, show cast intent + store which skill
 	if arcana_intent_enabled:
 		var cast_plan: Dictionary = _choose_cast_plan(enemy, players)
 		if not cast_plan.is_empty():
+			if cast_plan.has("skill"):
+				_set_intent_skill(enemy, cast_plan["skill"])
 			return "cast"
+
 
 	var target: Node = _find_closest_player(enemy, players)
 	if target == null or not is_instance_valid(target):
@@ -645,3 +651,13 @@ func _await_signal_for_unit(emitter: Object, signal_name: StringName, unit: Obje
 			first = emitted[0]
 		if first == unit:
 			return
+
+#SKILL INTENT HELPER
+func _set_intent_skill(enemy: Node, skill) -> void:
+	if enemy == null or not is_instance_valid(enemy):
+		return
+	if skill == null:
+		if enemy.has_meta("intent_skill"):
+			enemy.remove_meta("intent_skill")
+	else:
+		enemy.set_meta("intent_skill", skill)

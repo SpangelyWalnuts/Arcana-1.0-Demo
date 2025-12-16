@@ -1,5 +1,6 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=15 format=3 uid="uid://vbbdbsfmfcwf"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=16 format=3 uid="uid://vbbdbsfmfcwf"]
 
+[ext_resource type="Texture2D" uid="uid://hea0csj534au" path="res://art/units/shaman/Shaman orc icon.png" id="1_dm6je"]
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_e1wvc"]
 [ext_resource type="Texture2D" uid="uid://csopmcpdhiy3a" path="res://art/units/shaman/animations/idle/Shaman Orc Idle Animation1.png" id="1_h6wsp"]
 [ext_resource type="Texture2D" uid="uid://b47igjpqkvct1" path="res://art/units/shaman/animations/idle/Shaman Orc Idle Animation2.png" id="2_dm6je"]
@@ -61,4 +62,6 @@ growth_defense = 0.4
 growth_move = 0.0
 growth_mana = 0.25
 sprite_texture = ExtResource("13_tj1y1")
+portrait_texture = ExtResource("1_dm6je")
+icon_texture = ExtResource("1_dm6je")
 idle_frames = SubResource("SpriteFrames_rv78c")
