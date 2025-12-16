@@ -54,6 +54,9 @@ func _ready() -> void:
 	if not RunManager.run_active:
 		RunManager.return_to_title()
 		return
+# Pull deploy limit from RunManager (scaled by floor/map)
+	if RunManager.has_method("get_deploy_limit"):
+		max_deploy_slots = RunManager.get_deploy_limit()
 
 	floor_label.text = "Floor %d" % RunManager.current_floor
 	hint_label.text = "Select up to %d units to deploy." % max_deploy_slots

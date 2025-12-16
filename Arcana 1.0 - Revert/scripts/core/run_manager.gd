@@ -4,6 +4,13 @@ var run_active: bool = false
 var current_floor: int = 0
 var gold: int = 0
 
+# --- Floor scaling (Option B) ---
+var current_enemy_count: int = 4
+var current_elite_chance: float = 0.08
+var current_map_chunks: Vector2i = Vector2i(2, 2)
+var current_deploy_limit: int = 4
+var is_boss_floor: bool = false
+
 # All units the player owns this run (per-unit data)
 var roster: Array[UnitData] = []
 var deployed_units: Array[UnitData] = []
@@ -111,6 +118,7 @@ func _ready() -> void:
 func start_new_run() -> void:
 	run_active = true
 	current_floor = 1
+	refresh_floor_config()
 	gold = 100
 	artifacts.clear()
 
@@ -146,9 +154,71 @@ func return_to_title() -> void:
 
 func advance_floor() -> bool:
 	current_floor += 1
+	refresh_floor_config()
 	print("Advancing to floor", current_floor)
 	return true
 
+func get_floor_config(floor: int) -> Dictionary:
+	# Floor bands: every 3 floors increases map size + baseline counts.
+	var band: int = int((floor - 1) / 3)
+
+# Map size progression:
+# 2x1 -> 2x2 -> 3x3 -> 4x4 -> 5x5 (then stay at 5x5)
+	var stage: int = clampi(band, 0, 4)
+
+	var map_chunks: Vector2i
+	match stage:
+		0:
+			map_chunks = Vector2i(2, 1)
+		1:
+			map_chunks = Vector2i(2, 2)
+		2:
+			map_chunks = Vector2i(3, 3)
+		3:
+			map_chunks = Vector2i(4, 4)
+		_:
+			map_chunks = Vector2i(5, 5)
+
+
+	# Boss floors
+	var boss: bool = (floor % 5) == 0
+
+	# Enemy count grows with band; boss floors add pressure
+	var enemy_count: int = 4 + (band * 2)
+	if boss:
+		enemy_count += 2
+
+	# Elite chance ramps slowly with floor (clamped)
+	var elite: float = clampf(0.08 + (0.02 * float(floor - 1)), 0.08, 0.35)
+
+	# Deploy limit scales with map size but never exceeds enemy count
+	var deploy: int = clampi(3 + band, 3, 6)
+	deploy = mini(deploy, enemy_count)
+
+	return {
+		"floor": floor,
+		"band": band,
+		"map_chunks": map_chunks,
+		"enemy_count": enemy_count,
+		"elite_chance": elite,
+		"deploy_limit": deploy,
+		"is_boss_floor": boss
+	}
+
+
+func refresh_floor_config() -> void:
+	var cfg: Dictionary = get_floor_config(current_floor)
+
+	current_map_chunks = cfg["map_chunks"] as Vector2i
+	current_enemy_count = int(cfg["enemy_count"])
+	current_elite_chance = float(cfg["elite_chance"])
+	current_deploy_limit = int(cfg["deploy_limit"])
+	is_boss_floor = bool(cfg["is_boss_floor"])
+
+
+func get_deploy_limit() -> int:
+	# Safe accessor for UI scenes.
+	return current_deploy_limit
 
 # -------------------------------------------------------------------
 #  DRAFT SYSTEM

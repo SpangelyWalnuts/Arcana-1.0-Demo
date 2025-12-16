@@ -95,6 +95,21 @@ var _enemy_preview_unit: Node2D = null
 
 
 func _ready() -> void:
+	# --- Apply floor scaling before spawning anything ---
+	if RunManager.has_method("refresh_floor_config"):
+		RunManager.refresh_floor_config()
+
+# Configure enemy spawning difficulty for this floor.
+	if enemy_spawner != null:
+		enemy_spawner.enemies_per_floor = RunManager.current_enemy_count
+		enemy_spawner.elite_chance = RunManager.current_elite_chance
+
+# Configure procedural map size for this floor (only matters when enabled).
+	if use_procedural_map and map_generator != null:
+		if "chunks_wide" in map_generator and "chunks_high" in map_generator:
+			map_generator.chunks_wide = RunManager.current_map_chunks.x
+			map_generator.chunks_high = RunManager.current_map_chunks.y
+
 	spawn_units_from_run()
 	turn_manager.phase_changed.connect(_on_phase_changed)
 	action_menu.action_selected.connect(_on_action_menu_selected)
