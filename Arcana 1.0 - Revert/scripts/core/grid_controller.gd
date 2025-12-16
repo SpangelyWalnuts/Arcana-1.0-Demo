@@ -160,7 +160,7 @@ func get_defense_bonus(tile: Vector2i) -> int:
 
 func is_walkable(tile: Vector2i) -> bool:
 	var info: Dictionary = get_terrain_info(tile)
-	return bool(info["walkable"])
+	return info.get("walkable", false)
 
 func apply_terrain_skill(tile: Vector2i, user, skill: Skill) -> void:
 	if skill.terrain_tile_key == "":

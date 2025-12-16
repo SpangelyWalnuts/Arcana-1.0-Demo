@@ -33,6 +33,55 @@ var _rng := RandomNumberGenerator.new()
 
 const INVALID_TILE: Vector2i = Vector2i(999999, 999999)
 
+const DIRS_4: Array[Vector2i] = [
+	Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN
+]
+
+func _flood_fill_reachable(
+	grid_node: Node,
+	terrain: TileMap,
+	rect: Rect2i,
+	starts: Array[Vector2i]
+) -> Dictionary:
+	var visited: Dictionary = {}
+	var queue: Array[Vector2i] = []
+
+	# Seed with valid starts
+	for s: Vector2i in starts:
+		if not rect.has_point(s):
+			continue
+		if terrain.get_cell_source_id(0, s) == -1:
+			continue
+		if grid_node.has_method("is_walkable") and not grid_node.is_walkable(s):
+			continue
+		if visited.has(s):
+			continue
+
+		visited[s] = true
+		queue.append(s)
+
+	while not queue.is_empty():
+		var cur: Vector2i = queue[0]
+		queue.remove_at(0)
+
+		for d: Vector2i in DIRS_4:
+			var n: Vector2i = cur + d
+
+			if not rect.has_point(n):
+				continue
+			if visited.has(n):
+				continue
+			if terrain.get_cell_source_id(0, n) == -1:
+				continue
+			if grid_node.has_method("is_walkable") and not grid_node.is_walkable(n):
+				continue
+
+			visited[n] = true
+			queue.append(n)
+
+	return visited
+
+
 func _ready() -> void:
 	_rng.randomize()
 
@@ -241,8 +290,19 @@ func _spawn_enemy_instance(
 # ----------------------------------------------------
 #  Candidate gathering
 # ----------------------------------------------------
-func _gather_spawn_candidates(grid_node, terrain: TileMap, rect: Rect2i, player_tiles: Array[Vector2i], units_node: Node) -> Array[Vector2i]:
+func _gather_spawn_candidates(
+	grid_node: Node,
+	terrain: TileMap,
+	rect: Rect2i,
+	player_tiles: Array[Vector2i],
+	units_node: Node
+) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
+
+	# NEW: reachable region from player deployment tiles
+	var reachable: Dictionary = {}
+	if player_tiles != null and not player_tiles.is_empty():
+		reachable = _flood_fill_reachable(grid_node, terrain, rect, player_tiles)
 
 	for y in range(rect.position.y, rect.position.y + rect.size.y):
 		for x in range(rect.position.x, rect.position.x + rect.size.x):
@@ -255,15 +315,19 @@ func _gather_spawn_candidates(grid_node, terrain: TileMap, rect: Rect2i, player_
 				if not grid_node.is_walkable(t):
 					continue
 
-			if _too_close_to_any_player(t, player_tiles, min_spawn_distance):
+			# NEW: require reachability (only when we have valid starts)
+			if not reachable.is_empty() and not reachable.has(t):
 				continue
 
+			if _too_close_to_any_player(t, player_tiles, min_spawn_distance):
+				continue
 			if _tile_occupied_by_unit(t, units_node):
 				continue
 
 			out.append(t)
 
 	return out
+
 
 
 func _too_close_to_any_player(tile: Vector2i, player_tiles: Array[Vector2i], min_dist: int) -> bool:
