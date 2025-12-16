@@ -177,6 +177,8 @@ func _spawn_enemy_instance(
 					if s != null and equipped.size() < 3:
 						equipped.append(s)
 				data.set("equipped_arcana", equipped)
+				print("[SPAWN] Enemy arcana equipped:", equipped.size(), " class=", cls.get("display_name"))
+
 
 	# --- IMPORTANT: assign BEFORE add_child so Unit._ready() sees it ---
 	if _has_prop(enemy, "team"):

@@ -11,11 +11,14 @@ extends Control
 @onready var unit_stats_label: Label   = $Panel2/VBoxContainer/UnitStatsLabel
 @onready var unit_portrait: TextureRect = $Panel2/UnitPortrait
 @onready var unit_status_icons: HBoxContainer = $Panel2/StatusIcons  # 🔹 NEW
+@onready var unit_arcana_icons: HBoxContainer = $Panel2/ArcanaIcons
 
 var _last_tile: Vector2i = Vector2i(-999, -999)
 
 var _last_status_unit_id: int = 0
 var _last_status_signature: String = ""
+var _last_arcana_unit_id: int = 0
+var _last_arcana_signature: String = ""
 
 var _home_position: Vector2
 var _hidden_position: Vector2
@@ -109,6 +112,8 @@ func _process(_delta: float) -> void:
 			unit_portrait.texture = tex
 
 		_update_status_icons(unit)   # 🔹 icons when there IS a unit
+		_update_arcana_icons(unit)
+
 	else:
 		unit_name_label.text = "Unit: -"
 		unit_hp_label.text = "HP: -"
@@ -117,6 +122,7 @@ func _process(_delta: float) -> void:
 			unit_portrait.texture = null
 
 		_update_status_icons(null)   # 🔹 clear icons when no unit
+		_update_arcana_icons(unit)
 
 
 func _get_unit_at_tile(tile: Vector2i):
@@ -181,3 +187,76 @@ func _update_status_icons(unit) -> void:
 
 	if StatusManager != null and StatusManager.has_method("refresh_icons_for_unit"):
 		StatusManager.refresh_icons_for_unit(unit, unit_status_icons)
+
+func _update_arcana_icons(unit) -> void:
+	if unit_arcana_icons == null:
+		return
+
+	# Clear if no unit
+	if unit == null:
+		_last_arcana_unit_id = 0
+		_last_arcana_signature = ""
+		for child in unit_arcana_icons.get_children():
+			child.queue_free()
+		unit_arcana_icons.visible = false
+		return
+
+	# Only use equipped arcana (no fallback)
+	var arcana: Array = []
+	if unit.has_method("get"):
+		var ud = unit.get("unit_data")
+		if ud != null and ud.has_method("get"):
+			var eq = ud.get("equipped_arcana")
+			if eq is Array:
+				arcana = eq
+
+	print("[HOVER] unit=", unit.name, " team=", unit.get("team"), " equipped_arcana=", arcana.size())
+
+	# If none equipped, show nothing (prevents misleading info)
+	if arcana.is_empty():
+		_last_arcana_unit_id = unit.get_instance_id()
+		_last_arcana_signature = ""
+		for child in unit_arcana_icons.get_children():
+			child.queue_free()
+		unit_arcana_icons.visible = false
+		return
+
+	unit_arcana_icons.visible = true
+
+	var unit_id: int = unit.get_instance_id()
+
+	# Build signature so we only rebuild when it changes
+	var sig_parts: Array[String] = []
+	for s in arcana:
+		if s == null:
+			continue
+		if s.has_method("get"):
+			sig_parts.append(str(s.get("name")))
+	sig_parts.sort()
+	var signature: String = "|".join(sig_parts)
+
+	if unit_id == _last_arcana_unit_id and signature == _last_arcana_signature:
+		return
+
+	_last_arcana_unit_id = unit_id
+	_last_arcana_signature = signature
+
+	# Rebuild icons
+	for child in unit_arcana_icons.get_children():
+		child.queue_free()
+
+	for s in arcana:
+		if s == null:
+			continue
+
+		var tex: Texture2D = null
+		if s.has_method("get"):
+			tex = s.get("icon_texture")
+
+		var icon := TextureRect.new()
+		icon.custom_minimum_size = Vector2(28, 28)
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture = tex
+		icon.tooltip_text = str(s.get("name"))
+
+		unit_arcana_icons.add_child(icon)

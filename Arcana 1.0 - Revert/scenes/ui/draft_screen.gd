@@ -11,6 +11,15 @@ extends Control
 
 @onready var continue_button: Button = $MarginContainer/VBoxContainer/ContinueButton
 
+var _is_picking: bool = false
+
+@export var pick_anim_duration: float = 0.28
+@export var pick_selected_scale: float = 1.10
+@export var pick_others_fade_alpha: float = 0.45
+
+@export var pick_selected_slide_y: float = -14.0
+@export var pick_others_slide_y: float = 10.0
+
 var _cards: Array[Button] = []
 
 
@@ -35,6 +44,16 @@ func _ready() -> void:
 
 
 func _refresh_cards() -> void:
+	# Reset visuals each refresh (prevents stuck scaling/dimming)
+	for b in _cards:
+		if b != null:
+			b.scale = Vector2.ONE
+			b.modulate = Color(1, 1, 1, 1)
+			b.disabled = false
+			b.z_index = 0
+			b.position = Vector2.ZERO
+
+
 	var opts: Array = []
 	if RunManager != null:
 		opts = RunManager.current_draft_options
@@ -70,8 +89,85 @@ func _refresh_cards() -> void:
 
 
 func _on_card_pressed(idx: int) -> void:
-	if RunManager != null and RunManager.has_method("choose_draft_unit"):
-		RunManager.choose_draft_unit(idx)
+	if _is_picking:
+		return
+	if RunManager == null or not RunManager.has_method("choose_draft_unit"):
+		return
+
+	_is_picking = true
+
+	# Disable all cards during the confirm anim
+	for b in _cards:
+		if b != null:
+			b.disabled = true
+
+	var selected: Button = _cards[idx]
+
+	# Animate selection
+	var tween := create_tween()
+	tween.set_parallel(true)
+
+# Other cards fade, shrink, and slide down slightly
+	for i in range(_cards.size()):
+		var b: Button = _cards[i]
+		if b == null:
+			continue
+		if i == idx:
+			continue
+
+		tween.tween_property(b, "modulate:a", pick_others_fade_alpha, pick_anim_duration)
+
+		tween.tween_property(
+			b,
+			"scale",
+			Vector2.ONE * 0.97,
+			pick_anim_duration
+		).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+		tween.tween_property(
+			b,
+			"position:y",
+			b.position.y + pick_others_slide_y,
+			pick_anim_duration
+		).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
+	# Selected card pop
+	if selected != null:
+		selected.z_index = 100
+
+# Scale up
+		tween.tween_property(
+			selected,
+			"scale",
+			Vector2.ONE * pick_selected_scale,
+			pick_anim_duration
+		).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+# Slide upward slightly
+		tween.tween_property(
+			selected,
+			"position:y",
+			selected.position.y + pick_selected_slide_y,
+			pick_anim_duration
+		).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
+		# Flash
+		var flash := create_tween()
+		flash.tween_property(selected, "modulate", Color(1.25, 1.25, 1.25, 1.0), 0.08)
+		flash.tween_property(selected, "modulate", Color(1, 1, 1, 1), 0.10)
+
+	await tween.finished
+
+	# Do the actual pick AFTER the animation
+	RunManager.choose_draft_unit(idx)
+
+	# If DraftScreen stays visible for the next pick, refresh and reset visuals
+	_refresh_cards()
+
+	_is_picking = false
+
 
 
 func _on_continue_pressed() -> void:

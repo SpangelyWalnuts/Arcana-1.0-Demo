@@ -13,6 +13,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_dgf36")
+pick_anim_duration = 0.5
 
 [node name="TextureRect" type="TextureRect" parent="."]
 texture_filter = 1

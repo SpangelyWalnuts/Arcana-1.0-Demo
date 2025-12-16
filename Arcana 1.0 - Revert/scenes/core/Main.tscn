@@ -360,6 +360,15 @@ offset_bottom = 154.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxTexture_d7485")
 
+[node name="ArcanaIcons" type="HBoxContainer" parent="UI/TileInfoPanel/Panel2"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 0
+offset_left = 20.0
+offset_top = -39.0
+offset_right = 240.0
+offset_bottom = -5.0
+
 [node name="StatusIcons" type="HBoxContainer" parent="UI/TileInfoPanel/Panel2"]
 layout_mode = 0
 offset_left = 26.0
