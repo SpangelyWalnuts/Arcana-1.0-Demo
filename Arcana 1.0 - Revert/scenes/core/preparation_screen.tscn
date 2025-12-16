@@ -177,3 +177,11 @@ text = "Buy"
 [node name="CloseButton" type="Button" parent="ShopDialog/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 text = "Close"
+
+[node name="EncounterTagLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 9.0
+offset_top = 359.0
+offset_right = 49.0
+offset_bottom = 375.0
+theme_override_font_sizes/font_size = 24

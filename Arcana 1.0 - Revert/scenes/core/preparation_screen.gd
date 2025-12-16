@@ -37,6 +37,7 @@ extends Control
 @onready var shop_details_label: Label     = $ShopDialog/VBoxContainer/DetailsLabel
 @onready var shop_buy_button: Button       = $ShopDialog/VBoxContainer/HBoxContainer/BuyButton
 @onready var shop_close_button: Button     = $ShopDialog/VBoxContainer/HBoxContainer/CloseButton
+@onready var encounter_tag_label: Label = $EncounterTagLabel
 
 @onready var unit_name_label: Label = $Panel/VBoxContainer/HBoxContainer/DetailsBox/UnitNameLabel
 
@@ -62,6 +63,7 @@ func _ready() -> void:
 	hint_label.text = "Select up to %d units to deploy." % max_deploy_slots
 
 	_populate_roster_lists()
+	_update_encounter_tag_ui()
 
 	# Double-click to move units between lists
 	roster_list.item_activated.connect(_on_roster_item_activated)
@@ -721,3 +723,28 @@ func _on_shop_buy_pressed() -> void:
 
 	# Optional: you could also refresh the details panel of the selected unit
 	# if you want to auto-show new equipment options, etc.
+#ENCOUNTER TAG HELPER
+func _update_encounter_tag_ui() -> void:
+	if encounter_tag_label == null:
+		return
+
+	var tag: StringName = &"none"
+	# Prefer accessor if you added it, otherwise read the variable directly.
+	if RunManager.has_method("get_encounter_tag"):
+		tag = RunManager.get_encounter_tag()
+	elif "current_encounter_tag" in RunManager:
+		tag = RunManager.current_encounter_tag
+
+	match tag:
+		&"swarm":
+			encounter_tag_label.text = "Encounter: Swarm"
+			encounter_tag_label.visible = true
+		&"elite_guard":
+			encounter_tag_label.text = "Encounter: Elite Guard"
+			encounter_tag_label.visible = true
+		&"caster_heavy":
+			encounter_tag_label.text = "Encounter: Caster Heavy"
+			encounter_tag_label.visible = true
+		_:
+			# Covers &"none" and anything unknown
+			encounter_tag_label.visible = false
