@@ -11,6 +11,9 @@ var current_map_chunks: Vector2i = Vector2i(2, 2)
 var current_deploy_limit: int = 4
 var is_boss_floor: bool = false
 
+# --- Biomes ---
+var current_biome: StringName = &"ruins"
+
 # --- Encounter tags ---
 var current_encounter_tag: StringName = &"none"
 @export_range(0.0, 1.0, 0.05) var encounter_tag_chance: float = 0.70 # 70% tagged, 30% none
@@ -165,6 +168,24 @@ func advance_floor() -> bool:
 func get_floor_config(floor: int) -> Dictionary:
 	# Floor bands: every 3 floors increases map size + baseline counts.
 	var band: int = int((floor - 1) / 3)
+	
+# Biome rotates every floor:
+# 1 ruins, 2 forest, 3 catacombs, 4 tundra, 5 volcano, 6 ruins...
+	var biome: StringName = &"ruins"
+	var biome_index: int = (floor - 1) % 5
+
+	match biome_index:
+		0:
+			biome = &"ruins"
+		1:
+			biome = &"forest"
+		2:
+			biome = &"catacombs"
+		3:
+			biome = &"taiga"
+		_:
+			biome = &"volcano"
+
 
 # Map size progression:
 # 2x1 -> 2x2 -> 3x3 -> 4x4 -> 5x5 (then stay at 5x5)
@@ -208,6 +229,7 @@ func get_floor_config(floor: int) -> Dictionary:
 		"elite_chance": elite,
 		"deploy_limit": deploy,
 		"encounter_tag": encounter_tag,
+		"biome": biome,
 		"is_boss_floor": boss
 	}
 
@@ -221,7 +243,11 @@ func refresh_floor_config() -> void:
 	current_elite_chance = float(cfg["elite_chance"])
 	current_deploy_limit = int(cfg["deploy_limit"])
 	is_boss_floor = bool(cfg["is_boss_floor"])
+	current_biome = StringName(cfg.get("biome", &"ruins"))
 
+#UI ACCESSOR
+func get_biome() -> StringName:
+	return current_biome
 
 # ENCOUNTERS
 func _roll_encounter_tag(floor: int, boss: bool) -> StringName:

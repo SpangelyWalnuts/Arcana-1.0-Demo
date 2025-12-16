@@ -1,4 +1,4 @@
-[gd_scene load_steps=69 format=3 uid="uid://n3fdkibgiero"]
+[gd_scene load_steps=70 format=3 uid="uid://n3fdkibgiero"]
 
 [ext_resource type="Script" uid="uid://h2yfgpr5nkon" path="res://scripts/core/Main.gd" id="1_v0fxp"]
 [ext_resource type="PackedScene" uid="uid://dtcrbthviju4m" path="res://scenes/ui/SelectionRing.tscn" id="2_8kqbm"]
@@ -17,6 +17,7 @@
 [ext_resource type="Texture2D" uid="uid://5wgt6knspj2r" path="res://art/animations/highlight/Hightlight V3.png" id="9_b7lq7"]
 [ext_resource type="Script" uid="uid://85x5ta0d1qgh" path="res://scripts/core/turn_manager.gd" id="10_d7485"]
 [ext_resource type="Texture2D" uid="uid://dq6d05m4ewvfi" path="res://art/animations/highlight/Hightlight V4.png" id="10_gm2h1"]
+[ext_resource type="PackedScene" uid="uid://bhs2cdw24cn1i" path="res://scenes/Chunks/Snow/chunk_mountain_forts.tscn" id="11_0l231"]
 [ext_resource type="Texture2D" uid="uid://cuj6spx1njmy1" path="res://art/animations/highlight/Hightlight V5.png" id="11_agh6m"]
 [ext_resource type="Script" uid="uid://dsj1ti4is1ryr" path="res://scenes/core/combat_manager.gd" id="11_dau2k"]
 [ext_resource type="Texture2D" uid="uid://djn8q0kefouoj" path="res://art/animations/highlight/Hightlight V6.png" id="12_tj20p"]
@@ -175,6 +176,7 @@ attack_tile_scene = ExtResource("4_nxm05")
 script = ExtResource("6_57s6d")
 terrain = NodePath("../Grid/Terrain")
 chunk_scenes = Array[PackedScene]([ExtResource("7_xhixk"), ExtResource("8_chcsr")])
+taiga_chunk_scenes = Array[PackedScene]([ExtResource("11_0l231"), ExtResource("7_xhixk"), ExtResource("8_chcsr")])
 chunks_high = 1
 
 [node name="Background" type="Node2D" parent="."]

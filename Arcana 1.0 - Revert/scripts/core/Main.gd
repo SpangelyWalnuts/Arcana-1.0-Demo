@@ -110,6 +110,13 @@ func _ready() -> void:
 	else:
 		battle_objective.victory_type = BattleObjective.VictoryType.ROUT
 	
+	# Apply biome to map generation
+	if map_generator != null:
+		if map_generator.has_method("set_biome"):
+			map_generator.set_biome(RunManager.current_biome)
+		elif "biome" in map_generator:
+			map_generator.biome = RunManager.current_biome
+
 	if use_procedural_map and map_generator != null:
 		map_generator.build_random_map()
 		
