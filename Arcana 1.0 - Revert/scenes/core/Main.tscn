@@ -691,6 +691,7 @@ enemies_per_floor = 4
 offense_classes = [ExtResource("46_leefl"), ExtResource("45_gnjag")]
 defense_classes = [ExtResource("48_kylyq"), ExtResource("47_8kqbm")]
 support_classes = [ExtResource("51_oh68v"), ExtResource("52_bwyab"), ExtResource("49_0l231")]
+arcana_chance = 0.25
 
 [node name="SkillSystem" type="Node" parent="."]
 script = ExtResource("53_gnjag")

@@ -24,7 +24,7 @@ class_name EnemySpawnManager
 @export var min_enemy_spacing: int = 1
 
 # Arcana chance (optional)
-@export var arcana_chance: float = 0.25
+@export var arcana_chance: float = 1
 
 # Elite chance (optional)
 @export var elite_chance: float = 0.10
@@ -134,14 +134,14 @@ func _spawn_enemy_instance(
 	floor: int,
 	is_elite: bool
 ) -> void:
+	print("[EnemySpawnManager] _spawn_enemy_instance called")
 	var enemy = enemy_unit_scene.instantiate()
 	if enemy == null:
 		return
 
-	# --- Build UnitData safely (no compile error if you rename it later) ---
-	var data: Object = null
-	if ClassDB.class_exists("UnitData"):
-		data = ClassDB.instantiate("UnitData")
+# --- Build UnitData (reliable for script classes) ---
+	var data: UnitData = UnitData.new()
+
 
 	# Scale / setup data if possible
 	if data != null:
@@ -167,17 +167,41 @@ func _spawn_enemy_instance(
 		_set_if_has(data, "bonus_max_mana", int(bonus_levels / 2))
 
 		# arcana loadout (optional)
+		print("[EnemySpawnManager] data has equipped_arcana=", _has_prop(data, "equipped_arcana"),
+	  " cls has skills=", _has_prop(cls, "skills"))
 		if _has_prop(data, "equipped_arcana") and _has_prop(cls, "skills"):
 			var skills = cls.get("skills")
-			if skills is Array and skills.size() > 0 and _rng.randf() < arcana_chance:
-				var pool: Array = skills.duplicate()
-				pool.shuffle()
-				var equipped: Array = []
-				for s in pool:
-					if s != null and equipped.size() < 3:
-						equipped.append(s)
-				data.set("equipped_arcana", equipped)
-				print("[SPAWN] Enemy arcana equipped:", equipped.size(), " class=", cls.get("display_name"))
+			if skills is Array and skills.size() > 0:
+				# Treat arcana_chance as 0..1 (clamp for safety)
+				var chance := clampf(arcana_chance, 0.0, 1.0)
+				var roll := _rng.randf()
+
+				# Debug (leave this in until you're confident)
+				print("[SPAWN] arcana roll=", roll, " chance=", chance, " class=", cls.get("display_name"), " pool=", skills.size())
+
+				if roll < chance:
+					var pool: Array = skills.duplicate()
+					pool.shuffle()
+
+					var equipped: Array = []
+					for s in pool:
+						if s != null and equipped.size() < 3:
+							equipped.append(s)
+
+					# 1) Store on UnitData (truth for UI hover/tooltips)
+					data.set("equipped_arcana", equipped)
+
+					# 2) ALSO store directly on the Unit node (truth for EnemyAI even if UnitData fails)
+					if _has_prop(enemy, "skills"):
+						enemy.set("skills", equipped.duplicate())
+
+					print("[SPAWN] Enemy arcana equipped:", equipped.size(), " class=", cls.get("display_name"))
+				else:
+					# Explicitly clear so there's no stale data
+					data.set("equipped_arcana", [])
+					if _has_prop(enemy, "skills"):
+						enemy.set("skills", [])
+
 
 
 	# --- IMPORTANT: assign BEFORE add_child so Unit._ready() sees it ---

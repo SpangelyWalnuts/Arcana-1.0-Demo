@@ -122,7 +122,7 @@ func _process(_delta: float) -> void:
 			unit_portrait.texture = null
 
 		_update_status_icons(null)   # 🔹 clear icons when no unit
-		_update_arcana_icons(unit)
+		_update_arcana_icons(null)
 
 
 func _get_unit_at_tile(tile: Vector2i):
@@ -201,18 +201,14 @@ func _update_arcana_icons(unit) -> void:
 		unit_arcana_icons.visible = false
 		return
 
-	# Only use equipped arcana (no fallback)
+	# ✅ Use what the unit can actually cast
 	var arcana: Array = []
 	if unit.has_method("get"):
-		var ud = unit.get("unit_data")
-		if ud != null and ud.has_method("get"):
-			var eq = ud.get("equipped_arcana")
-			if eq is Array:
-				arcana = eq
+		var s = unit.get("skills")
+		if s is Array:
+			arcana = s
 
-	print("[HOVER] unit=", unit.name, " team=", unit.get("team"), " equipped_arcana=", arcana.size())
-
-	# If none equipped, show nothing (prevents misleading info)
+	# If none, show nothing
 	if arcana.is_empty():
 		_last_arcana_unit_id = unit.get_instance_id()
 		_last_arcana_signature = ""
@@ -222,7 +218,6 @@ func _update_arcana_icons(unit) -> void:
 		return
 
 	unit_arcana_icons.visible = true
-
 	var unit_id: int = unit.get_instance_id()
 
 	# Build signature so we only rebuild when it changes

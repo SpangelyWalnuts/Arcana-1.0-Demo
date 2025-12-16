@@ -146,13 +146,22 @@ func _ready() -> void:
 	hp   = max_hp
 	mana = max_mana
 
-	# 6) Decide skills: prefer equipped arcana, otherwise class defaults
-	if unit_data != null and unit_data.equipped_arcana.size() > 0:
-		skills = unit_data.equipped_arcana.duplicate()
-	elif unit_class != null:
-		skills = unit_class.skills.duplicate()
+# 6) Decide skills:
+# - Enemies: ONLY equipped arcana (so arcana_chance is truthful)
+# - Players: prefer equipped arcana, otherwise class defaults
+	if team == "enemy":
+		if unit_data != null and unit_data.equipped_arcana.size() > 0:
+			skills = unit_data.equipped_arcana.duplicate()
+		else:
+			skills = []
 	else:
-		skills = []
+		if unit_data != null and unit_data.equipped_arcana.size() > 0:
+			skills = unit_data.equipped_arcana.duplicate()
+		elif unit_class != null:
+			skills = unit_class.skills.duplicate()
+		else:
+			skills = []
+
 
 	# 7) Add to correct group
 	# If team somehow isn't set, default to player.
