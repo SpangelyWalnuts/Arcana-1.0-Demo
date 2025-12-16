@@ -95,14 +95,31 @@ var _enemy_preview_unit: Node2D = null
 
 
 func _ready() -> void:
+	print("[BOSS DEBUG] floor=", RunManager.current_floor, " is_boss_floor=", RunManager.is_boss_floor)
 	# --- Apply floor scaling before spawning anything ---
 	if RunManager.has_method("refresh_floor_config"):
 		RunManager.refresh_floor_config()
+		
+		
+# --- Boss floor objective setup ---
+	if battle_objective == null:
+		battle_objective = BattleObjective.new()
 
+	if RunManager.is_boss_floor:
+		battle_objective.victory_type = BattleObjective.VictoryType.DEFEAT_BOSS
+	else:
+		battle_objective.victory_type = BattleObjective.VictoryType.ROUT
+	
+	if use_procedural_map and map_generator != null:
+		map_generator.build_random_map()
+		
 # Configure enemy spawning difficulty for this floor.
 	if enemy_spawner != null:
 		enemy_spawner.enemies_per_floor = RunManager.current_enemy_count
 		enemy_spawner.elite_chance = RunManager.current_elite_chance
+		enemy_spawner.boss_floor = RunManager.is_boss_floor
+		enemy_spawner.encounter_tag = RunManager.current_encounter_tag
+
 
 # Configure procedural map size for this floor (only matters when enabled).
 	if use_procedural_map and map_generator != null:
@@ -153,8 +170,6 @@ func _ready() -> void:
 	defeat_panel.visible = false
 	combat_log_panel.visible = false
 	
-	if use_procedural_map and map_generator != null:
-		map_generator.build_random_map()
 
 	# After map is built, you can now spawn units based on terrain, etc.
 	# ...
@@ -187,6 +202,14 @@ func spawn_test_units() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# --- DEBUG: Jump to floor 5 and reload scene ---
+	if event.is_action_pressed("debug_jump_floor_5"):
+		RunManager.current_floor = 5
+		if RunManager.has_method("refresh_floor_config"):
+			RunManager.refresh_floor_config()
+		get_tree().reload_current_scene()
+		return
+
 	if battle_finished:
 		return
 		# ✅ Always allow toggling combat log (even during enemy turn / UI hover / battle end)
@@ -224,6 +247,7 @@ func _input(event: InputEvent) -> void:
 		if event.is_action_pressed("toggle_combat_log"):
 			_toggle_combat_log()
 			return
+
 
 	# -----------------------------------------
 	#  UI CLICK BLOCKING — DO NOT CLICK THROUGH UI
@@ -1559,10 +1583,19 @@ func _check_victory_defeat() -> void:
 			if enemy_units.is_empty():
 				print(" -> ROUT objective and no enemies: VICTORY")
 				_on_victory("All enemies defeated.")
+
+		BattleObjective.VictoryType.DEFEAT_BOSS:
+			var boss_group: StringName = battle_objective.boss_group
+			var bosses_alive := get_tree().get_nodes_in_group(boss_group)
+
+			if bosses_alive.is_empty():
+				print(" -> DEFEAT_BOSS objective and no bosses alive: VICTORY")
+				_on_victory("Boss defeated.")
 		_:
 			if enemy_units.is_empty():
 				print(" -> Unhandled objective type but no enemies: VICTORY as rout")
 				_on_victory("All enemies defeated.")
+
 
 
 

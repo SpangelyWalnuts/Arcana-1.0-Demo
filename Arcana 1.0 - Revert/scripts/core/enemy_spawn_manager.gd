@@ -7,6 +7,10 @@ class_name EnemySpawnManager
 @export var enemy_unit_scene: PackedScene
 @export var enemies_per_floor: int = 6
 
+@export var boss_group_name: StringName = &"boss"
+@export var boss_floor: bool = false
+@export var encounter_tag: StringName = &"none"
+
 # --- Class pools by ROLE (drag your UnitClass resources here) ---
 @export var offense_classes: Array = []
 @export var defense_classes: Array = []
@@ -87,6 +91,7 @@ func _ready() -> void:
 
 
 func spawn_enemies_for_floor(floor: int, player_tiles: Array[Vector2i]) -> void:
+	print("[BOSS DEBUG] spawn_enemies_for_floor floor=", floor, " boss_floor=", boss_floor, " elite_chance=", elite_chance)
 	var grid_node := get_node_or_null(grid)
 	var units_node := get_node_or_null(units_root)
 
@@ -117,8 +122,44 @@ func spawn_enemies_for_floor(floor: int, player_tiles: Array[Vector2i]) -> void:
 		push_error("EnemySpawnManager: Could not access Terrain TileMap.")
 		return
 
-	var count: int = enemies_per_floor
-	print("EnemySpawnManager: spawning %d enemies (floor %d)" % [count, floor])
+	# --- Encounter tag modifiers (local, safe) ---
+	var local_count: int = enemies_per_floor
+	var local_elite_chance: float = elite_chance
+	var local_arcana_chance: float = arcana_chance
+
+	var local_weight_offense: float = weight_offense
+	var local_weight_defense: float = weight_defense
+	var local_weight_support: float = weight_support
+
+# Boss floors already have a special identity; keep tags off there for clarity.
+	var tag: StringName = encounter_tag
+	if boss_floor:
+		tag = &"none"
+
+	match tag:
+		&"swarm":
+		# More bodies, slightly fewer elites (readability).
+			local_count += 3
+			local_elite_chance = max(0.0, local_elite_chance - 0.05)
+
+		&"elite_guard":
+		# Guarantee one elite (handled in loop), keep count the same.
+			pass
+
+		&"caster_heavy":
+		# More "support" role + more arcana usage.
+			local_weight_support += 0.25
+			local_weight_offense = max(0.05, local_weight_offense - 0.10)
+			local_weight_defense = max(0.05, local_weight_defense - 0.15)
+			local_arcana_chance = min(1.0, local_arcana_chance + 0.20)
+
+		_:
+			pass
+
+	var count: int = local_count
+	print("EnemySpawnManager: spawning %d enemies (floor %d) tag=%s" % [count, floor, String(tag)])
+
+	
 
 	# Use the actual stamped map bounds.
 	var used_rect: Rect2i = terrain.get_used_rect()
@@ -136,9 +177,12 @@ func spawn_enemies_for_floor(floor: int, player_tiles: Array[Vector2i]) -> void:
 		return
 
 	_shuffle_vec2i_array(candidates)
-
+	
+	var mark_boss_assigned: bool = false
 	var spawned_tiles: Array[Vector2i] = []
 	var safety: int = 0
+	var elite_guard_assigned: bool = false
+
 
 	while spawned_tiles.size() < count and safety < 5000:
 		safety += 1
@@ -154,21 +198,39 @@ func spawn_enemies_for_floor(floor: int, player_tiles: Array[Vector2i]) -> void:
 		if min_enemy_spacing > 0 and _too_close_to_existing_enemies(tile, spawned_tiles, min_enemy_spacing):
 			continue
 
-		var role: String = _pick_role()
+		var role: String = _pick_role(local_weight_offense, local_weight_defense, local_weight_support)
 		var cls = _pick_class_for_role(role)
 		if cls == null:
 			push_warning("EnemySpawnManager: No UnitClass available for role '%s' (check your pools)." % role)
 			continue
 
-		var is_elite: bool = _rng.randf() < elite_chance
+		var mark_boss: bool = false
 
-		_spawn_enemy_instance(grid_node, units_node, terrain, cls, role, tile, floor, is_elite)
+		var is_elite: bool = _rng.randf() < local_elite_chance
+		# Encounter tag: guarantee one elite on elite_guard floors (non-boss).
+		if tag == &"elite_guard" and not boss_floor and not elite_guard_assigned:
+			is_elite = true
+			elite_guard_assigned = true
 
+
+
+		if boss_floor and not mark_boss_assigned:
+			mark_boss = true
+			mark_boss_assigned = true
+			is_elite = true # treat boss as elite for now
+			
+		var saved_arcana_chance: float = arcana_chance
+		arcana_chance = local_arcana_chance
+		
+		_spawn_enemy_instance(grid_node, units_node, terrain, cls, role, tile, floor, is_elite, mark_boss)
 		spawned_tiles.append(tile)
+		
+		arcana_chance = saved_arcana_chance
 
 	if spawned_tiles.size() < count:
 		push_warning("EnemySpawnManager: only spawned %d/%d (ran out of valid candidates)." % [spawned_tiles.size(), count])
 
+	print("[BOSS DEBUG] bosses alive:", get_tree().get_nodes_in_group("boss").size())
 
 # ----------------------------------------------------
 #  Spawn one enemy (assign data BEFORE add_child, place AFTER)
@@ -181,7 +243,8 @@ func _spawn_enemy_instance(
 	role: String,
 	tile: Vector2i,
 	floor: int,
-	is_elite: bool
+	is_elite: bool,
+	mark_boss: bool
 ) -> void:
 	print("[EnemySpawnManager] _spawn_enemy_instance called")
 	var enemy = enemy_unit_scene.instantiate()
@@ -272,6 +335,11 @@ func _spawn_enemy_instance(
 	# Add to tree (triggers _ready())
 	units_node.add_child(enemy)
 
+	if mark_boss:
+		enemy.add_to_group(boss_group_name)
+		enemy.set_meta("is_boss", true)
+		print("[BOSS DEBUG] MARKED BOSS:", enemy.name, " group=", boss_group_name)
+
 	# Place (your GridController has tile_to_world; fallback to tilemap transform)
 	var world_pos: Vector2
 	if grid_node.has_method("tile_to_world"):
@@ -361,21 +429,30 @@ func _tile_occupied_by_unit(tile: Vector2i, units_node: Node) -> bool:
 # ----------------------------------------------------
 #  Role + class selection
 # ----------------------------------------------------
-func _pick_role() -> String:
-	var total: float = weight_offense + weight_defense + weight_support
+func _pick_role(
+	w_offense: float = -1.0,
+	w_defense: float = -1.0,
+	w_support: float = -1.0
+) -> String:
+	var wo: float = weight_offense if w_offense < 0.0 else w_offense
+	var wd: float = weight_defense if w_defense < 0.0 else w_defense
+	var ws: float = weight_support if w_support < 0.0 else w_support
+
+	var total: float = wo + wd + ws
 	if total <= 0.0001:
 		total = 1.0
 
 	var r: float = _rng.randf() * total
 
-	if r < weight_offense:
+	if r < wo:
 		return "offense"
-	r -= weight_offense
+	r -= wo
 
-	if r < weight_defense:
+	if r < wd:
 		return "defense"
 
 	return "support"
+
 
 
 

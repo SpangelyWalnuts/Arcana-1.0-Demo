@@ -30,11 +30,16 @@ var attack_range: int = 1
 
 # --- Enemy intent icon support ---
 @onready var intent_icon: TextureRect = $IntentIcon
+@onready var boss_icon: TextureRect = $BossIcon
+
+@export var boss_icon_texture: Texture2D
 
 @export var intent_attack_texture: Texture2D
 @export var intent_move_texture: Texture2D
 @export var intent_wait_texture: Texture2D
 @export var intent_cast_texture: Texture2D  # NEW
+@export var intent_boss_texture: Texture2D
+
 var _intent_tween: Tween = null
 var _intent_last_shown: String = ""
 
@@ -188,6 +193,7 @@ func _ready() -> void:
 
 	_update_hp_bar()
 	refresh_status_icons()  # start empty, but keeps UI clean
+	_refresh_boss_icon()
 
 	# 🔹 Listen for status changes (to update icons)
 	if StatusManager != null:
@@ -252,6 +258,11 @@ func die() -> void:
 		remove_from_group("enemy_units")
 	elif team == "player":
 		remove_from_group("player_units")
+	# NEW: boss objective support
+	# If this unit is a boss, remove immediately so DEFEAT_BOSS triggers on death,
+	# not after the KO tween finishes.
+	if is_in_group("boss"):
+		remove_from_group("boss")
 
 	# Prevent further interactions
 	set_process(false)
@@ -315,9 +326,26 @@ func refresh_status_icons() -> void:
 
 #Intent icon helper
 func set_intent_icon(intent: String) -> void:
+	_refresh_boss_icon()
 	current_intent = intent
 
 	if intent_icon == null:
+		return
+
+	# --- BOSS OVERRIDE ---
+# If this unit is a boss, always show the boss icon regardless of intent.
+# Uses group first, meta as backup.
+	var is_boss := is_in_group("boss") or (has_meta("is_boss") and bool(get_meta("is_boss")))
+	if is_boss:
+		intent_icon.texture = intent_boss_texture if intent_boss_texture != null else intent_attack_texture
+		if intent_icon is Control:
+			intent_icon.tooltip_text = "BOSS"
+
+	# Ensure it's visible (no pop logic needed, but keep it consistent)
+		intent_icon.visible = true
+		intent_icon.modulate.a = 1.0
+		intent_icon.scale = Vector2.ONE
+		_intent_last_shown = "__boss__"
 		return
 
 	var tex: Texture2D = null
@@ -411,6 +439,22 @@ func set_intent_icon(intent: String) -> void:
 	var settle := create_tween()
 	settle.tween_property(intent_icon, "scale", Vector2.ONE, 0.08)\
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+#BOSS ICON HELPER
+func _refresh_boss_icon() -> void:
+	if boss_icon == null:
+		return
+
+	var is_boss := is_in_group("boss") or (has_meta("is_boss") and bool(get_meta("is_boss")))
+	if is_boss:
+		boss_icon.texture = boss_icon_texture
+		boss_icon.visible = true
+		boss_icon.modulate.a = 1.0
+		boss_icon.scale = Vector2.ONE
+		if boss_icon is Control:
+			boss_icon.tooltip_text = "BOSS"
+	else:
+		boss_icon.visible = false
 
 
 #ANIMATION HELPERS

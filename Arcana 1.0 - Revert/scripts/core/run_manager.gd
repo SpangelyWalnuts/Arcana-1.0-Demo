@@ -11,6 +11,10 @@ var current_map_chunks: Vector2i = Vector2i(2, 2)
 var current_deploy_limit: int = 4
 var is_boss_floor: bool = false
 
+# --- Encounter tags ---
+var current_encounter_tag: StringName = &"none"
+@export_range(0.0, 1.0, 0.05) var encounter_tag_chance: float = 0.70 # 70% tagged, 30% none
+
 # All units the player owns this run (per-unit data)
 var roster: Array[UnitData] = []
 var deployed_units: Array[UnitData] = []
@@ -194,6 +198,7 @@ func get_floor_config(floor: int) -> Dictionary:
 	# Deploy limit scales with map size but never exceeds enemy count
 	var deploy: int = clampi(3 + band, 3, 6)
 	deploy = mini(deploy, enemy_count)
+	var encounter_tag: StringName = _roll_encounter_tag(floor, boss)
 
 	return {
 		"floor": floor,
@@ -202,6 +207,7 @@ func get_floor_config(floor: int) -> Dictionary:
 		"enemy_count": enemy_count,
 		"elite_chance": elite,
 		"deploy_limit": deploy,
+		"encounter_tag": encounter_tag,
 		"is_boss_floor": boss
 	}
 
@@ -209,12 +215,28 @@ func get_floor_config(floor: int) -> Dictionary:
 func refresh_floor_config() -> void:
 	var cfg: Dictionary = get_floor_config(current_floor)
 
+	current_encounter_tag = StringName(cfg.get("encounter_tag", &"none"))
 	current_map_chunks = cfg["map_chunks"] as Vector2i
 	current_enemy_count = int(cfg["enemy_count"])
 	current_elite_chance = float(cfg["elite_chance"])
 	current_deploy_limit = int(cfg["deploy_limit"])
 	is_boss_floor = bool(cfg["is_boss_floor"])
 
+
+# ENCOUNTERS
+func _roll_encounter_tag(floor: int, boss: bool) -> StringName:
+	# Boss floors are special already; keep tags off for clarity.
+	if boss:
+		return &"none"
+
+	# 70/30: "none" vs "tag"
+	var roll: float = randf()
+	if roll >= encounter_tag_chance:
+		return &"none"
+
+	# Pick a tag. Start simple: equal weights.
+	var tags: Array[StringName] = [&"swarm", &"elite_guard", &"caster_heavy"]
+	return tags[int(randi() % tags.size())]
 
 func get_deploy_limit() -> int:
 	# Safe accessor for UI scenes.

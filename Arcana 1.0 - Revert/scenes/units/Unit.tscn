@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://cdxb46fgjtu0c"]
+[gd_scene load_steps=8 format=3 uid="uid://cdxb46fgjtu0c"]
 
 [ext_resource type="Script" uid="uid://c2kfu4b3sbqbo" path="res://scripts/units/unit.gd" id="1_fqlnf"]
 [ext_resource type="Texture2D" uid="uid://nhlhj45xxg6w" path="res://art/ui/status_icons/Attacking.png" id="2_5uit4"]
@@ -6,9 +6,11 @@
 [ext_resource type="Texture2D" uid="uid://bd1vjbh0qxb" path="res://art/ui/status_icons/Moving.png" id="3_e2ob1"]
 [ext_resource type="Texture2D" uid="uid://b78urms4wqv82" path="res://art/ui/status_icons/fatigue.png" id="4_5uit4"]
 [ext_resource type="Texture2D" uid="uid://bdfsoh5vtjom7" path="res://art/ui/status_icons/Arcana Casting.png" id="5_e2ob1"]
+[ext_resource type="Texture2D" uid="uid://cpq8kboryuhkr" path="res://art/ui/TEMP STAR.png" id="6_ca0pj"]
 
 [node name="Units" type="Node2D"]
 script = ExtResource("1_fqlnf")
+boss_icon_texture = ExtResource("6_ca0pj")
 intent_attack_texture = ExtResource("2_5uit4")
 intent_move_texture = ExtResource("3_e2ob1")
 intent_wait_texture = ExtResource("4_5uit4")
@@ -62,3 +64,11 @@ visible = false
 texture_filter = 1
 texture_repeat = 1
 position = Vector2(16, 16)
+
+[node name="BossIcon" type="TextureRect" parent="."]
+texture_filter = 1
+texture_repeat = 1
+custom_minimum_size = Vector2(-8, -8)
+offset_top = 25.0
+offset_right = 7.0
+offset_bottom = 32.0
