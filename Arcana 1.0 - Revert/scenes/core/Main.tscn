@@ -173,6 +173,7 @@ attack_tile_scene = ExtResource("4_nxm05")
 [node name="MapGenerator" type="Node" parent="." node_paths=PackedStringArray("terrain")]
 script = ExtResource("6_57s6d")
 terrain = NodePath("../Grid/Terrain")
+debug_chunk_gen = false
 biome = &"taiga"
 ruins_db = ExtResource("12_j8vbb")
 forest_db = ExtResource("12_j8vbb")

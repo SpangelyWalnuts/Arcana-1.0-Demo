@@ -168,25 +168,6 @@ func advance_floor() -> bool:
 func get_floor_config(floor: int) -> Dictionary:
 	# Floor bands: every 3 floors increases map size + baseline counts.
 	var band: int = int((floor - 1) / 3)
-	
-# Biome rotates every floor:
-# 1 ruins, 2 forest, 3 catacombs, 4 tundra, 5 volcano, 6 ruins...
-	var biome: StringName = &"ruins"
-	var biome_index: int = (floor - 1) % 5
-
-	match biome_index:
-		0:
-			biome = &"ruins"
-		1:
-			biome = &"forest"
-		2:
-			biome = &"catacombs"
-		3:
-			biome = &"taiga"
-		_:
-			biome = &"volcano"
-
-
 # Map size progression:
 # 2x1 -> 2x2 -> 3x3 -> 4x4 -> 5x5 (then stay at 5x5)
 	var stage: int = clampi(band, 0, 4)
@@ -203,7 +184,22 @@ func get_floor_config(floor: int) -> Dictionary:
 			map_chunks = Vector2i(4, 4)
 		_:
 			map_chunks = Vector2i(5, 5)
+# Biome rotates every floor:
+# 1 ruins, 2 forest, 3 catacombs, 4 tundra, 5 volcano, 6 ruins...
+	var biome: StringName = &"ruins"
+	var biome_index: int = (floor - 1) % 5
 
+	match biome_index:
+		0:
+			biome = &"ruins"
+		1:
+			biome = &"forest"
+		2:
+			biome = &"catacombs"
+		3:
+			biome = &"taiga"
+		_:
+			biome = &"volcano"
 
 	# Boss floors
 	var boss: bool = (floor % 5) == 0

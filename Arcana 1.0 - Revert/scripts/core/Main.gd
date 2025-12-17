@@ -11,6 +11,29 @@ var _current_skill: Skill = null
 var _initial_player_unit_count: int = 0
 var _hitstop_in_progress: bool = false
 
+# --- Map validation (post-generation safety net) ---
+@export var validate_procedural_map: bool = true
+@export var map_validate_max_rerolls: int = 12
+@export var map_validate_min_reachable_ratio: float = 0.75
+@export var map_validate_min_reachable_tiles: int = 40
+@export var map_validate_debug: bool = false
+
+const DIRS_4: Array[Vector2i] = [
+	Vector2i(1, 0),
+	Vector2i(-1, 0),
+	Vector2i(0, 1),
+	Vector2i(0, -1),
+]
+
+func _get_player_spawn_tiles() -> Array[Vector2i]:
+	# Keep this in ONE place so validator + spawns always match.
+	return [
+		Vector2i(2, 2),
+		Vector2i(3, 2),
+		Vector2i(2, 3),
+		Vector2i(3, 3),
+	]
+
 # --- Run statistics for summary panel ---
 var run_turns: int = 1              # Turn count (starts at player phase 1)
 var enemies_defeated: int = 0       # Total enemy units killed this battle
@@ -117,8 +140,18 @@ func _ready() -> void:
 		elif "biome" in map_generator:
 			map_generator.biome = RunManager.current_biome
 
+	# Apply biome to map generation
+	if map_generator != null:
+		if map_generator.has_method("set_biome"):
+			map_generator.set_biome(RunManager.current_biome)
+		elif "biome" in map_generator:
+			map_generator.biome = RunManager.current_biome
+
+# Build + validate procedural map (also applies chunk size first)
 	if use_procedural_map and map_generator != null:
-		map_generator.build_random_map()
+		await _build_and_validate_procedural_map()
+
+		
 		
 # Configure enemy spawning difficulty for this floor.
 	if enemy_spawner != null:
@@ -1141,12 +1174,7 @@ func spawn_units_from_run() -> void:
 
 	# Simple starting positions for player units (tile coords).
 	# You can change these later or use proper spawn markers.
-	var spawn_tiles: Array[Vector2i] = [
-		Vector2i(2, 2),
-		Vector2i(3, 2),
-		Vector2i(2, 3),
-		Vector2i(3, 3),
-	]
+	var spawn_tiles: Array[Vector2i] = _get_player_spawn_tiles()
 
 	var i: int = 0
 	for data in RunManager.deployed_units:
@@ -1773,6 +1801,116 @@ func _spawn_unit(scene: PackedScene, grid_pos: Vector2i, team: String) -> Node2D
 		u.died.connect(_on_unit_died.bind(u))
 
 	return u
+func _validate_current_map_from_spawns(spawn_tiles: Array[Vector2i]) -> bool:
+	if terrain == null or grid == null:
+		push_warning("MapValidator: terrain or grid is null; skipping validation.")
+		return true
+
+	# Use stamped bounds (same approach your EnemySpawnManager uses)
+	var rect: Rect2i = terrain.get_used_rect()
+	if rect.size.x <= 0 or rect.size.y <= 0:
+		push_warning("MapValidator: terrain.get_used_rect() is empty; map not built?")
+		return false
+
+	# Count total walkable tiles inside stamped rect
+	var total_walkable: int = 0
+	for y in range(rect.position.y, rect.position.y + rect.size.y):
+		for x in range(rect.position.x, rect.position.x + rect.size.x):
+			var t := Vector2i(x, y)
+			if terrain.get_cell_source_id(0, t) == -1:
+				continue
+			if grid.is_walkable(t):
+				total_walkable += 1
+
+	if total_walkable <= 0:
+		if map_validate_debug:
+			print("[MapValidator] total_walkable=0 -> invalid")
+		return false
+
+	# Flood fill from spawn tiles over walkable cells
+	var visited: Dictionary = {}
+	var queue: Array[Vector2i] = []
+
+	for s: Vector2i in spawn_tiles:
+		if not rect.has_point(s):
+			continue
+		if terrain.get_cell_source_id(0, s) == -1:
+			continue
+		if not grid.is_walkable(s):
+			continue
+		if visited.has(s):
+			continue
+		visited[s] = true
+		queue.append(s)
+
+	if queue.is_empty():
+		if map_validate_debug:
+			print("[MapValidator] No valid spawn tiles inside stamped/walkable area -> invalid")
+		return false
+
+	while not queue.is_empty():
+		var cur: Vector2i = queue[0]
+		queue.remove_at(0)
+
+		for d: Vector2i in DIRS_4:
+			var n: Vector2i = cur + d
+			if not rect.has_point(n):
+				continue
+			if visited.has(n):
+				continue
+			if terrain.get_cell_source_id(0, n) == -1:
+				continue
+			if not grid.is_walkable(n):
+				continue
+
+			visited[n] = true
+			queue.append(n)
+
+	var reachable_walkable: int = visited.size()
+	var ratio: float = float(reachable_walkable) / float(total_walkable)
+
+	if map_validate_debug:
+		print("[MapValidator] rect=", rect, " total_walkable=", total_walkable,
+			" reachable=", reachable_walkable, " ratio=", ratio)
+
+	if reachable_walkable < map_validate_min_reachable_tiles:
+		return false
+	if ratio < map_validate_min_reachable_ratio:
+		return false
+
+	return true
+
+#MAP VALIDATOR
+func _build_and_validate_procedural_map() -> void:
+	if not use_procedural_map or map_generator == null:
+		return
+
+	# IMPORTANT: set size BEFORE building (right now you build first then set size) :contentReference[oaicite:2]{index=2}
+	if "chunks_wide" in map_generator and "chunks_high" in map_generator:
+		map_generator.chunks_wide = RunManager.current_map_chunks.x
+		map_generator.chunks_high = RunManager.current_map_chunks.y
+
+	var spawn_tiles: Array[Vector2i] = _get_player_spawn_tiles()
+
+	if not validate_procedural_map:
+		map_generator.build_random_map()
+		await get_tree().process_frame
+		return
+
+	for attempt in range(map_validate_max_rerolls):
+		map_generator.build_random_map()
+		await get_tree().process_frame
+
+		var ok: bool = _validate_current_map_from_spawns(spawn_tiles)
+		if ok:
+			if map_validate_debug:
+				print("[MapValidator] VALID map after rerolls:", attempt)
+			return
+
+		if map_validate_debug:
+			print("[MapValidator] invalid map, rerolling... attempt", attempt)
+
+	push_warning("MapValidator: Failed to generate a valid map after %d rerolls; using last attempt." % map_validate_max_rerolls)
 
 #Rewards Screen Helper
 func _go_to_rewards_screen() -> void:
