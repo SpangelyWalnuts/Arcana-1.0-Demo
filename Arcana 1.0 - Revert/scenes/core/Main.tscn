@@ -1,4 +1,4 @@
-[gd_scene load_steps=70 format=3 uid="uid://n3fdkibgiero"]
+[gd_scene load_steps=68 format=3 uid="uid://n3fdkibgiero"]
 
 [ext_resource type="Script" uid="uid://h2yfgpr5nkon" path="res://scripts/core/Main.gd" id="1_v0fxp"]
 [ext_resource type="PackedScene" uid="uid://dtcrbthviju4m" path="res://scenes/ui/SelectionRing.tscn" id="2_8kqbm"]
@@ -11,15 +11,13 @@
 [ext_resource type="Script" uid="uid://0c3ertpx5ieg" path="res://scenes/core/map_generator.gd" id="6_57s6d"]
 [ext_resource type="TileSet" uid="uid://bnxwiy3yga8y" path="res://scenes/core/SnowTileSet.tres" id="7_j15km"]
 [ext_resource type="Script" uid="uid://b7il60mhh2gxo" path="res://scripts/terrain.gd" id="7_tupnw"]
-[ext_resource type="PackedScene" uid="uid://biyne7gg2b8sk" path="res://scenes/Chunks/Snow/Chunk_RoadHills.tscn" id="7_xhixk"]
-[ext_resource type="PackedScene" uid="uid://cjxp8wde4exkv" path="res://scenes/Chunks/Snow/chunk_snow_roads.tscn" id="8_chcsr"]
 [ext_resource type="Texture2D" uid="uid://c0a00mrijdwrw" path="res://art/animations/highlight/Hightlight V2.png" id="8_ym1f7"]
 [ext_resource type="Texture2D" uid="uid://5wgt6knspj2r" path="res://art/animations/highlight/Hightlight V3.png" id="9_b7lq7"]
 [ext_resource type="Script" uid="uid://85x5ta0d1qgh" path="res://scripts/core/turn_manager.gd" id="10_d7485"]
 [ext_resource type="Texture2D" uid="uid://dq6d05m4ewvfi" path="res://art/animations/highlight/Hightlight V4.png" id="10_gm2h1"]
-[ext_resource type="PackedScene" uid="uid://bhs2cdw24cn1i" path="res://scenes/Chunks/Snow/chunk_mountain_forts.tscn" id="11_0l231"]
 [ext_resource type="Texture2D" uid="uid://cuj6spx1njmy1" path="res://art/animations/highlight/Hightlight V5.png" id="11_agh6m"]
 [ext_resource type="Script" uid="uid://dsj1ti4is1ryr" path="res://scenes/core/combat_manager.gd" id="11_dau2k"]
+[ext_resource type="Resource" uid="uid://banuvwiv8hpjc" path="res://scenes/Chunks/Snow/taiga_db.tres" id="12_j8vbb"]
 [ext_resource type="Texture2D" uid="uid://djn8q0kefouoj" path="res://art/animations/highlight/Hightlight V6.png" id="12_tj20p"]
 [ext_resource type="Script" uid="uid://5quna8uwyqii" path="res://scripts/ui/tile_info_panel.gd" id="13_nxm05"]
 [ext_resource type="Texture2D" uid="uid://rj18myc7fema" path="res://art/animations/highlight/Hightlight V7.png" id="13_vyvfi"]
@@ -175,8 +173,12 @@ attack_tile_scene = ExtResource("4_nxm05")
 [node name="MapGenerator" type="Node" parent="." node_paths=PackedStringArray("terrain")]
 script = ExtResource("6_57s6d")
 terrain = NodePath("../Grid/Terrain")
-chunk_scenes = Array[PackedScene]([ExtResource("7_xhixk"), ExtResource("8_chcsr")])
-taiga_chunk_scenes = Array[PackedScene]([ExtResource("11_0l231"), ExtResource("7_xhixk"), ExtResource("8_chcsr")])
+biome = &"taiga"
+ruins_db = ExtResource("12_j8vbb")
+forest_db = ExtResource("12_j8vbb")
+catacombs_db = ExtResource("12_j8vbb")
+taiga_db = ExtResource("12_j8vbb")
+volcano_db = ExtResource("12_j8vbb")
 chunks_high = 1
 
 [node name="Background" type="Node2D" parent="."]

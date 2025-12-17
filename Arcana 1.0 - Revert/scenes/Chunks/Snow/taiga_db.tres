@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="BiomeChunkDB" load_steps=13 format=3 uid="uid://banuvwiv8hpjc"]
+
+[ext_resource type="Script" uid="uid://ckblgr0owi8d6" path="res://scripts/systems/chunk_adjacency_entry.gd" id="1_8e67h"]
+[ext_resource type="PackedScene" uid="uid://cjxp8wde4exkv" path="res://scenes/Chunks/Snow/chunk_snow_roads.tscn" id="2_53uag"]
+[ext_resource type="Script" uid="uid://ibijw6g8ddcj" path="res://scripts/systems/biome_chunk_db.gd" id="2_oa7x6"]
+[ext_resource type="PackedScene" uid="uid://dtoqgvynrihm0" path="res://scenes/Chunks/Snow/chunk_river_crossing.tscn" id="3_ok61h"]
+[ext_resource type="PackedScene" uid="uid://bhs2cdw24cn1i" path="res://scenes/Chunks/Snow/chunk_mountain_forts.tscn" id="3_pd6ks"]
+[ext_resource type="PackedScene" uid="uid://biyne7gg2b8sk" path="res://scenes/Chunks/Snow/Chunk_RoadHills.tscn" id="4_ok61h"]
+[ext_resource type="PackedScene" uid="uid://ckx7gf2vyay82" path="res://scenes/Chunks/Snow/chunk_fort_clearing.tscn" id="5_pd6ks"]
+
+[sub_resource type="Resource" id="Resource_8e67h"]
+script = ExtResource("1_8e67h")
+chunk = ExtResource("4_ok61h")
+allow_north = Array[PackedScene]([ExtResource("3_ok61h")])
+allow_east = Array[PackedScene]([ExtResource("2_53uag")])
+allow_west = Array[PackedScene]([ExtResource("3_pd6ks")])
+metadata/_custom_type_script = "uid://ckblgr0owi8d6"
+
+[sub_resource type="Resource" id="Resource_lmyeo"]
+script = ExtResource("1_8e67h")
+chunk = ExtResource("2_53uag")
+allow_north = Array[PackedScene]([ExtResource("5_pd6ks")])
+allow_west = Array[PackedScene]([ExtResource("4_ok61h")])
+metadata/_custom_type_script = "uid://ckblgr0owi8d6"
+
+[sub_resource type="Resource" id="Resource_lbjfd"]
+script = ExtResource("1_8e67h")
+chunk = ExtResource("3_pd6ks")
+allow_east = Array[PackedScene]([ExtResource("4_ok61h")])
+metadata/_custom_type_script = "uid://ckblgr0owi8d6"
+
+[sub_resource type="Resource" id="Resource_ok61h"]
+script = ExtResource("1_8e67h")
+chunk = ExtResource("5_pd6ks")
+allow_south = Array[PackedScene]([ExtResource("2_53uag")])
+allow_west = Array[PackedScene]([ExtResource("3_ok61h")])
+metadata/_custom_type_script = "uid://ckblgr0owi8d6"
+
+[sub_resource type="Resource" id="Resource_n7eke"]
+script = ExtResource("1_8e67h")
+chunk = ExtResource("3_ok61h")
+allow_east = Array[PackedScene]([ExtResource("5_pd6ks")])
+allow_south = Array[PackedScene]([ExtResource("4_ok61h")])
+metadata/_custom_type_script = "uid://ckblgr0owi8d6"
+
+[resource]
+script = ExtResource("2_oa7x6")
+entries = Array[ExtResource("1_8e67h")]([SubResource("Resource_8e67h"), SubResource("Resource_lmyeo"), SubResource("Resource_lbjfd"), SubResource("Resource_ok61h"), SubResource("Resource_n7eke")])
+metadata/_custom_type_script = "uid://ibijw6g8ddcj"
