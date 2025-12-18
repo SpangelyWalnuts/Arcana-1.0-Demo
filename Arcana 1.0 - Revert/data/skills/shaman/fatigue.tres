@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://bjl3kwcsocmoq"]
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://bjl3kwcsocmoq"]
 
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_2wkiv"]
+[ext_resource type="Texture2D" uid="uid://xhlakfiqiegf" path="res://art/ui/spell icons/Fatigue.png" id="1_ofrxt"]
 
 [resource]
 script = ExtResource("1_2wkiv")
@@ -14,3 +15,4 @@ target_type = 1
 duration_turns = 2
 prevent_move = true
 terrain_object_duration = 0
+icon_texture = ExtResource("1_ofrxt")

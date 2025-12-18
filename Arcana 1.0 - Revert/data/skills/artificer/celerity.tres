@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://dspsn31vnun42"]
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://dspsn31vnun42"]
 
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_ajkqf"]
+[ext_resource type="Texture2D" uid="uid://echoxwrkv5u0" path="res://art/ui/spell icons/Celerity.png" id="1_ncu7k"]
 
 [resource]
 script = ExtResource("1_ajkqf")
@@ -12,3 +13,4 @@ power_multiplier = 0.0
 target_type = 2
 can_target_self = true
 move_mod = 2
+icon_texture = ExtResource("1_ncu7k")

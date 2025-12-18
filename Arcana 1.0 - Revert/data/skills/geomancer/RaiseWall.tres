@@ -1,5 +1,6 @@
-[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://boccsnr552fws"]
+[gd_resource type="Resource" script_class="Skill" load_steps=4 format=3 uid="uid://boccsnr552fws"]
 
+[ext_resource type="Texture2D" uid="uid://b83jq1yhngg2w" path="res://art/ui/spell icons/Raise Wall.png" id="1_mq82g"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_x654m"]
 [ext_resource type="PackedScene" uid="uid://dlkfu2nbid67s" path="res://scenes/terrain_effects/GeomancerWallEffect.tscn" id="2_mq82g"]
 
@@ -15,3 +16,4 @@ is_terrain_object_skill = true
 terrain_object_scene = ExtResource("2_mq82g")
 terrain_object_key = "wall"
 terrain_object_blocks_movement = true
+icon_texture = ExtResource("1_mq82g")

@@ -1,5 +1,6 @@
-[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://btw03xglibj71"]
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://btw03xglibj71"]
 
+[ext_resource type="Texture2D" uid="uid://dsjqfyqng7lbg" path="res://art/ui/spell icons/Electrocute.png" id="1_3ameu"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_6orty"]
 
 [resource]
@@ -10,3 +11,4 @@ mana_cost = 5
 cast_range = 1
 power_multiplier = 3.0
 flat_power = 2
+icon_texture = ExtResource("1_3ameu")

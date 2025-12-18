@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Equipment" load_steps=2 format=3 uid="uid://ds17ro2kaifj"]
+
+[ext_resource type="Script" uid="uid://bnsyp2yvudsd2" path="res://scripts/data/equipment.gd" id="1_y7dgt"]
+
+[resource]
+script = ExtResource("1_y7dgt")
+name = "Leystone"
+description = "Increases mana by 15."
+rarity = "Rare"
+bonus_max_mana = 15
+metadata/_custom_type_script = "uid://bnsyp2yvudsd2"

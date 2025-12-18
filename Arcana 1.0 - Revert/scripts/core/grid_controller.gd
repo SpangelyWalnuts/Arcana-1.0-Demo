@@ -26,8 +26,8 @@ const TERRAIN_SOURCE_ID: int = 1
 # 🔹 CHANGE these coords to match what you see in the TileSet editor.
 @export var terrain_atlas_coords: Dictionary = {
 	"wall": Vector2i(4, 5),   # example
-	"vines": Vector2i(7, 5),   # example
-	"spikes": Vector2i(6, 5)   # example
+	"vines": Vector2i(0, 6),   # example
+	"spikes": Vector2i(1, 6)   # example
 }
 
 
@@ -81,11 +81,16 @@ const TERRAIN_TABLE := {
 	Vector3i(1, 11, 5): { "name": "road", "move_cost": 1, "def": 0, "walkable": true },
 	Vector3i(1, 12, 5): { "name": "road", "move_cost": 1, "def": 0, "walkable": true },
 	Vector3i(1, 13, 5): { "name": "road", "move_cost": 1, "def": 0, "walkable": true },
+	Vector3i(1, 4, 6): { "name": "road", "move_cost": 1, "def": 0, "walkable": true },
+	Vector3i(1, 5, 6): { "name": "road", "move_cost": 1, "def": 0, "walkable": true },
 	
 	# WALL (blocks movement)
 	Vector3i(1, 4, 5): { "name": "wall", "move_cost": 99, "def": 0, "walkable": false },
+	Vector3i(1, 7, 6): { "name": "wall", "move_cost": 99, "def": 0, "walkable": false },
+	Vector3i(1, 4, 7): { "name": "wall", "move_cost": 99, "def": 0, "walkable": false },
+	Vector3i(1, 5, 7): { "name": "wall", "move_cost": 99, "def": 0, "walkable": false },
 	# VINES
-	Vector3i(1, 7, 5): { "name": "vines", "move_cost": 3, "def": 0, "walkable": true },
+	Vector3i(1, 0, 6): { "name": "vines", "move_cost": 3, "def": 0, "walkable": true },
 	# Forest
 	Vector3i(1, 6, 3): { "name": "forest", "move_cost": 2, "def": 1, "walkable": true },
 	Vector3i(1, 7, 3): { "name": "forest", "move_cost": 2, "def": 1, "walkable": true },
@@ -105,9 +110,13 @@ const TERRAIN_TABLE := {
 	Vector3i(1, 2, 5): { "name": "forest", "move_cost": 2, "def": 1, "walkable": true },
 	Vector3i(1, 3, 5): { "name": "forest", "move_cost": 2, "def": 1, "walkable": true },
 	#HAZARD
-	Vector3i(1, 6, 5): { "name": "spikes", "move_cost": 1, "def": 0, "walkable": true },
+	Vector3i(1, 1, 6): { "name": "spikes", "move_cost": 1, "def": 0, "walkable": true },
 	#FORT/CASTLE
-	Vector3i(1, 5, 5): { "name": "Fort", "move_cost": 3, "def": 3, "walkable": true },
+	Vector3i(1, 5, 5): { "name": "Fort", "move_cost": 2, "def": 3, "walkable": true },
+	Vector3i(1, 6, 5): { "name": "Fort", "move_cost": 2, "def": 3, "walkable": true },
+	Vector3i(1, 7, 5): { "name": "Fort", "move_cost": 2, "def": 3, "walkable": true },
+	Vector3i(1, 6, 6): { "name": "Fort", "move_cost": 2, "def": 3, "walkable": true },
+	Vector3i(1, 8, 6): { "name": "Fort", "move_cost": 2, "def": 3, "walkable": true },
 	# Mountain variants
 	Vector3i(1, 0, 1): { "name": "mountain", "move_cost": 99, "def": 2, "walkable": false },
 	Vector3i(1, 2, 1): { "name": "mountain", "move_cost": 99, "def": 2, "walkable": false },

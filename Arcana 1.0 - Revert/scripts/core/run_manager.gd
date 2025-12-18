@@ -16,7 +16,7 @@ var current_biome: StringName = &"ruins"
 
 # --- Encounter tags ---
 var current_encounter_tag: StringName = &"none"
-@export_range(0.0, 1.0, 0.05) var encounter_tag_chance: float = 0.70 # 70% tagged, 30% none
+@export_range(0.0, 1.0, 0.05) var encounter_tag_chance: float = 0.60 # 60% tagged, 40% none
 
 # All units the player owns this run (per-unit data)
 var roster: Array[UnitData] = []
@@ -93,13 +93,13 @@ const ITEM_DEF_PATHS := [
 ]
 
 const EQUIPMENT_DEF_PATHS := [
-	"res://data/equipment/Book.tres",
-	"res://data/equipment/Boots.tres",
-	"res://data/equipment/RefinedRing.tres",
-	"res://data/equipment/ProtectionStone.tres",
-	"res://data/equipment/ParallelThought.tres",
-	"res://data/equipment/StartingGear.tres",
-	"res://data/equipment/VitalityStone.tres",
+	"res://data/equipment/common/Book.tres",
+	"res://data/equipment/uncommon/Boots.tres",
+	"res://data/equipment/common/RefinedRing.tres",
+	"res://data/equipment/common/ProtectionStone.tres",
+	"res://data/equipment/legendary/ParallelThought.tres",
+	"res://data/equipment/rare/StartingGear.tres",
+	"res://data/equipment/common/VitalityStone.tres",
 ]
 
 var item_defs: Array[Item] = []

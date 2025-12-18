@@ -1,4 +1,4 @@
-[gd_scene load_steps=68 format=3 uid="uid://n3fdkibgiero"]
+[gd_scene load_steps=61 format=3 uid="uid://n3fdkibgiero"]
 
 [ext_resource type="Script" uid="uid://h2yfgpr5nkon" path="res://scripts/core/Main.gd" id="1_v0fxp"]
 [ext_resource type="PackedScene" uid="uid://dtcrbthviju4m" path="res://scenes/ui/SelectionRing.tscn" id="2_8kqbm"]
@@ -11,35 +11,28 @@
 [ext_resource type="Script" uid="uid://0c3ertpx5ieg" path="res://scenes/core/map_generator.gd" id="6_57s6d"]
 [ext_resource type="TileSet" uid="uid://bnxwiy3yga8y" path="res://scenes/core/SnowTileSet.tres" id="7_j15km"]
 [ext_resource type="Script" uid="uid://b7il60mhh2gxo" path="res://scripts/terrain.gd" id="7_tupnw"]
-[ext_resource type="Texture2D" uid="uid://c0a00mrijdwrw" path="res://art/animations/highlight/Hightlight V2.png" id="8_ym1f7"]
-[ext_resource type="Texture2D" uid="uid://5wgt6knspj2r" path="res://art/animations/highlight/Hightlight V3.png" id="9_b7lq7"]
 [ext_resource type="Script" uid="uid://85x5ta0d1qgh" path="res://scripts/core/turn_manager.gd" id="10_d7485"]
-[ext_resource type="Texture2D" uid="uid://dq6d05m4ewvfi" path="res://art/animations/highlight/Hightlight V4.png" id="10_gm2h1"]
-[ext_resource type="Texture2D" uid="uid://cuj6spx1njmy1" path="res://art/animations/highlight/Hightlight V5.png" id="11_agh6m"]
 [ext_resource type="Script" uid="uid://dsj1ti4is1ryr" path="res://scenes/core/combat_manager.gd" id="11_dau2k"]
 [ext_resource type="Resource" uid="uid://banuvwiv8hpjc" path="res://scenes/Chunks/Snow/taiga_db.tres" id="12_j8vbb"]
-[ext_resource type="Texture2D" uid="uid://djn8q0kefouoj" path="res://art/animations/highlight/Hightlight V6.png" id="12_tj20p"]
+[ext_resource type="Texture2D" uid="uid://c3qh8pkaxtq5y" path="res://art/animations/highlight/Yellow Highlight/Yellow Highlight1.png" id="13_grs5f"]
 [ext_resource type="Script" uid="uid://5quna8uwyqii" path="res://scripts/ui/tile_info_panel.gd" id="13_nxm05"]
-[ext_resource type="Texture2D" uid="uid://rj18myc7fema" path="res://art/animations/highlight/Hightlight V7.png" id="13_vyvfi"]
 [ext_resource type="Theme" uid="uid://cin6ixr60fos6" path="res://scenes/core/game_theme.tres" id="13_wpo1s"]
 [ext_resource type="Script" uid="uid://dyr8u0ikrwpp6" path="res://scenes/core/action_menu.gd" id="14_founp"]
-[ext_resource type="Texture2D" uid="uid://c86ge48mtx67d" path="res://art/animations/highlight/Hightlight V8.png" id="14_j15km"]
-[ext_resource type="Texture2D" uid="uid://bu0fp6jpfdre6" path="res://art/animations/highlight/Hightlight V9.png" id="15_57s6d"]
+[ext_resource type="Texture2D" uid="uid://ovv61lmom3au" path="res://art/animations/highlight/Yellow Highlight/Yellow Highlight2.png" id="14_r5uuc"]
+[ext_resource type="Texture2D" uid="uid://2kk0fje27l83" path="res://art/animations/highlight/Yellow Highlight/Yellow Highlight3.png" id="15_do1pq"]
 [ext_resource type="Script" uid="uid://d0ddnfotjpb7a" path="res://scenes/core/skill_menu.gd" id="15_tupnw"]
+[ext_resource type="Texture2D" uid="uid://bojmgryoygyu0" path="res://art/animations/highlight/Yellow Highlight/Yellow Highlight4.png" id="16_gm45u"]
 [ext_resource type="Script" uid="uid://cybd31a6lrogt" path="res://scripts/core/camera_controller.gd" id="16_tupnw"]
-[ext_resource type="Texture2D" uid="uid://cggdbxjqvkwpe" path="res://art/animations/highlight/Hightlight V10.png" id="16_xhixk"]
-[ext_resource type="Texture2D" uid="uid://dd0ukfj4xiher" path="res://art/animations/highlight/Hightlight V11.png" id="17_chcsr"]
+[ext_resource type="Texture2D" uid="uid://y0kvj04quxw7" path="res://art/animations/highlight/Yellow Highlight/Yellow Highlight5.png" id="17_7m268"]
 [ext_resource type="Texture2D" uid="uid://deabse3cfih0m" path="res://art/ui/Game Border.png" id="18_d7485"]
-[ext_resource type="Texture2D" uid="uid://ct6ajwnm8qtc2" path="res://art/animations/highlight/Hightlight V12.png" id="18_q8d2n"]
-[ext_resource type="Texture2D" uid="uid://c7nijytl225sq" path="res://art/animations/highlight/Hightlight V13.png" id="19_pw2mr"]
-[ext_resource type="Texture2D" uid="uid://drqmvrfcpbg2u" path="res://art/animations/highlight/Hightlight V14.png" id="20_ewl0u"]
-[ext_resource type="Texture2D" uid="uid://cwjdyuracromf" path="res://art/animations/highlight/Hightlight V15.png" id="21_1hc2n"]
-[ext_resource type="Texture2D" uid="uid://tb530gvt00wn" path="res://art/animations/highlight/Hightlight V16.png" id="22_klg8m"]
+[ext_resource type="Texture2D" uid="uid://cr8gltjdvnhnn" path="res://art/animations/highlight/Yellow Highlight/Yellow Highlight6.png" id="18_gnjag"]
+[ext_resource type="Texture2D" uid="uid://b1ff2vn56sd5f" path="res://art/animations/highlight/Yellow Highlight/Yellow Highlight7.png" id="19_leefl"]
+[ext_resource type="Texture2D" uid="uid://d1mwiv5y4wvhh" path="res://art/animations/highlight/Yellow Highlight/Yellow Highlight8.png" id="20_8kqbm"]
+[ext_resource type="Texture2D" uid="uid://rax4vkjh37l5" path="res://art/ui/text backgrounds/Banner 96 x 32.png" id="30_grs5f"]
 [ext_resource type="PackedScene" uid="uid://nlciohyc66th" path="res://scenes/arcana/HealingCircle.tscn" id="31_kylyq"]
 [ext_resource type="Texture2D" uid="uid://rp2hu8jppu4k" path="res://art/ui/Big Square Background 96 by 64.png" id="32_leefl"]
 [ext_resource type="Script" uid="uid://bey8xgcuxldtv" path="res://scenes/core/phase_banner.gd" id="33_b7lq7"]
 [ext_resource type="Script" uid="uid://bqvyfnnwwd26t" path="res://scenes/core/combat_forecast_panel.gd" id="34_gm2h1"]
-[ext_resource type="Texture2D" uid="uid://dtsettj0v6hlv" path="res://art/ui/Horizontal Background 96 by 32.png" id="36_8kqbm"]
 [ext_resource type="AudioStream" uid="uid://bhbbrcabjf7l3" path="res://audio/select deselect.wav" id="37_tj20p"]
 [ext_resource type="AudioStream" uid="uid://cabme2c0la5c" path="res://audio/music/Planar.wav" id="38_vyvfi"]
 [ext_resource type="PackedScene" uid="uid://daxq4r3e6lfcn" path="res://scenes/ui/LevelUpPanel.tscn" id="39_chcsr"]
@@ -73,49 +66,28 @@ height = 2160
 animations = [{
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("8_ym1f7")
+"texture": ExtResource("13_grs5f")
 }, {
 "duration": 1.0,
-"texture": ExtResource("9_b7lq7")
+"texture": ExtResource("14_r5uuc")
 }, {
 "duration": 1.0,
-"texture": ExtResource("10_gm2h1")
+"texture": ExtResource("15_do1pq")
 }, {
 "duration": 1.0,
-"texture": ExtResource("11_agh6m")
+"texture": ExtResource("16_gm45u")
 }, {
 "duration": 1.0,
-"texture": ExtResource("12_tj20p")
+"texture": ExtResource("17_7m268")
 }, {
 "duration": 1.0,
-"texture": ExtResource("13_vyvfi")
+"texture": ExtResource("18_gnjag")
 }, {
 "duration": 1.0,
-"texture": ExtResource("14_j15km")
+"texture": ExtResource("19_leefl")
 }, {
 "duration": 1.0,
-"texture": ExtResource("15_57s6d")
-}, {
-"duration": 1.0,
-"texture": ExtResource("16_xhixk")
-}, {
-"duration": 1.0,
-"texture": ExtResource("17_chcsr")
-}, {
-"duration": 1.0,
-"texture": ExtResource("18_q8d2n")
-}, {
-"duration": 1.0,
-"texture": ExtResource("19_pw2mr")
-}, {
-"duration": 1.0,
-"texture": ExtResource("20_ewl0u")
-}, {
-"duration": 1.0,
-"texture": ExtResource("21_1hc2n")
-}, {
-"duration": 1.0,
-"texture": ExtResource("22_klg8m")
+"texture": ExtResource("20_8kqbm")
 }],
 "loop": true,
 "name": &"default",
@@ -136,7 +108,7 @@ content_margin_left = 6.0
 content_margin_top = 6.0
 content_margin_right = 6.0
 content_margin_bottom = 6.0
-texture = ExtResource("36_8kqbm")
+texture = ExtResource("30_grs5f")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gm2h1"]
 bg_color = Color(0.10277911, 0.12624115, 0.42467642, 1)
@@ -203,9 +175,10 @@ script = ExtResource("7_tupnw")
 z_index = 10
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Grid/Cursor"]
+texture_filter = 1
+texture_repeat = 1
 sprite_frames = SubResource("SpriteFrames_ship8")
 autoplay = "default"
-frame = 1
 centered = false
 
 [node name="Units" type="Node2D" parent="."]
@@ -243,10 +216,10 @@ theme_override_styles/panel = SubResource("StyleBoxTexture_tyork")
 [node name="ActionMenu" type="Control" parent="UI"]
 layout_mode = 3
 anchors_preset = 0
-offset_left = 11.0
-offset_top = -30.0
-offset_right = 51.0
-offset_bottom = 10.0
+offset_left = 38.0
+offset_top = -33.0
+offset_right = 78.0
+offset_bottom = 7.0
 script = ExtResource("14_founp")
 
 [node name="Panel" type="Panel" parent="UI/ActionMenu"]
@@ -286,10 +259,10 @@ custom_minimum_size = Vector2(200, 200)
 layout_mode = 3
 anchor_right = 0.721
 anchor_bottom = 0.76000005
-offset_left = 483.0
-offset_top = 478.0
-offset_right = -239.88
-offset_bottom = 130.79999
+offset_left = 514.0
+offset_top = 494.0
+offset_right = -208.88
+offset_bottom = 146.79999
 script = ExtResource("15_tupnw")
 
 [node name="Panel" type="Panel" parent="UI/SkillMenu"]
@@ -326,19 +299,19 @@ texture_filter = 1
 texture_repeat = 1
 custom_minimum_size = Vector2(200, 100)
 layout_mode = 0
-offset_left = -42.0
-offset_top = 51.0
-offset_right = 226.0
-offset_bottom = 151.0
+offset_left = -97.00003
+offset_top = 28.0
+offset_right = 240.12
+offset_bottom = 162.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxTexture_d7485")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UI/TileInfoPanel/Panel"]
 layout_mode = 0
-offset_left = 51.0
-offset_top = 4.0
-offset_right = 234.0
-offset_bottom = 84.0
+offset_left = 136.0
+offset_top = 20.0
+offset_right = 319.0
+offset_bottom = 100.0
 mouse_filter = 2
 
 [node name="TerrainLabel" type="Label" parent="UI/TileInfoPanel/Panel/VBoxContainer"]
@@ -359,9 +332,9 @@ texture_repeat = 1
 custom_minimum_size = Vector2(200, 100)
 layout_mode = 0
 offset_left = -1013.0
-offset_top = 47.0
-offset_right = -757.0
-offset_bottom = 154.0
+offset_top = 33.0
+offset_right = -675.88
+offset_bottom = 167.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxTexture_d7485")
 
@@ -369,35 +342,35 @@ theme_override_styles/panel = SubResource("StyleBoxTexture_d7485")
 texture_filter = 1
 texture_repeat = 1
 layout_mode = 0
-offset_left = 20.0
-offset_top = -39.0
-offset_right = 240.0
-offset_bottom = -5.0
+offset_left = 28.0
+offset_top = -26.0
+offset_right = 248.0
+offset_bottom = 8.0
 
 [node name="StatusIcons" type="HBoxContainer" parent="UI/TileInfoPanel/Panel2"]
 layout_mode = 0
-offset_left = 26.0
-offset_top = 68.0
-offset_right = 81.0
-offset_bottom = 81.0
+offset_left = 30.0
+offset_top = 78.0
+offset_right = 85.0
+offset_bottom = 99.0
 
 [node name="UnitPortrait" type="TextureRect" parent="UI/TileInfoPanel/Panel2"]
 texture_filter = 1
 texture_repeat = 1
 custom_minimum_size = Vector2(16, 16)
 layout_mode = 0
-offset_left = 25.0
-offset_top = 9.0
-offset_right = 81.0
-offset_bottom = 64.0
+offset_left = 29.0
+offset_top = 22.0
+offset_right = 85.0
+offset_bottom = 77.0
 stretch_mode = 5
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UI/TileInfoPanel/Panel2"]
 layout_mode = 0
-offset_left = 82.0
-offset_top = 5.0
-offset_right = 122.0
-offset_bottom = 87.0
+offset_left = 91.0
+offset_top = 22.0
+offset_right = 133.0
+offset_bottom = 102.0
 mouse_filter = 2
 
 [node name="UnitNameLabel" type="Label" parent="UI/TileInfoPanel/Panel2/VBoxContainer"]

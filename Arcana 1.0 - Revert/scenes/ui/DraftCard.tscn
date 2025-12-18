@@ -1,19 +1,26 @@
-[gd_scene load_steps=2 format=3 uid="uid://b0lw8xp3nat3b"]
+[gd_scene load_steps=4 format=3 uid="uid://b0lw8xp3nat3b"]
 
 [ext_resource type="Script" uid="uid://x8keo7w74ok1" path="res://scenes/ui/DraftCard.gd" id="1_conpi"]
+[ext_resource type="Texture2D" uid="uid://nli5aus1mu70" path="res://art/ui/text backgrounds/Title Page Banner 96 x 128.png" id="1_oucwt"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_8g5vx"]
+texture = ExtResource("1_oucwt")
 
 [node name="Button" type="Button"]
+texture_filter = 1
+texture_repeat = 1
 custom_minimum_size = Vector2(240, 360)
 offset_right = 8.0
 offset_bottom = 8.0
+theme_override_styles/normal = SubResource("StyleBoxTexture_8g5vx")
 script = ExtResource("1_conpi")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 0
-offset_left = 41.0
-offset_top = 3.0
-offset_right = 201.0
-offset_bottom = 163.0
+offset_left = 40.0
+offset_top = 14.0
+offset_right = 200.0
+offset_bottom = 174.0
 
 [node name="UnitPreview" type="SubViewportContainer" parent="HBoxContainer"]
 custom_minimum_size = Vector2(160, 160)
@@ -27,7 +34,7 @@ size = Vector2i(160, 160)
 render_target_update_mode = 4
 
 [node name="Pivot" type="Node2D" parent="HBoxContainer/UnitPreview/SubViewport"]
-position = Vector2(80, 80)
+position = Vector2(79, 91)
 scale = Vector2(2, 2)
 
 [node name="Anim" type="AnimatedSprite2D" parent="HBoxContainer/UnitPreview/SubViewport/Pivot"]
@@ -41,20 +48,22 @@ texture_repeat = 1
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 custom_minimum_size = Vector2(96, 0)
 layout_mode = 0
-offset_left = 5.0
-offset_top = 164.0
-offset_right = 236.0
-offset_bottom = 226.0
+offset_left = 4.0
+offset_top = 175.0
+offset_right = 235.0
+offset_bottom = 237.0
 size_flags_horizontal = 3
 
 [node name="NameLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 24
 horizontal_alignment = 1
 clip_text = true
 
 [node name="StatsLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 24
 horizontal_alignment = 1
 clip_text = true
@@ -64,8 +73,8 @@ texture_filter = 1
 texture_repeat = 1
 custom_minimum_size = Vector2(64, 32)
 layout_mode = 0
-offset_left = 44.0
-offset_top = 232.0
-offset_right = 192.0
-offset_bottom = 279.0
+offset_left = 43.0
+offset_top = 243.0
+offset_right = 191.0
+offset_bottom = 290.0
 alignment = 1
