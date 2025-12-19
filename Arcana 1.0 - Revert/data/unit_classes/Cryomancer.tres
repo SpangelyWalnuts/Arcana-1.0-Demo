@@ -1,19 +1,20 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=16 format=3 uid="uid://bwlb1xfhjqbtr"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=17 format=3 uid="uid://bwlb1xfhjqbtr"]
 
+[ext_resource type="Texture2D" uid="uid://c1pgb5eewqk1n" path="res://art/units/Cryomancer Icon.png" id="1_3dpi8"]
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_c58w8"]
-[ext_resource type="Texture2D" uid="uid://3fcgv16e3an7" path="res://art/units/Cryomancer/Cryomancer icon.png" id="1_t4jmv"]
-[ext_resource type="Texture2D" uid="uid://0xn8gtms2ju7" path="res://art/units/Cryomancer/Animations/Idle Animation/Cryomancer Idle Animation1.png" id="2_3dpi8"]
+[ext_resource type="Texture2D" uid="uid://b1o5cof43qc77" path="res://art/units/Cryomancer/Animations/idle/Cryomancer Idle Animation1.png" id="2_3dpi8"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_nf8b4"]
-[ext_resource type="Texture2D" uid="uid://fh48m368b35h" path="res://art/units/Cryomancer/Animations/Idle Animation/Cryomancer Idle Animation2.png" id="3_h018i"]
+[ext_resource type="Texture2D" uid="uid://bcdwuupwxagav" path="res://art/units/Cryomancer/Animations/idle/Cryomancer Idle Animation2.png" id="3_h018i"]
 [ext_resource type="Resource" uid="uid://d0f52yih01fe" path="res://data/skills/cryomancer/frozenbody.tres" id="3_upeti"]
-[ext_resource type="Texture2D" uid="uid://ddohaifyawotr" path="res://art/units/Cryomancer/Animations/Idle Animation/Cryomancer Idle Animation3.png" id="4_pdx8l"]
+[ext_resource type="Texture2D" uid="uid://bnfvq460pocjn" path="res://art/units/Cryomancer/Animations/idle/Cryomancer Idle Animation3.png" id="4_pdx8l"]
 [ext_resource type="Resource" uid="uid://vil0l2v0ery0" path="res://data/skills/cryomancer/Frozenspikes.tres" id="4_t4jmv"]
-[ext_resource type="Texture2D" uid="uid://bbqv07rnxqjmn" path="res://art/units/Cryomancer/Animations/Idle Animation/Cryomancer Idle Animation4.png" id="5_ub8d2"]
-[ext_resource type="Texture2D" uid="uid://cpb0iwxqmhhux" path="res://art/units/Cryomancer map.png" id="5_upeti"]
-[ext_resource type="Texture2D" uid="uid://c1b5tepdjex3s" path="res://art/units/Cryomancer/Animations/Idle Animation/Cryomancer Idle Animation5.png" id="6_esorq"]
-[ext_resource type="Texture2D" uid="uid://dayg8xnomnm32" path="res://art/units/Cryomancer/Animations/Idle Animation/Cryomancer Idle Animation6.png" id="7_qp10e"]
-[ext_resource type="Texture2D" uid="uid://brbaxodocmaq2" path="res://art/units/Cryomancer/Animations/Idle Animation/Cryomancer Idle Animation7.png" id="8_1u6xd"]
-[ext_resource type="Texture2D" uid="uid://ce4i7uit6bw8c" path="res://art/units/Cryomancer/Animations/Idle Animation/Cryomancer Idle Animation8.png" id="9_d0icy"]
+[ext_resource type="Texture2D" uid="uid://xnyprtndl71m" path="res://art/units/Cryomancer/Animations/idle/Cryomancer Idle Animation4.png" id="5_ub8d2"]
+[ext_resource type="Texture2D" uid="uid://cq85ra42pk1k" path="res://art/units/Cryomancer/Animations/idle/Cryomancer Idle Animation5.png" id="6_esorq"]
+[ext_resource type="Texture2D" uid="uid://dv3i6w6dkjxu2" path="res://art/units/Cryomancer/Animations/idle/Cryomancer Idle Animation6.png" id="7_qp10e"]
+[ext_resource type="Texture2D" uid="uid://cg74klslixpqg" path="res://art/units/Cryomancer/Animations/idle/Cryomancer Idle Animation7.png" id="8_1u6xd"]
+[ext_resource type="Texture2D" uid="uid://cnlfjnyg27xa3" path="res://art/units/Cryomancer/Animations/idle/Cryomancer Idle Animation8.png" id="9_d0icy"]
+[ext_resource type="Texture2D" uid="uid://o6m1y3h485uh" path="res://art/units/Cryomancer.png" id="14_h018i"]
+[ext_resource type="Resource" uid="uid://pq87a0bvcj5b" path="res://data/skills/cryomancer/IceSpear.tres" id="14_pdx8l"]
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_o6rfk"]
 animations = [{
@@ -44,7 +45,7 @@ animations = [{
 }],
 "loop": true,
 "name": &"idle",
-"speed": 7.0
+"speed": 8.0
 }]
 
 [resource]
@@ -54,12 +55,12 @@ max_hp = 16
 atk = 2
 attack_range = 2
 max_mana = 10
-skills = Array[ExtResource("2_nf8b4")]([ExtResource("3_upeti"), ExtResource("4_t4jmv")])
+skills = Array[ExtResource("2_nf8b4")]([ExtResource("3_upeti"), ExtResource("4_t4jmv"), ExtResource("14_pdx8l")])
 growth_hp = 1.0
 growth_atk = 0.3
 growth_move = 0.0
-sprite_texture = ExtResource("5_upeti")
-portrait_texture = ExtResource("1_t4jmv")
-icon_texture = ExtResource("1_t4jmv")
+sprite_texture = ExtResource("14_h018i")
+portrait_texture = ExtResource("1_3dpi8")
+icon_texture = ExtResource("1_3dpi8")
 idle_frames = SubResource("SpriteFrames_o6rfk")
 metadata/_custom_type_script = "uid://b823ipo4ebjd5"

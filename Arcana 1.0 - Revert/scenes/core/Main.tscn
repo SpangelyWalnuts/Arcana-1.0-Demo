@@ -216,10 +216,10 @@ theme_override_styles/panel = SubResource("StyleBoxTexture_tyork")
 [node name="ActionMenu" type="Control" parent="UI"]
 layout_mode = 3
 anchors_preset = 0
-offset_left = 38.0
-offset_top = -33.0
-offset_right = 78.0
-offset_bottom = 7.0
+offset_left = 104.0
+offset_top = -37.0
+offset_right = 144.0
+offset_bottom = 3.0
 script = ExtResource("14_founp")
 
 [node name="Panel" type="Panel" parent="UI/ActionMenu"]
@@ -259,10 +259,10 @@ custom_minimum_size = Vector2(200, 200)
 layout_mode = 3
 anchor_right = 0.721
 anchor_bottom = 0.76000005
-offset_left = 514.0
-offset_top = 494.0
-offset_right = -208.88
-offset_bottom = 146.79999
+offset_left = 580.0
+offset_top = 490.0
+offset_right = -142.88
+offset_bottom = 142.79999
 script = ExtResource("15_tupnw")
 
 [node name="Panel" type="Panel" parent="UI/SkillMenu"]

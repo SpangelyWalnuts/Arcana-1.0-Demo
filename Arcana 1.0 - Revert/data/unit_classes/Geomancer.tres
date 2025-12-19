@@ -1,10 +1,52 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=6 format=3 uid="uid://r0vriv0j5ote"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=17 format=3 uid="uid://r0vriv0j5ote"]
 
+[ext_resource type="Texture2D" uid="uid://oefrfeuyan0e" path="res://art/units/geomancer/Geomancer Icon.png" id="1_8ln0j"]
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_phwwh"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_du10u"]
+[ext_resource type="Texture2D" uid="uid://dfsfftrk7v3da" path="res://art/units/geomancer/animations/idle/Geomancer Idle Animation1.png" id="2_svlp8"]
 [ext_resource type="Resource" uid="uid://boccsnr552fws" path="res://data/skills/geomancer/RaiseWall.tres" id="3_du10u"]
+[ext_resource type="Texture2D" uid="uid://cx4fl5y8m4iu" path="res://art/units/geomancer/animations/idle/Geomancer Idle Animation2.png" id="3_n605o"]
+[ext_resource type="Texture2D" uid="uid://ccify8e6tcbq5" path="res://art/units/geomancer/animations/idle/Geomancer Idle Animation3.png" id="4_5eksv"]
 [ext_resource type="Resource" uid="uid://cpgycncjb4er5" path="res://data/skills/geomancer/DestroyWall.tres" id="4_8f8no"]
 [ext_resource type="Resource" uid="uid://c2nejpl8rd3w" path="res://data/skills/geomancer/Stoneflesh.tres" id="5_l41ud"]
+[ext_resource type="Texture2D" uid="uid://d0570b2ibfyco" path="res://art/units/geomancer/animations/idle/Geomancer Idle Animation4.png" id="5_qrusx"]
+[ext_resource type="Texture2D" uid="uid://f1th8gqn323v" path="res://art/units/geomancer/Geomancer.png" id="6_g8equ"]
+[ext_resource type="Texture2D" uid="uid://cylov3ohii8e6" path="res://art/units/geomancer/animations/idle/Geomancer Idle Animation5.png" id="6_q31ug"]
+[ext_resource type="Texture2D" uid="uid://lcwnjvsxy7u1" path="res://art/units/geomancer/animations/idle/Geomancer Idle Animation6.png" id="7_ixbsb"]
+[ext_resource type="Texture2D" uid="uid://u7s1r1mbdt4e" path="res://art/units/geomancer/animations/idle/Geomancer Idle Animation7.png" id="8_gk2vh"]
+[ext_resource type="Texture2D" uid="uid://dlkf6binjg8lu" path="res://art/units/geomancer/animations/idle/Geomancer Idle Animation8.png" id="9_p3mva"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_84svg"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_svlp8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_n605o")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_5eksv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_qrusx")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_q31ug")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_ixbsb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_gk2vh")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_p3mva")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}]
 
 [resource]
 script = ExtResource("1_phwwh")
@@ -17,4 +59,8 @@ skills = Array[ExtResource("2_du10u")]([ExtResource("3_du10u"), ExtResource("4_8
 growth_atk = 0.3
 growth_defense = 0.6
 growth_move = 0.0
+sprite_texture = ExtResource("6_g8equ")
+portrait_texture = ExtResource("1_8ln0j")
+icon_texture = ExtResource("1_8ln0j")
+idle_frames = SubResource("SpriteFrames_84svg")
 metadata/_custom_type_script = "uid://b823ipo4ebjd5"

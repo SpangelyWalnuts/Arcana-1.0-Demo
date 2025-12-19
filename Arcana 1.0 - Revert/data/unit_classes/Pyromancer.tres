@@ -1,12 +1,52 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=8 format=3 uid="uid://dy0tp2axtcqvr"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=17 format=3 uid="uid://dy0tp2axtcqvr"]
 
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_7jeh2"]
-[ext_resource type="Texture2D" uid="uid://d36bvwxbwrmwp" path="res://art/units/pyromancer/pyromancer icon.png" id="1_sf8ri"]
+[ext_resource type="Texture2D" uid="uid://bdqm6pl1ohgi8" path="res://art/units/pyromancer/Pyromancer Cape Icon.png" id="1_ux0xt"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_7l1x5"]
 [ext_resource type="Resource" uid="uid://cs4lwh06yhvos" path="res://data/skills/Pyromancer/Fireball.tres" id="2_bpxdp"]
+[ext_resource type="Texture2D" uid="uid://dwnrnqq1d0tij" path="res://art/units/pyromancer/idle/Pyromancer Cape Idle1.png" id="2_ux0xt"]
 [ext_resource type="Resource" uid="uid://bfrqsar2c8kjh" path="res://data/skills/Pyromancer/Firebolt.tres" id="3_0qsor"]
-[ext_resource type="Texture2D" uid="uid://244yk4gforef" path="res://art/units/FIre Wizard repair.png" id="6_sf8ri"]
+[ext_resource type="Texture2D" uid="uid://dkddprehkp07m" path="res://art/units/pyromancer/idle/Pyromancer Cape Idle2.png" id="3_empqp"]
+[ext_resource type="Texture2D" uid="uid://rrvhkjrc0tvi" path="res://art/units/pyromancer/idle/Pyromancer Cape Idle3.png" id="4_ob1f4"]
+[ext_resource type="Texture2D" uid="uid://c0hnwluy0vjjq" path="res://art/units/pyromancer/idle/Pyromancer Cape Idle4.png" id="5_xnkp4"]
+[ext_resource type="Texture2D" uid="uid://dfpnu73hdp4oy" path="res://art/units/pyromancer/idle/Pyromancer Cape Idle5.png" id="6_4vroe"]
 [ext_resource type="Resource" uid="uid://dnkeiik2pogwi" path="res://data/skills/Pyromancer/HeatUp.tres" id="6_yal4e"]
+[ext_resource type="Texture2D" uid="uid://bq7coekmofu05" path="res://art/units/pyromancer/idle/Pyromancer Cape Idle6.png" id="7_mfbn5"]
+[ext_resource type="Texture2D" uid="uid://da7pp4spodeay" path="res://art/units/pyromancer/idle/Pyromancer Cape Idle7.png" id="8_rb7sd"]
+[ext_resource type="Texture2D" uid="uid://cvrjxrhbxt0pj" path="res://art/units/pyromancer/idle/Pyromancer Cape Idle8.png" id="9_svf5c"]
+[ext_resource type="Texture2D" uid="uid://cqtad2d6a5jrt" path="res://art/units/pyromancer/Pyromancer Cape.png" id="15_263cj"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_bsxux"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_ux0xt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_empqp")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_ob1f4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_xnkp4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_4vroe")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_mfbn5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_rb7sd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_svf5c")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}]
 
 [resource]
 script = ExtResource("1_7jeh2")
@@ -19,6 +59,7 @@ growth_hp = 0.4
 growth_atk = 0.7
 growth_defense = 0.1
 growth_move = 0.0
-sprite_texture = ExtResource("6_sf8ri")
-portrait_texture = ExtResource("1_sf8ri")
-icon_texture = ExtResource("1_sf8ri")
+sprite_texture = ExtResource("15_263cj")
+portrait_texture = ExtResource("1_ux0xt")
+icon_texture = ExtResource("1_ux0xt")
+idle_frames = SubResource("SpriteFrames_bsxux")

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://pq87a0bvcj5b"]
+
+[ext_resource type="Texture2D" uid="uid://dmfekaxqvnf85" path="res://art/ui/spell icons/Ice Spear.png" id="1_frmmd"]
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_no20o"]
+
+[resource]
+script = ExtResource("2_no20o")
+name = "Ice Spear"
+description = "Strike an enemy with a spear of ice."
+mana_cost = 4
+cast_range = 4
+aoe_radius = 1
+flat_power = 1
+icon_texture = ExtResource("1_frmmd")

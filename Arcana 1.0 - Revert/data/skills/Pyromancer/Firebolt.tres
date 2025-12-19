@@ -8,6 +8,5 @@ script = ExtResource("1_wejox")
 name = "Firebolt"
 description = "Strike an enemy with a firebolt for massive damage."
 mana_cost = 3
-power_multiplier = 2.0
-flat_power = 1
+aoe_radius = 1
 icon_texture = ExtResource("1_cst6a")

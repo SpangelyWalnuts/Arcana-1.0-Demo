@@ -1,12 +1,52 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=8 format=3 uid="uid://dr514xgg3ujki"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=17 format=3 uid="uid://dr514xgg3ujki"]
 
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_851fg"]
 [ext_resource type="Texture2D" uid="uid://dsl8culjlvove" path="res://art/units/druid/Druid Icon.png" id="1_fmy7s"]
+[ext_resource type="Texture2D" uid="uid://bnqxo86sc48yu" path="res://art/units/druid/idle/Druid Idle Animation1.png" id="2_grl6k"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_nnrtr"]
 [ext_resource type="Resource" uid="uid://ci844ttgxgesx" path="res://data/skills/druid/Entangling Vines.tres" id="3_h63y4"]
+[ext_resource type="Texture2D" uid="uid://d23e65eknip6g" path="res://art/units/druid/idle/Druid Idle Animation2.png" id="3_qqa6a"]
+[ext_resource type="Texture2D" uid="uid://bysdudjd1vjrh" path="res://art/units/druid/idle/Druid Idle Animation3.png" id="4_2uipf"]
 [ext_resource type="Resource" uid="uid://c7j2c7apo5id" path="res://data/skills/druid/Earths_Bounty.tres" id="4_jbx38"]
-[ext_resource type="Texture2D" uid="uid://5vs3tvwphfuf" path="res://art/units/druid/Druid Map.png" id="5_jbx38"]
+[ext_resource type="Texture2D" uid="uid://cv5cdr2scrltb" path="res://art/units/druid/idle/Druid Idle Animation4.png" id="5_ce8gk"]
 [ext_resource type="Resource" uid="uid://brij0i2ochohl" path="res://data/skills/druid/HealingSpores.tres" id="6_se717"]
+[ext_resource type="Texture2D" uid="uid://3mktnmllakno" path="res://art/units/druid/idle/Druid Idle Animation5.png" id="6_ty4jb"]
+[ext_resource type="Texture2D" uid="uid://1bkxtlyok06t" path="res://art/units/druid/idle/Druid Idle Animation6.png" id="7_n0q0l"]
+[ext_resource type="Texture2D" uid="uid://cn8xoggbxb3bm" path="res://art/units/druid/Druid.png" id="7_se717"]
+[ext_resource type="Texture2D" uid="uid://dmw6xd7dt8nh0" path="res://art/units/druid/idle/Druid Idle Animation7.png" id="8_xulo8"]
+[ext_resource type="Texture2D" uid="uid://mh3mmi3ttjfb" path="res://art/units/druid/idle/Druid Idle Animation8.png" id="9_m6a1m"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_e2veg"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_grl6k")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_qqa6a")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_2uipf")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_ce8gk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_ty4jb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_n0q0l")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_xulo8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_m6a1m")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}]
 
 [resource]
 script = ExtResource("1_851fg")
@@ -20,6 +60,7 @@ growth_atk = 0.4
 growth_defense = 0.3
 growth_move = 0.0
 growth_mana = 0.2
-sprite_texture = ExtResource("5_jbx38")
+sprite_texture = ExtResource("7_se717")
 portrait_texture = ExtResource("1_fmy7s")
 icon_texture = ExtResource("1_fmy7s")
+idle_frames = SubResource("SpriteFrames_e2veg")

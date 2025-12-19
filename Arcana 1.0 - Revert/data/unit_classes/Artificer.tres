@@ -1,13 +1,54 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=9 format=3 uid="uid://bvkvy6vfo1ylc"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=19 format=3 uid="uid://bvkvy6vfo1ylc"]
 
+[ext_resource type="Texture2D" uid="uid://0kmxqa14vq6u" path="res://art/units/artificer/Artificer Icon.png" id="1_63yau"]
+[ext_resource type="Texture2D" uid="uid://d12vkaa6225d7" path="res://art/units/artificer/idle/Artificer Idle Animation1.png" id="1_71cqd"]
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_i74ft"]
+[ext_resource type="Texture2D" uid="uid://dpidf7xygj82y" path="res://art/units/artificer/idle/Artificer Idle Animation2.png" id="2_63yau"]
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_av64s"]
 [ext_resource type="Resource" uid="uid://83hx2jarskvu" path="res://data/skills/artificer/alacrity.tres" id="3_ash0m"]
+[ext_resource type="Texture2D" uid="uid://bb2tpeecsadph" path="res://art/units/artificer/idle/Artificer Idle Animation3.png" id="3_ovqut"]
 [ext_resource type="Resource" uid="uid://4p4g2olvpi2h" path="res://data/skills/artificer/insight.tres" id="4_p2xr4"]
-[ext_resource type="Texture2D" uid="uid://dohdap1fk0eus" path="res://art/Alchemist_Map_Sprite.png" id="5_ash0m"]
+[ext_resource type="Texture2D" uid="uid://b2fyk5fku8f6b" path="res://art/units/artificer/idle/Artificer Idle Animation4.png" id="4_pn16k"]
 [ext_resource type="Resource" uid="uid://6q3fk1imlxsg" path="res://data/skills/artificer/foresight.tres" id="5_f143a"]
+[ext_resource type="Texture2D" uid="uid://hqpln7fihk2r" path="res://art/units/artificer/idle/Artificer Idle Animation5.png" id="5_t7qyn"]
 [ext_resource type="Resource" uid="uid://seacqbd14wua" path="res://data/skills/artificer/dualcast.tres" id="6_7mxlk"]
+[ext_resource type="Texture2D" uid="uid://dmhoanj7mhwxu" path="res://art/units/artificer/idle/Artificer Idle Animation6.png" id="6_phk73"]
 [ext_resource type="Resource" uid="uid://dspsn31vnun42" path="res://data/skills/artificer/celerity.tres" id="7_2uoik"]
+[ext_resource type="Texture2D" uid="uid://o57h8vqvia42" path="res://art/units/artificer/idle/Artificer Idle Animation7.png" id="7_6eyuv"]
+[ext_resource type="Texture2D" uid="uid://dnn6jf3gqbwsa" path="res://art/units/artificer/idle/Artificer Idle Animation8.png" id="8_4pnta"]
+[ext_resource type="Texture2D" uid="uid://cxgi10dvbqtsx" path="res://art/units/artificer/Artificer Map Sprite.png" id="16_ong5l"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_3k286"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_71cqd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_63yau")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_ovqut")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_pn16k")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_t7qyn")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_phk73")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_6eyuv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_4pnta")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}]
 
 [resource]
 script = ExtResource("1_i74ft")
@@ -21,4 +62,7 @@ growth_atk = 0.1
 growth_defense = 0.3
 growth_move = 0.0
 growth_mana = 1.0
-sprite_texture = ExtResource("5_ash0m")
+sprite_texture = ExtResource("16_ong5l")
+portrait_texture = ExtResource("1_63yau")
+icon_texture = ExtResource("1_63yau")
+idle_frames = SubResource("SpriteFrames_3k286")
