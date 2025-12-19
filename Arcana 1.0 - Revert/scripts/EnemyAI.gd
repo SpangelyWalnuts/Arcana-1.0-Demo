@@ -67,6 +67,8 @@ func take_turn(main: Node, enemy: Node, players: Array) -> void:
 	if target == null or not is_instance_valid(target):
 		return
 
+	_tick_ai_cooldowns(enemy)
+
 	# 0) Cast arcana if possible (so intent "cast" is truthful)
 	if arcana_intent_enabled:
 		var cast_plan: Dictionary = _choose_cast_plan(enemy, players)
@@ -175,10 +177,9 @@ func _choose_cast_plan(enemy: Node, players: Array) -> Dictionary:
 	# { "skill": Skill, "target_unit": Node, "center_tile": Vector2i }
 	if enemy == null or not is_instance_valid(enemy):
 		return {}
-	if StatusManager != null and StatusManager.has_method("unit_has_flag") and StatusManager.unit_has_flag(enemy, "prevent_arcana"):
+	if _unit_cannot_cast(enemy):
 		return {}
 
-	# Needs skills array on Unit (your Unit has: var skills: Array[Skill] = [] ) :contentReference[oaicite:0]{index=0}
 	if not _has_prop(enemy, "skills"):
 		return {}
 	var skills: Array = enemy.get("skills")
@@ -200,21 +201,62 @@ func _choose_cast_plan(enemy: Node, players: Array) -> Dictionary:
 		# Ignore terrain-object skills for now (you can enable later)
 		if _has_prop(skill, "is_terrain_object_skill") and bool(skill.get("is_terrain_object_skill")):
 			continue
-		# effect_type == 3 (terrain) in your scheme; safe-check
 		if _has_prop(skill, "effect_type") and int(skill.get("effect_type")) == 4:
 			continue
 
+		# -------------------------
+		# (2) Unified target pool logic (PUTS HERE)
+		# -------------------------
+		if _is_buff_skill(skill):
+			if _get_skill_cooldown(enemy, skill) > 0:
+				continue
 		var target_pool: Array = players
+
+		if _has_prop(skill, "target_type"):
+			var tt: int = int(skill.get("target_type"))
+			match tt:
+				2: # ALLY_UNITS
+					target_pool = _get_enemy_allies(enemy)
+				3: # SELF
+					target_pool = [enemy]
+				1: # ALL_UNITS
+					target_pool = []
+					target_pool.append_array(players)
+					target_pool.append_array(_get_enemy_allies(enemy))
+				0: # ENEMY_UNITS
+					target_pool = players
+				_:
+					target_pool = players
+
+		# Healing should never target players even if misconfigured
 		if _is_heal_skill(skill):
 			target_pool = _get_enemy_allies(enemy)
 
-		var pick: Dictionary = _pick_cast_target(enemy, target_pool, skill)
+		# -------------------------
+		# (3) Prevent buff spam (PUTS HERE)
+		# -------------------------
+		if _is_buff_skill(skill):
+			var any_valid: bool = false
+			for t in target_pool:
+				if t == null or not is_instance_valid(t):
+					continue
+				if _get_int(t, "hp", 0) <= 0:
+					continue
+				if _unit_has_buff_from_skill(t, skill):
+					continue
+				any_valid = true
+				break
+			if not any_valid:
+				continue
 
+		# Now pick an actual target/tile from the pool
+		var pick: Dictionary = _pick_cast_target(enemy, target_pool, skill)
 		if pick.is_empty():
 			continue
 		return pick
 
 	return {}
+
 
 
 func _pick_cast_target(enemy: Node, players: Array, skill) -> Dictionary:
@@ -250,8 +292,14 @@ func _pick_cast_target(enemy: Node, players: Array, skill) -> Dictionary:
 		# Prefer finishing low HP targets slightly (readability / threat)
 		var hp: int = _get_int(p, "hp", 0)
 		var max_hp: int = _get_int(p, "max_hp", 0)
+		
+		# DONT PICK TARGETS ALREADY BUFFED BY THE SAME SKILL
+		if _is_buff_skill(skill) and _unit_has_buff_from_skill(p, skill):
+			continue
 
 		if _is_heal_skill(skill):
+			if max_hp <= 0:
+				continue
 			if max_hp > 0:
 				var missing: int = max_hp - hp
 				if missing <= 0:
@@ -322,6 +370,13 @@ func _execute_cast_plan(main: Node, enemy: Node, plan: Dictionary) -> void:
 
 					if caster == enemy:
 						break
+				# After casting, set a cooldown for buffs so they don't get spammed.
+			# ✅ Set AI cooldown after a successful cast
+					if _is_buff_skill(skill):
+						var cd: int = 2
+						if _has_prop(skill, "duration_turns"):
+							cd = max(2, int(skill.get("duration_turns")))
+						_apply_buff_cooldown_after_cast(enemy, skill)
 			return
 
 	# Single-target: route through SkillSystem if available
@@ -343,6 +398,12 @@ func _execute_cast_plan(main: Node, enemy: Node, plan: Dictionary) -> void:
 
 					if caster == enemy:
 						break
+								# ✅ Set AI cooldown after a successful cast
+					if _is_buff_skill(skill):
+						var cd2: int = 2
+						if _has_prop(skill, "duration_turns"):
+							cd2 = max(2, int(skill.get("duration_turns")))
+						_apply_buff_cooldown_after_cast(enemy, skill)
 			return
 
 	# Fallback: basic attack if we have CombatManager
@@ -352,6 +413,8 @@ func _execute_cast_plan(main: Node, enemy: Node, plan: Dictionary) -> void:
 
 	# small readability pause after casting
 	await get_tree().create_timer(0.2).timeout
+	
+	
 
 # -----------------------------
 # Role Profiles
@@ -677,7 +740,7 @@ func _skill_has_tag(skill, tag: StringName) -> bool:
 				return true
 	return false
 
-#HEALER HELPERS
+#HEALER/BUFF HELPERS
 func _is_heal_skill(skill) -> bool:
 	if skill == null:
 		return false
@@ -707,6 +770,111 @@ func _get_enemy_allies(enemy: Node) -> Array:
 		allies.append(a)
 
 	return allies
+
+func _is_buff_skill(skill) -> bool:
+	if skill == null:
+		return false
+	if _has_prop(skill, "effect_type"):
+		return int(skill.get("effect_type")) == 2 # Skill.EffectType.BUFF
+	return false
+
+
+func _unit_has_buff_from_skill(unit: Node, skill) -> bool:
+	if unit == null or not is_instance_valid(unit) or skill == null:
+		return false
+	if StatusManager == null or not StatusManager.has_method("get_statuses_for_unit"):
+		return false
+
+	var statuses: Array = StatusManager.get_statuses_for_unit(unit)
+	for st in statuses:
+		if typeof(st) != TYPE_DICTIONARY:
+			continue
+		var s = st.get("skill", null)
+		if s == null:
+			continue
+
+		# Prefer reference equality
+		if s == skill:
+			return true
+
+		# Fallback: match by name (safer across duplicated resources)
+		if _has_prop(s, "name") and _has_prop(skill, "name"):
+			if String(s.get("name")) == String(skill.get("name")):
+				return true
+
+	return false
+
+func _skill_id(skill) -> String:
+	# Stable key: resource_path if available, otherwise name
+	if skill == null:
+		return ""
+	if _has_prop(skill, "resource_path"):
+		var rp: String = String(skill.get("resource_path"))
+		if rp != "":
+			return rp
+	if _has_prop(skill, "name"):
+		return String(skill.get("name"))
+	return str(skill)
+
+
+func _get_ai_cooldowns(enemy: Node) -> Dictionary:
+	if enemy == null:
+		return {}
+	if enemy.has_meta("ai_cooldowns"):
+		var d = enemy.get_meta("ai_cooldowns")
+		if typeof(d) == TYPE_DICTIONARY:
+			return d
+	var fresh: Dictionary = {}
+	enemy.set_meta("ai_cooldowns", fresh)
+	return fresh
+
+
+func _tick_ai_cooldowns(enemy: Node) -> void:
+	var cds: Dictionary = _get_ai_cooldowns(enemy)
+	if cds.is_empty():
+		return
+
+	var keys := cds.keys()
+	for k in keys:
+		var v = cds[k]
+		if typeof(v) != TYPE_INT:
+			continue
+		var nv: int = int(v) - 1
+		if nv <= 0:
+			cds.erase(k)
+		else:
+			cds[k] = nv
+	enemy.set_meta("ai_cooldowns", cds)
+
+
+func _get_skill_cooldown(enemy: Node, skill) -> int:
+	var cds: Dictionary = _get_ai_cooldowns(enemy)
+	var key: String = _skill_id(skill)
+	if key == "":
+		return 0
+	if cds.has(key):
+		return int(cds[key])
+	return 0
+
+
+func _set_skill_cooldown(enemy: Node, skill, turns: int) -> void:
+	if enemy == null or skill == null:
+		return
+	var key: String = _skill_id(skill)
+	if key == "":
+		return
+	var cds: Dictionary = _get_ai_cooldowns(enemy)
+	cds[key] = max(1, int(turns))
+	enemy.set_meta("ai_cooldowns", cds)
+
+# Buff cleaner HELPER to avoid duplicate code
+func _apply_buff_cooldown_after_cast(enemy: Node, skill) -> void:
+	if not _is_buff_skill(skill):
+		return
+	var cd: int = 2
+	if _has_prop(skill, "duration_turns"):
+		cd = max(2, int(skill.get("duration_turns")))
+	_set_skill_cooldown(enemy, skill, cd)
 
 # -----------------------------
 # Safe property helpers (Godot 4)
