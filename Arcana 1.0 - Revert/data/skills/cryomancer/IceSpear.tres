@@ -10,6 +10,5 @@ description = "Strike an enemy with a spear of ice."
 mana_cost = 4
 cast_range = 4
 flat_power = 1
-status_key = &"chilled"
 tags = Array[StringName]([&"ice"])
 icon_texture = ExtResource("1_frmmd")

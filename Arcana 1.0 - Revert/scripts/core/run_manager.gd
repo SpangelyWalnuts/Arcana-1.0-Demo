@@ -17,6 +17,10 @@ var current_weather: StringName = &"clear"
 # --- Biomes ---
 var current_biome: StringName = &"ruins"
 
+#--- Status Skills ---
+var _wet_status_skill: Skill
+var _chilled_status_skill: Skill
+
 # --- Encounter tags ---
 var current_encounter_tag: StringName = &"none"
 @export_range(0.0, 1.0, 0.05) var encounter_tag_chance: float = 0.60 # 60% tagged, 40% none
@@ -189,7 +193,7 @@ func get_floor_config(floor: int) -> Dictionary:
 			map_chunks = Vector2i(5, 5)
 # Biome rotates every floor:
 # 1 ruins, 2 forest, 3 catacombs, 4 tundra, 5 volcano, 6 ruins...
-	var biome: StringName = &"ruins"
+	var biome: StringName = &"taiga"
 	var biome_index: int = (floor - 1) % 5
 	var weather: StringName = _roll_weather_for_biome(biome)
 
@@ -862,7 +866,7 @@ func _roll_weather_for_biome(biome: StringName) -> StringName:
 	if biome == &"taiga":
 		# 30% snow, 70% clear (tweak anytime)
 		var r: float = randf()
-		if r < 0.30:
+		if r < .90:
 			return &"snow"
 		return &"clear"
 
@@ -872,9 +876,6 @@ func _roll_weather_for_biome(biome: StringName) -> StringName:
 
 func get_weather() -> StringName:
 	return current_weather
-
-var _wet_status_skill: Skill
-var _chilled_status_skill: Skill
 
 #STATUS SKILL STUFF
 func get_wet_status_skill() -> Skill:
@@ -892,8 +893,34 @@ func get_chilled_status_skill() -> Skill:
 		_chilled_status_skill = Skill.new()
 		_chilled_status_skill.name = "Chilled"
 		_chilled_status_skill.effect_type = Skill.EffectType.DEBUFF
-		_chilled_status_skill.duration_turns = 3
+		_chilled_status_skill.duration_turns = 4
 		_chilled_status_skill.move_mod = -1
 		_chilled_status_skill.status_key = &"chilled"
 		_chilled_status_skill.tags = [&"ice"]
 	return _chilled_status_skill
+
+var _shocked_status_skill: Skill
+
+func get_shocked_status_skill() -> Skill:
+	if _shocked_status_skill == null:
+		_shocked_status_skill = Skill.new()
+		_shocked_status_skill.name = "Shocked"
+		_shocked_status_skill.effect_type = Skill.EffectType.DEBUFF
+		_shocked_status_skill.duration_turns = 2
+		_shocked_status_skill.prevent_move = true
+		_shocked_status_skill.status_key = &"shocked"
+		_shocked_status_skill.tags = [&"lightning"]
+	return _shocked_status_skill
+	
+var _frozen_status_skill: Skill
+
+func get_frozen_status_skill() -> Skill:
+	if _frozen_status_skill == null:
+		_frozen_status_skill = Skill.new()
+		_frozen_status_skill.name = "Frozen"
+		_frozen_status_skill.effect_type = Skill.EffectType.DEBUFF
+		_frozen_status_skill.duration_turns = 2
+		_frozen_status_skill.prevent_move = true
+		_frozen_status_skill.status_key = &"frozen"
+		_frozen_status_skill.tags = [&"ice"]
+	return _frozen_status_skill

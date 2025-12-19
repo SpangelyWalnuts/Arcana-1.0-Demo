@@ -1202,7 +1202,7 @@ func spawn_units_from_run() -> void:
 		i += 1
 		_hook_unit_for_combat_log(u)
 
-# After all player units are spawned, spawn enemies.
+	# After all player units are spawned, spawn enemies.
 	if enemy_spawner != null:
 		enemy_spawner.spawn_enemies_for_floor(RunManager.current_floor, spawn_tiles)
 
@@ -1211,8 +1211,14 @@ func spawn_units_from_run() -> void:
 		await get_tree().process_frame
 		for child in units.get_children():
 			_connect_unit_signals(child)
+
+		# ✅ Weather start statuses should happen AFTER enemies exist
+		_apply_weather_start_statuses()
 	else:
-	# existing fallback...
+		# fallback enemy spawn...
+		# (optional: also call _apply_weather_start_statuses() after you add fallback enemy)
+		pass
+
 
 		# Fallback: spawn a single generic enemy so you can still test combat
 		var enemy_tile := Vector2i(8, 4)
@@ -1222,22 +1228,12 @@ func spawn_units_from_run() -> void:
 		e.grid_position = enemy_tile
 		e.position = grid.tile_to_world(enemy_tile)
 		units.add_child(e)
-	
+	_apply_weather_start_statuses()
 
 	_initial_player_unit_count = get_tree().get_nodes_in_group("player_units").size()
 
-#GIVE UNITS EFFECTS ON BATTLE START
-func _apply_weather_start_statuses() -> void:
-	if RunManager == null or StatusManager == null:
-		return
 
-	var w: StringName = RunManager.get_weather() if RunManager.has_method("get_weather") else &"clear"
-	if w == &"snow":
-		var chilled: Skill = RunManager.get_chilled_status_skill()
-		for u in get_tree().get_nodes_in_group("player_units"):
-			StatusManager.apply_status_to_unit(u, chilled, null)
-		for e in get_tree().get_nodes_in_group("enemy_units"):
-			StatusManager.apply_status_to_unit(e, chilled, null)
+
 
 #ENEMY INTENT ICON HELPER
 func _update_enemy_intents() -> void:
@@ -1813,6 +1809,35 @@ func _spawn_unit(scene: PackedScene, grid_pos: Vector2i, team: String) -> Node2D
 		u.died.connect(_on_unit_died.bind(u))
 
 	return u
+	
+func _apply_weather_start_statuses() -> void:
+	if RunManager == null or StatusManager == null:
+		return
+
+	var w: StringName = &"clear"
+	if RunManager.has_method("get_weather"):
+		w = RunManager.get_weather()
+	elif "current_weather" in RunManager:
+		w = RunManager.current_weather
+
+	if w != &"snow":
+		return
+
+	# Requires RunManager.get_chilled_status_skill() (you already have this for reactions)
+	if not RunManager.has_method("get_chilled_status_skill"):
+		return
+
+	var chilled: Skill = RunManager.get_chilled_status_skill()
+	if chilled == null:
+		return
+
+	# Apply to both teams for now (we can change this later)
+	for u in get_tree().get_nodes_in_group("player_units"):
+		StatusManager.apply_status_to_unit(u, chilled, null)
+
+	for e in get_tree().get_nodes_in_group("enemy_units"):
+		StatusManager.apply_status_to_unit(e, chilled, null)
+
 func _validate_current_map_from_spawns(spawn_tiles: Array[Vector2i]) -> bool:
 	if terrain == null or grid == null:
 		push_warning("MapValidator: terrain or grid is null; skipping validation.")

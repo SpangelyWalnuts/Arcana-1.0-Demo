@@ -523,3 +523,25 @@ func _resolve_status_reactions(user, target, skill: Skill) -> void:
 		if CombatLog != null:
 			CombatLog.add("  -> reaction: Wet + Ice = Chilled on %s" % target.name,
 				{"type":"reaction", "target": target.name})
+		
+	# Wet + Lightning => Shocked (Wet consumed)
+	if _skill_has_tag(skill, &"lightning") and StatusManager.has_status(target, &"wet"):
+		StatusManager.remove_status(target, &"wet")
+
+		if RunManager != null and RunManager.has_method("get_shocked_status_skill"):
+			var shocked: Skill = RunManager.get_shocked_status_skill()
+			StatusManager.apply_status_to_unit(target, shocked, user)
+
+		if CombatLog != null:
+			CombatLog.add("Reaction: Wet + Lightning → Shocked (%s)" % target.name, {"type":"reaction"})
+			
+	# Chilled + Ice => Frozen (Wet consumed)
+	if _skill_has_tag(skill, &"ice") and StatusManager.has_status(target, &"chilled"):
+		StatusManager.remove_status(target, &"chilled")
+
+		if RunManager != null and RunManager.has_method("get_frozen_status_skill"):
+			var frozen: Skill = RunManager.get_frozen_status_skill()
+			StatusManager.apply_status_to_unit(target, frozen, user)
+
+		if CombatLog != null:
+			CombatLog.add("Reaction: Chilled + Ice → Frozen (%s)" % target.name, {"type":"reaction"})

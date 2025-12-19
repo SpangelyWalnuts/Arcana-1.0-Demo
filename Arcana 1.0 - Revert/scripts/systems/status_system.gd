@@ -13,6 +13,9 @@ const STATUS_ICON_TEXTURES: Dictionary = {
 	"def_mod": preload("res://art/ui/status_icons/buff_def.png"),
 	"wet": preload("res://art/ui/status_icons/wet.png"),
 	"chilled": preload("res://art/ui/status_icons/chilled.png"),
+	"shocked": preload("res://art/ui/status_icons/fatigue.png"),
+	"frozen": preload("res://art/ui/status_icons/fatigue.png"),
+
 
 }
 
@@ -255,3 +258,12 @@ func refresh_icons_for_unit(unit, container: HBoxContainer) -> void:
 		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		icon.custom_minimum_size = Vector2(12, 12) # Godot 4 property name
 		container.add_child(icon)
+
+#STATUS DISPLAY HELPER
+func get_status_display_name(key: StringName) -> String:
+	match key:
+		&"wet": return "Wet"
+		&"chilled": return "Chilled"
+		&"shocked": return "Shocked"
+		&"frozen": return "Frozen"
+		_: return String(key)
