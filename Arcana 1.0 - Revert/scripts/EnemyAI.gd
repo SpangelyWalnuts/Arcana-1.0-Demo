@@ -19,6 +19,37 @@ class_name EnemyAI
 # Arcana (casting) tuning
 @export var arcana_intent_enabled: bool = true
 
+#STATUS INFLUENCE
+func _has_status(unit: Node, key: StringName) -> bool:
+	if unit == null:
+		return false
+	if StatusManager == null:
+		return false
+	if StatusManager.has_method("has_status"):
+		return bool(StatusManager.has_status(unit, key))
+	return false
+
+func _unit_cannot_move(unit: Node) -> bool:
+	# Existing flag path
+	if StatusManager != null and StatusManager.has_method("unit_has_flag"):
+		if bool(StatusManager.unit_has_flag(unit, "prevent_move")):
+			return true
+
+	# New: explicit status keys
+	if _has_status(unit, &"shocked"):
+		return true
+	if _has_status(unit, &"frozen"):
+		return true
+
+	return false
+
+func _unit_cannot_cast(unit: Node) -> bool:
+	if StatusManager != null and StatusManager.has_method("unit_has_flag"):
+		return bool(StatusManager.unit_has_flag(unit, "prevent_arcana"))
+	return false
+
+func _unit_is_chilled(unit: Node) -> bool:
+	return _has_status(unit, &"chilled")
 
 # -----------------------------
 # Public API
@@ -71,11 +102,20 @@ func take_turn(main: Node, enemy: Node, players: Array) -> void:
 		return
 
 
-	# 2) If prevented from moving, wait
-	if StatusManager != null and StatusManager.has_method("unit_has_flag") and StatusManager.unit_has_flag(enemy, "prevent_move"):
+	# 2) If prevented from moving (prevent_move / shocked / frozen), we cannot reposition.
+# Try to cast (if possible) or attack (if possible); otherwise wait.
+	if _unit_cannot_move(enemy):
+		# If we can cast, do it (keeps turns meaningful while rooted)
+		if arcana_intent_enabled and not _unit_cannot_cast(enemy):
+			var cast_plan_locked: Dictionary = _choose_cast_plan(enemy, players)
+			if not cast_plan_locked.is_empty():
+				_execute_cast_plan(main, enemy, cast_plan_locked)
+				return
+		# Otherwise just wait (do nothing)
 		return
 
-	# 3) Otherwise MOVE (multi-tile greedy), then end action
+
+# 3) Otherwise MOVE (multi-tile greedy), then end action
 	var final_tile: Vector2i = _choose_greedy_destination(main, enemy, target)
 	var enemy_tile: Vector2i = _get_v2i(enemy, "grid_position", Vector2i.ZERO)
 	if final_tile == enemy_tile:
@@ -115,7 +155,7 @@ func get_intent(main: Node, enemy: Node, players: Array) -> String:
 	if dist_to_target <= attack_range:
 		return "attack"
 
-	if StatusManager != null and StatusManager.has_method("unit_has_flag") and StatusManager.unit_has_flag(enemy, "prevent_move"):
+	if _unit_cannot_move(enemy):
 		return "wait"
 
 	var dest: Vector2i = _choose_greedy_destination(main, enemy, target)
@@ -161,10 +201,15 @@ func _choose_cast_plan(enemy: Node, players: Array) -> Dictionary:
 		if _has_prop(skill, "is_terrain_object_skill") and bool(skill.get("is_terrain_object_skill")):
 			continue
 		# effect_type == 3 (terrain) in your scheme; safe-check
-		if _has_prop(skill, "effect_type") and int(skill.get("effect_type")) == 3:
+		if _has_prop(skill, "effect_type") and int(skill.get("effect_type")) == 4:
 			continue
 
-		var pick: Dictionary = _pick_cast_target(enemy, players, skill)
+		var target_pool: Array = players
+		if _is_heal_skill(skill):
+			target_pool = _get_enemy_allies(enemy)
+
+		var pick: Dictionary = _pick_cast_target(enemy, target_pool, skill)
+
 		if pick.is_empty():
 			continue
 		return pick
@@ -174,7 +219,7 @@ func _choose_cast_plan(enemy: Node, players: Array) -> Dictionary:
 
 func _pick_cast_target(enemy: Node, players: Array, skill) -> Dictionary:
 	var best_target: Node = null
-	var best_dist: int = 999999
+	var best_score: float = -999999.0
 
 	var enemy_tile: Vector2i = _get_v2i(enemy, "grid_position", Vector2i.ZERO)
 
@@ -186,21 +231,47 @@ func _pick_cast_target(enemy: Node, players: Array, skill) -> Dictionary:
 
 		var p_tile: Vector2i = _get_v2i(p, "grid_position", Vector2i.ZERO)
 		var d: int = _distance(enemy_tile, p_tile)
-		if d < best_dist:
-			best_dist = d
+
+		var cast_range: int = _get_int(skill, "cast_range", 0)
+		if d > cast_range:
+			continue
+
+		# Base: prefer closer targets slightly
+		var score: float = 10.0 - float(d)
+
+		# Reaction visibility: lightning prefers wet targets (Wet consumed -> Shocked in your reactions)
+		if _skill_has_tag(skill, &"lightning") and _has_status(p, &"wet"):
+			score += 6.0
+
+		# (Optional) Ice prefers wet targets too if you want to show Wet->Chilled more often:
+		# if _skill_has_tag(skill, &"ice") and _has_status(p, &"wet"):
+		#     score += 6.0
+
+		# Prefer finishing low HP targets slightly (readability / threat)
+		var hp: int = _get_int(p, "hp", 0)
+		var max_hp: int = _get_int(p, "max_hp", 0)
+
+		if _is_heal_skill(skill):
+			if max_hp > 0:
+				var missing: int = max_hp - hp
+				if missing <= 0:
+					continue # don't heal full HP
+				score += float(missing) * 0.35 # prefer more missing HP
+
+		if not _is_heal_skill(skill) and hp > 0:
+			score += clamp(6.0 - float(hp) * 0.25, 0.0, 6.0)
+
+
+		if score > best_score:
+			best_score = score
 			best_target = p
 
 	if best_target == null:
 		return {}
 
-	var cast_range: int = _get_int(skill, "cast_range", 0)
-	if best_dist > cast_range:
-		return {}
-
 	var best_target_tile: Vector2i = _get_v2i(best_target, "grid_position", Vector2i.ZERO)
-
-	# AoE: use target tile as center for now
 	var aoe_radius: int = _get_int(skill, "aoe_radius", 0)
+
 	if aoe_radius > 0:
 		return {
 			"skill": skill,
@@ -208,7 +279,6 @@ func _pick_cast_target(enemy: Node, players: Array, skill) -> Dictionary:
 			"center_tile": best_target_tile
 		}
 
-	# Single target
 	return {
 		"skill": skill,
 		"target_unit": best_target,
@@ -469,7 +539,10 @@ func _should_move(main: Node, enemy: Node, target: Node, dest: Vector2i) -> bool
 			margin += hold_margin_offense_role
 		_:
 			pass
-
+	# Chilled units are less eager to reposition (helps readability, matches theme)
+	if _unit_is_chilled(enemy):
+		margin += 0.75
+	
 	return move_score < (stay_score - margin)
 
 
@@ -592,6 +665,48 @@ func _find_closest_player(enemy: Node, players: Array) -> Node:
 func _distance(a: Vector2i, b: Vector2i) -> int:
 	return abs(a.x - b.x) + abs(a.y - b.y)
 
+#SKILL TAG HELPER
+func _skill_has_tag(skill, tag: StringName) -> bool:
+	if skill == null:
+		return false
+	# Skills may store tags as Array[StringName] (your Skill.gd does)
+	if _has_prop(skill, "tags"):
+		var tags: Array = skill.get("tags")
+		for t in tags:
+			if t == tag:
+				return true
+	return false
+
+#HEALER HELPERS
+func _is_heal_skill(skill) -> bool:
+	if skill == null:
+		return false
+	# Prefer effect_type if present
+	if _has_prop(skill, "effect_type"):
+		# Skill.EffectType.HEAL == 1 per your enum ordering in Skill.gd
+		# (DAMAGE=0, HEAL=1, BUFF=2, DEBUFF=3, TERRAIN=4)
+		if int(skill.get("effect_type")) == 1:
+			return true
+	# Backwards-compatible flag
+	if _has_prop(skill, "is_heal") and bool(skill.get("is_heal")):
+		return true
+	return false
+
+func _get_enemy_allies(enemy: Node) -> Array:
+	var allies: Array = []
+	if enemy == null or not is_instance_valid(enemy):
+		return allies
+
+	# Enemy units group is already used elsewhere in your project
+	var group_allies := get_tree().get_nodes_in_group("enemy_units")
+	for a in group_allies:
+		if a == null or not is_instance_valid(a):
+			continue
+		if _get_int(a, "hp", 0) <= 0:
+			continue
+		allies.append(a)
+
+	return allies
 
 # -----------------------------
 # Safe property helpers (Godot 4)

@@ -866,7 +866,7 @@ func _roll_weather_for_biome(biome: StringName) -> StringName:
 	if biome == &"taiga":
 		# 30% snow, 70% clear (tweak anytime)
 		var r: float = randf()
-		if r < .90:
+		if r < .30:
 			return &"snow"
 		return &"clear"
 
