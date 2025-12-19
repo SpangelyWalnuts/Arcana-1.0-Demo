@@ -11,6 +11,9 @@ const STATUS_ICON_TEXTURES: Dictionary = {
 	"prevent_arcana": preload("res://art/ui/status_icons/silence.png"),
 	"atk_mod": preload("res://art/ui/status_icons/buff_atk.png"),
 	"def_mod": preload("res://art/ui/status_icons/buff_def.png"),
+	"wet": preload("res://art/ui/status_icons/wet.png"),
+	"chilled": preload("res://art/ui/status_icons/chilled.png"),
+
 }
 
 # -----------------------------------------
@@ -41,6 +44,7 @@ func apply_status_to_unit(unit, skill: Skill, source_unit: Node = null) -> void:
 		"skill": skill,
 		"source": source_unit,
 		"remaining_turns": int(skill.duration_turns),
+		"status_key": skill.status_key,
 
 		# numeric mods
 		"atk_mod": int(skill.atk_mod),
@@ -63,6 +67,7 @@ func apply_status_to_unit(unit, skill: Skill, source_unit: Node = null) -> void:
 		var src_name: String = source_unit.name if source_unit != null else "<?>"
 		CombatLog.add("%s applies %s to %s (%d turns)" % [src_name, skill.name, unit.name, int(skill.duration_turns)],
 			{"type":"status_apply", "skill": skill.name, "target": unit.name, "duration": int(skill.duration_turns)})
+	print("[STATUS APPLY] unit=", unit.name, " skill=", skill.name, " status_key=", skill.status_key)
 
 	# IMPORTANT: deferred emit avoids re-entrancy/stack overflow
 	call_deferred("_emit_status_changed", unit)
@@ -70,6 +75,34 @@ func apply_status_to_unit(unit, skill: Skill, source_unit: Node = null) -> void:
 func _emit_status_changed(unit) -> void:
 	if unit != null:
 		status_changed.emit(unit)
+
+#STATUS ADD AND REMOVAL HELPER
+func has_status(unit, key: StringName) -> bool:
+	var list: Array = _get_status_list(unit)
+	for st in list:
+		if typeof(st) != TYPE_DICTIONARY:
+			continue
+		if StringName(st.get("status_key", &"")) == key:
+			return true
+	return false
+
+
+func remove_status(unit, key: StringName) -> bool:
+	var list: Array = _get_status_list(unit)
+	var removed: bool = false
+
+	for i in range(list.size() - 1, -1, -1):
+		var st = list[i]
+		if typeof(st) != TYPE_DICTIONARY:
+			continue
+		if StringName(st.get("status_key", &"")) == key:
+			list.remove_at(i)
+			removed = true
+
+	if removed:
+		call_deferred("_emit_status_changed", unit)
+
+	return removed
 
 
 # -----------------------------------------
@@ -179,17 +212,22 @@ func get_flags_for_unit(unit) -> Dictionary:
 		if typeof(st) != TYPE_DICTIONARY:
 			continue
 
+		# NEW: show icons for status_key (wet, chilled, etc.)
+		var skey: StringName = StringName(st.get("status_key", &""))
+		if skey != &"":
+			flags[String(skey)] = true
+
 		if bool(st.get("prevent_move", false)):
 			flags["prevent_move"] = true
 		if bool(st.get("prevent_arcana", false)):
 			flags["prevent_arcana"] = true
-
 		if int(st.get("atk_mod", 0)) != 0:
 			flags["atk_mod"] = true
 		if int(st.get("def_mod", 0)) != 0:
 			flags["def_mod"] = true
 
 	return flags
+
 
 
 # -----------------------------------------

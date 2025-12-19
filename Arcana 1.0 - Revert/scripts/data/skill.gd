@@ -44,6 +44,8 @@ enum TerrainAction {
 @export var def_mod: int = 0
 @export var move_mod: int = 0
 @export var mana_regen_mod: int = 0
+@export var status_key: StringName = &""  # e.g. &"wet", &"chilled"
+@export var tags: Array[StringName] = []  # e.g. [&"ice"], [&"water"]
 
 # Number of turns the status lasts (0 = until consumed or permanent)
 @export var duration_turns: int = 1

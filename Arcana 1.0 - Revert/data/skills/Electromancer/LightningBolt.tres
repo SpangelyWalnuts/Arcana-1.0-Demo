@@ -10,4 +10,5 @@ description = "A bolt of lightning strikes target enemy from a great distance"
 mana_cost = 3
 cast_range = 6
 flat_power = 1
+duration_turns = 2
 icon_texture = ExtResource("1_n4eae")

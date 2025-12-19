@@ -1226,6 +1226,18 @@ func spawn_units_from_run() -> void:
 
 	_initial_player_unit_count = get_tree().get_nodes_in_group("player_units").size()
 
+#GIVE UNITS EFFECTS ON BATTLE START
+func _apply_weather_start_statuses() -> void:
+	if RunManager == null or StatusManager == null:
+		return
+
+	var w: StringName = RunManager.get_weather() if RunManager.has_method("get_weather") else &"clear"
+	if w == &"snow":
+		var chilled: Skill = RunManager.get_chilled_status_skill()
+		for u in get_tree().get_nodes_in_group("player_units"):
+			StatusManager.apply_status_to_unit(u, chilled, null)
+		for e in get_tree().get_nodes_in_group("enemy_units"):
+			StatusManager.apply_status_to_unit(e, chilled, null)
 
 #ENEMY INTENT ICON HELPER
 func _update_enemy_intents() -> void:

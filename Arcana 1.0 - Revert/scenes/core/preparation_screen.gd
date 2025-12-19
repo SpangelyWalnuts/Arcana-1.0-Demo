@@ -37,7 +37,10 @@ extends Control
 @onready var shop_details_label: Label     = $ShopDialog/VBoxContainer/DetailsLabel
 @onready var shop_buy_button: Button       = $ShopDialog/VBoxContainer/HBoxContainer/BuyButton
 @onready var shop_close_button: Button     = $ShopDialog/VBoxContainer/HBoxContainer/CloseButton
+
+#MAP TAGS
 @onready var encounter_tag_label: Label = $EncounterTagLabel
+@onready var weather_label: Label = $WeatherLabel
 
 @onready var unit_name_label: Label = $Panel/VBoxContainer/HBoxContainer/DetailsBox/UnitNameLabel
 
@@ -64,6 +67,7 @@ func _ready() -> void:
 
 	_populate_roster_lists()
 	_update_encounter_tag_ui()
+	_update_weather_ui()
 
 	# Double-click to move units between lists
 	roster_list.item_activated.connect(_on_roster_item_activated)
@@ -71,7 +75,6 @@ func _ready() -> void:
 
 	# Single-click to show details
 	roster_list.item_selected.connect(_on_roster_item_selected)
-
 
 	start_button.pressed.connect(_on_start_battle_pressed)
 	title_button.pressed.connect(_on_return_to_title_pressed)
@@ -748,3 +751,22 @@ func _update_encounter_tag_ui() -> void:
 		_:
 			# Covers &"none" and anything unknown
 			encounter_tag_label.visible = false
+
+#WEATHER HELPER 
+func _update_weather_ui() -> void:
+	if weather_label == null:
+		return
+
+	var w: StringName = &"clear"
+	if RunManager.has_method("get_weather"):
+		w = RunManager.get_weather()
+	elif "current_weather" in RunManager:
+		w = RunManager.current_weather
+
+	match w:
+		&"snow":
+			weather_label.text = "Weather: Snow"
+			weather_label.visible = true
+		_:
+			weather_label.text = "Weather: Clear"
+			weather_label.visible = true

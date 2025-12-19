@@ -176,6 +176,9 @@ func _update_status_icons(unit) -> void:
 				continue
 			var turns: int = int(st.get("remaining_turns", -1))
 
+			var skey: String = str(st.get("status_key", ""))
+			if skey != "":
+				sig_parts.append("key:%s:%d" % [skey, turns])
 			# We include the key flags that drive icons
 			if bool(st.get("prevent_move", false)):
 				sig_parts.append("prevent_move:%d" % turns)

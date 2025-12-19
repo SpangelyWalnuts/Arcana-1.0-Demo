@@ -11,6 +11,9 @@ var current_map_chunks: Vector2i = Vector2i(2, 2)
 var current_deploy_limit: int = 4
 var is_boss_floor: bool = false
 
+# --- Weather (biome-driven) ---
+var current_weather: StringName = &"clear"
+
 # --- Biomes ---
 var current_biome: StringName = &"ruins"
 
@@ -188,6 +191,8 @@ func get_floor_config(floor: int) -> Dictionary:
 # 1 ruins, 2 forest, 3 catacombs, 4 tundra, 5 volcano, 6 ruins...
 	var biome: StringName = &"ruins"
 	var biome_index: int = (floor - 1) % 5
+	var weather: StringName = _roll_weather_for_biome(biome)
+
 
 	match biome_index:
 		0:
@@ -226,6 +231,7 @@ func get_floor_config(floor: int) -> Dictionary:
 		"deploy_limit": deploy,
 		"encounter_tag": encounter_tag,
 		"biome": biome,
+		"weather": weather,
 		"is_boss_floor": boss
 	}
 
@@ -240,6 +246,7 @@ func refresh_floor_config() -> void:
 	current_deploy_limit = int(cfg["deploy_limit"])
 	is_boss_floor = bool(cfg["is_boss_floor"])
 	current_biome = StringName(cfg.get("biome", &"ruins"))
+	current_weather = StringName(cfg.get("weather", &"clear"))
 
 #UI ACCESSOR
 func get_biome() -> StringName:
@@ -847,3 +854,46 @@ func choose_draft_unit(choice_index: int) -> void:
 
 	# Now go to the normal preparation screen
 	_goto_preparation()
+
+#WEATHER HELPERS
+func _roll_weather_for_biome(biome: StringName) -> StringName:
+	# v1 weather list: clear, snow
+	# Only taiga has snow for now (per your art support).
+	if biome == &"taiga":
+		# 30% snow, 70% clear (tweak anytime)
+		var r: float = randf()
+		if r < 0.30:
+			return &"snow"
+		return &"clear"
+
+	# All other biomes: clear (for now)
+	return &"clear"
+
+
+func get_weather() -> StringName:
+	return current_weather
+
+var _wet_status_skill: Skill
+var _chilled_status_skill: Skill
+
+#STATUS SKILL STUFF
+func get_wet_status_skill() -> Skill:
+	if _wet_status_skill == null:
+		_wet_status_skill = Skill.new()
+		_wet_status_skill.name = "Wet"
+		_wet_status_skill.effect_type = Skill.EffectType.DEBUFF
+		_wet_status_skill.duration_turns = 4
+		_wet_status_skill.status_key = &"wet"
+		_wet_status_skill.tags = [&"water"]
+	return _wet_status_skill
+
+func get_chilled_status_skill() -> Skill:
+	if _chilled_status_skill == null:
+		_chilled_status_skill = Skill.new()
+		_chilled_status_skill.name = "Chilled"
+		_chilled_status_skill.effect_type = Skill.EffectType.DEBUFF
+		_chilled_status_skill.duration_turns = 3
+		_chilled_status_skill.move_mod = -1
+		_chilled_status_skill.status_key = &"chilled"
+		_chilled_status_skill.tags = [&"ice"]
+	return _chilled_status_skill

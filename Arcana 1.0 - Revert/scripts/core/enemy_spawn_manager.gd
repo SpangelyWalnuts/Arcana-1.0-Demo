@@ -152,9 +152,19 @@ func spawn_enemies_for_floor(floor: int, player_tiles: Array[Vector2i]) -> void:
 			local_weight_offense = max(0.05, local_weight_offense - 0.10)
 			local_weight_defense = max(0.05, local_weight_defense - 0.15)
 			local_arcana_chance = min(1.0, local_arcana_chance + 0.20)
-
 		_:
 			pass
+	var weather: StringName = &"clear"
+	if RunManager != null and "current_weather" in RunManager:
+		weather = RunManager.current_weather
+	elif RunManager != null and RunManager.has_method("get_weather"):
+		weather = RunManager.get_weather()
+
+	var wdict: Dictionary = _apply_weather_to_role_weights(weather, local_weight_offense, local_weight_defense, local_weight_support)
+	local_weight_offense = float(wdict["off"])
+	local_weight_defense = float(wdict["def"])
+	local_weight_support = float(wdict["sup"])
+
 
 	var count: int = local_count
 	print("EnemySpawnManager: spawning %d enemies (floor %d) tag=%s" % [count, floor, String(tag)])
@@ -502,3 +512,25 @@ func _has_prop(obj: Object, prop_name: String) -> bool:
 func _set_if_has(obj: Object, prop: String, value) -> void:
 	if _has_prop(obj, prop):
 		obj.set(prop, value)
+
+#WEATHER MODIFIER HELPER
+func _apply_weather_to_role_weights(weather: StringName, w_off: float, w_def: float, w_sup: float) -> Dictionary:
+	var off: float = w_off
+	var def: float = w_def
+	var sup: float = w_sup
+
+	match weather:
+		&"snow":
+			# Snow: more durable frontlines, fewer supports
+			def *= 1.35
+			off *= 0.95
+			sup *= 0.80
+		_:
+			pass
+
+	# Normalize so proportions stay sane
+	var sum: float = off + def + sup
+	if sum <= 0.0001:
+		return {"off": 1.0, "def": 1.0, "sup": 1.0}
+
+	return {"off": off / sum, "def": def / sum, "sup": sup / sum}

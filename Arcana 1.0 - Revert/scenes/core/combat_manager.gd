@@ -207,6 +207,15 @@ func _skill_can_affect_target(caster, target, skill: Skill) -> bool:
 			return false
 	return false
 
+# SKILL TAG HELPER
+func _skill_has_tag(skill: Skill, tag: StringName) -> bool:
+	if skill == null:
+		return false
+	for t in skill.tags:
+		if t == tag:
+			return true
+	return false
+
 
 # ------------------------------------------------------------
 # UNIT-TARGET SKILLS (single pipeline)
@@ -225,6 +234,8 @@ func execute_skill_on_target(user, target, skill: Skill) -> void:
 			"user": user.name,
 			"target": target.name
 		})
+
+	_resolve_status_reactions(user, target, skill)
 
 	match skill.effect_type:
 		Skill.EffectType.HEAL:
@@ -492,3 +503,23 @@ func _spawn_tile_overlay(skill: Skill, tile: Vector2i, caster) -> void:
 	# NEW: register overlay so GridController can delete it on expiry
 	if grid != null and grid.has_method("register_tile_overlay"):
 		grid.register_tile_overlay(tile, obj, StringName(skill.terrain_tile_key))
+		
+		
+#STATUS REACTION HELPER
+func _resolve_status_reactions(user, target, skill: Skill) -> void:
+	if user == null or target == null or skill == null:
+		return
+	if StatusManager == null:
+		return
+
+	# Ice on Wet => replace Wet with Chilled (your choice A)
+	if _skill_has_tag(skill, &"ice") and StatusManager.has_status(target, &"wet"):
+		StatusManager.remove_status(target, &"wet")
+
+		var chilled_skill: Skill = RunManager.get_chilled_status_skill() if RunManager != null and RunManager.has_method("get_chilled_status_skill") else null
+		if chilled_skill != null:
+			StatusManager.apply_status_to_unit(target, chilled_skill, user)
+
+		if CombatLog != null:
+			CombatLog.add("  -> reaction: Wet + Ice = Chilled on %s" % target.name,
+				{"type":"reaction", "target": target.name})
