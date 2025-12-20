@@ -73,8 +73,9 @@ func take_turn(main: Node, enemy: Node, players: Array) -> void:
 	if arcana_intent_enabled:
 		var cast_plan: Dictionary = _choose_cast_plan(enemy, players)
 		if not cast_plan.is_empty():
-			_execute_cast_plan(main, enemy, cast_plan)
+			await _execute_cast_plan(main, enemy, cast_plan)
 			return
+
 
 	# 1) Attack if already in range
 	var dist_to_target: int = _distance(_get_v2i(enemy, "grid_position", Vector2i.ZERO), _get_v2i(target, "grid_position", Vector2i.ZERO))
@@ -111,7 +112,7 @@ func take_turn(main: Node, enemy: Node, players: Array) -> void:
 		if arcana_intent_enabled and not _unit_cannot_cast(enemy):
 			var cast_plan_locked: Dictionary = _choose_cast_plan(enemy, players)
 			if not cast_plan_locked.is_empty():
-				_execute_cast_plan(main, enemy, cast_plan_locked)
+				await _execute_cast_plan(main, enemy, cast_plan_locked)
 				return
 		# Otherwise just wait (do nothing)
 		return
@@ -125,6 +126,41 @@ func take_turn(main: Node, enemy: Node, players: Array) -> void:
 
 	_move_enemy_to_tile(main, enemy, final_tile)
 
+func _wait_skill_finished_safe(main: Node, enemy: Node, timeout_sec: float = 0.6) -> void:
+	if main == null or enemy == null or not is_instance_valid(enemy):
+		return
+
+	var cm: Node = _get_child_or_prop(main, "combat_manager")
+	if cm == null:
+		# Fallback: just give a tiny pacing delay
+		await get_tree().create_timer(0.15).timeout
+		return
+
+	# If the signal doesn't exist, also fallback.
+	if not cm.has_signal("skill_sequence_finished"):
+		await get_tree().create_timer(0.15).timeout
+		return
+
+	var done: bool = false
+
+	# One-shot listener: marks done only when THIS enemy is the caster
+	var cb := func(emitted):
+		var caster = emitted
+		if emitted is Array and emitted.size() > 0:
+			caster = emitted[0]
+		if caster == enemy:
+			done = true
+
+	cm.skill_sequence_finished.connect(cb, CONNECT_ONE_SHOT)
+
+	var t := get_tree().create_timer(timeout_sec)
+	while true:
+		if done:
+			return
+		if t.time_left <= 0.0:
+			print("[AI] skill_sequence_finished TIMEOUT for:", enemy.name)
+			return
+		await get_tree().process_frame
 
 func get_intent(main: Node, enemy: Node, players: Array) -> String:
 	if enemy == null or not is_instance_valid(enemy) or _get_int(enemy, "hp", 0) <= 0:
@@ -345,75 +381,43 @@ func _execute_cast_plan(main: Node, enemy: Node, plan: Dictionary) -> void:
 	if plan.has("center_tile"):
 		center_tile = plan["center_tile"]
 
-	# Let systems spend mana if they already do.
-	# If your CombatManager/SkillSystem DOES NOT spend mana for enemies, uncomment:
-	# if _has_prop(enemy, "mana"):
-	#     enemy.set("mana", _get_int(enemy, "mana", 0) - _get_int(skill, "mana_cost", 0))
-
 	var aoe_radius: int = _get_int(skill, "aoe_radius", 0)
 
-	# AoE skills: route through CombatManager if available
+	# --- AoE skills: use CombatManager ---
 	if aoe_radius > 0:
 		var cm: Node = _get_child_or_prop(main, "combat_manager")
 		if cm != null and cm.has_method("use_skill"):
 			cm.use_skill(enemy, skill, center_tile)
-			var cm_wait: Node = _get_child_or_prop(main, "combat_manager")
-			if cm_wait != null and cm_wait.has_signal("skill_sequence_finished"):
-				while true:
-					var emitted = await cm_wait.skill_sequence_finished
 
-					# Godot: if the signal emits one arg, `emitted` is that arg.
-					# If it emits multiple args, `emitted` is an Array.
-					var caster = emitted
-					if emitted is Array and emitted.size() > 0:
-						caster = emitted[0]
+			# ✅ Never hang
+			await _wait_skill_finished_safe(main, enemy, 0.6)
 
-					if caster == enemy:
-						break
-				# After casting, set a cooldown for buffs so they don't get spammed.
-			# ✅ Set AI cooldown after a successful cast
 			if _is_buff_skill(skill):
-				var cd: int = 2
-				if _has_prop(skill, "duration_turns"):
-					cd = max(2, int(skill.get("duration_turns")))
 				_apply_buff_cooldown_after_cast(enemy, skill)
 			return
 
-	# Single-target: route through SkillSystem if available
+	# --- Single-target skills: use SkillSystem ---
 	if plan.has("target_unit"):
 		var target_unit: Node = plan["target_unit"]
 		var ss: Node = _get_child_or_prop(main, "skill_system")
 		if ss != null and ss.has_method("execute_skill_on_target"):
 			ss.execute_skill_on_target(enemy, target_unit, skill)
-			var cm_wait: Node = _get_child_or_prop(main, "combat_manager")
-			if cm_wait != null and cm_wait.has_signal("skill_sequence_finished"):
-				while true:
-					var emitted = await cm_wait.skill_sequence_finished
 
-					# Godot: if the signal emits one arg, `emitted` is that arg.
-					# If it emits multiple args, `emitted` is an Array.
-					var caster = emitted
-					if emitted is Array and emitted.size() > 0:
-						caster = emitted[0]
+			# ✅ Never hang
+			await _wait_skill_finished_safe(main, enemy, 0.6)
 
-					if caster == enemy:
-						break
-								# ✅ Set AI cooldown after a successful cast
-					if _is_buff_skill(skill):
-						var cd2: int = 2
-						if _has_prop(skill, "duration_turns"):
-							cd2 = max(2, int(skill.get("duration_turns")))
-						_apply_buff_cooldown_after_cast(enemy, skill)
+			if _is_buff_skill(skill):
+				_apply_buff_cooldown_after_cast(enemy, skill)
 			return
 
-	# Fallback: basic attack if we have CombatManager
+	# --- Fallback: basic attack if CombatManager exists ---
 	var cm2: Node = _get_child_or_prop(main, "combat_manager")
 	if cm2 != null and cm2.has_method("perform_attack") and plan.has("target_unit"):
 		cm2.perform_attack(enemy, plan["target_unit"])
 
-	# small readability pause after casting
 	await get_tree().create_timer(0.2).timeout
-	
+
+
 	
 
 # -----------------------------
@@ -951,3 +955,42 @@ func _set_intent_skill(enemy: Node, skill) -> void:
 			enemy.remove_meta("intent_skill")
 	else:
 		enemy.set_meta("intent_skill", skill)
+
+#SKILL WAIT HELPER
+func _await_skill_finished_or_timeout(main: Node, enemy: Node, timeout_sec: float = 0.8) -> void:
+	# Waits for CombatManager.skill_sequence_finished for this enemy, but never hangs forever.
+	if main == null or enemy == null:
+		return
+
+	var cm_wait: Node = _get_child_or_prop(main, "combat_manager")
+	if cm_wait == null:
+		await get_tree().create_timer(0.15).timeout
+		return
+
+	if not cm_wait.has_signal("skill_sequence_finished"):
+		await get_tree().create_timer(0.15).timeout
+		return
+
+	var timeout := get_tree().create_timer(timeout_sec)
+
+	while true:
+		# If the timer is up, bail out safely.
+		if timeout.time_left <= 0.0:
+			print("[AI] skill_sequence_finished TIMEOUT for:", enemy.name)
+			return
+
+		# Wait one frame while also listening for the signal.
+		# This avoids being stuck inside a signal wait forever if it never fires.
+		await get_tree().process_frame
+
+		# Non-blocking poll: check if any signal already queued this frame (not available),
+		# so we instead do a blocking wait but with a short timer slice.
+		var slice := get_tree().create_timer(0.05)
+		var emitted = await cm_wait.skill_sequence_finished if cm_wait != null else null
+
+		var caster = emitted
+		if emitted is Array and emitted.size() > 0:
+			caster = emitted[0]
+
+		if caster == enemy:
+			return

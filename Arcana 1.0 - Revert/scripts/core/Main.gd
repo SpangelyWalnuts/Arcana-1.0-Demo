@@ -140,13 +140,6 @@ func _ready() -> void:
 		elif "biome" in map_generator:
 			map_generator.biome = RunManager.current_biome
 
-	# Apply biome to map generation
-	if map_generator != null:
-		if map_generator.has_method("set_biome"):
-			map_generator.set_biome(RunManager.current_biome)
-		elif "biome" in map_generator:
-			map_generator.biome = RunManager.current_biome
-
 # Build + validate procedural map (also applies chunk size first)
 	if use_procedural_map and map_generator != null:
 		await _build_and_validate_procedural_map()
