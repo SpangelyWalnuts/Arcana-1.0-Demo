@@ -19,6 +19,10 @@ class_name EnemyAI
 # Arcana (casting) tuning
 @export var arcana_intent_enabled: bool = true
 
+# Buff casting distance gating (prevents buffing from across the map)
+@export var buff_cast_min_player_distance: int = 6  # only cast buffs if within this manhattan distance
+@export var buff_cast_when_rooted: bool = true      # if can't move, allow buff regardless of distance
+
 #STATUS INFLUENCE
 func _has_status(unit: Node, key: StringName) -> bool:
 	if unit == null:
@@ -210,7 +214,8 @@ func get_intent(main: Node, enemy: Node, players: Array) -> String:
 # -----------------------------
 func _choose_cast_plan(enemy: Node, players: Array) -> Dictionary:
 	# Returns {} if no cast. Otherwise:
-	# { "skill": Skill, "target_unit": Node, "center_tile": Vector2i }
+	# { "skill": Skill, "target_unit": Node, "center_tile": Vector2i, "score": float }
+
 	if enemy == null or not is_instance_valid(enemy):
 		return {}
 	if _unit_cannot_cast(enemy):
@@ -221,6 +226,9 @@ func _choose_cast_plan(enemy: Node, players: Array) -> Dictionary:
 	var skills: Array = enemy.get("skills")
 	if skills == null or skills.is_empty():
 		return {}
+
+	var best_pick: Dictionary = {}
+	var best_value: float = -999999.0
 
 	for s in skills:
 		var skill = s
@@ -240,12 +248,26 @@ func _choose_cast_plan(enemy: Node, players: Array) -> Dictionary:
 		if _has_prop(skill, "effect_type") and int(skill.get("effect_type")) == 4:
 			continue
 
-		# -------------------------
-		# (2) Unified target pool logic (PUTS HERE)
-		# -------------------------
+				# --- Buff distance gating ---
+		# Only cast buffs when we're close enough to the players to matter.
+		if _is_buff_skill(skill):
+			var far_ok: bool = false
+			if buff_cast_when_rooted and _unit_cannot_move(enemy):
+				far_ok = true
+
+			if not far_ok:
+				var nearest_player_d: int = _min_distance_to_players(enemy, players)
+				if nearest_player_d > buff_cast_min_player_distance:
+					continue
+
+		# Buff cooldown gate (AI-only)
 		if _is_buff_skill(skill):
 			if _get_skill_cooldown(enemy, skill) > 0:
 				continue
+
+		# -------------------------
+		# Target pool selection
+		# -------------------------
 		var target_pool: Array = players
 
 		if _has_prop(skill, "target_type"):
@@ -253,14 +275,22 @@ func _choose_cast_plan(enemy: Node, players: Array) -> Dictionary:
 			match tt:
 				2: # ALLY_UNITS
 					target_pool = _get_enemy_allies(enemy)
+
 				3: # SELF
 					target_pool = [enemy]
+
 				1: # ALL_UNITS
-					target_pool = []
-					target_pool.append_array(players)
-					target_pool.append_array(_get_enemy_allies(enemy))
+					# Enemies should not friendly-fire with DAMAGE skills by default.
+					if _is_damage_skill(skill):
+						target_pool = players
+					else:
+						target_pool = []
+						target_pool.append_array(players)
+						target_pool.append_array(_get_enemy_allies(enemy))
+
 				0: # ENEMY_UNITS
 					target_pool = players
+
 				_:
 					target_pool = players
 
@@ -269,7 +299,8 @@ func _choose_cast_plan(enemy: Node, players: Array) -> Dictionary:
 			target_pool = _get_enemy_allies(enemy)
 
 		# -------------------------
-		# (3) Prevent buff spam (PUTS HERE)
+		# Prevent buff spam on already-buffed targets
+		# (only works for buffs that create status entries)
 		# -------------------------
 		if _is_buff_skill(skill):
 			var any_valid: bool = false
@@ -285,12 +316,34 @@ func _choose_cast_plan(enemy: Node, players: Array) -> Dictionary:
 			if not any_valid:
 				continue
 
-		# Now pick an actual target/tile from the pool
+		# Pick best target for this skill
 		var pick: Dictionary = _pick_cast_target(enemy, target_pool, skill)
 		if pick.is_empty():
 			continue
-		return pick
 
+		# -------------------------
+		# Priority ordering
+		# -------------------------
+		var v: float = 0.0
+		if pick.has("score"):
+			v = float(pick["score"])
+
+		# Bias by skill type so enemies feel smarter.
+		if _is_heal_skill(skill):
+			v += 4.0
+		elif _is_damage_skill(skill):
+			v += 2.0
+		elif _is_buff_skill(skill):
+			v += 1.0
+		else:
+			v += 0.5
+
+		if v > best_value:
+			best_value = v
+			best_pick = pick
+
+	if not best_pick.is_empty():
+		return best_pick
 	return {}
 
 
@@ -366,7 +419,8 @@ func _pick_cast_target(enemy: Node, players: Array, skill) -> Dictionary:
 	return {
 		"skill": skill,
 		"target_unit": best_target,
-		"center_tile": best_target_tile
+		"center_tile": best_target_tile,
+		"score": best_score
 	}
 
 
@@ -575,6 +629,32 @@ func _choose_best_neighbor(
 		if score < best_score:
 			best_score = score
 			best = n
+		
+			# --- Fallback: if we couldn't find a good scored neighbor, force a simple "chase step"
+	# This prevents stalling around mountains/water when a detour is needed.
+	if best == current:
+		var best_d: int = _distance(current, target_pos)
+		var chase_best: Vector2i = current
+
+		for dir2 in dirs:
+			var n2: Vector2i = current + dir2
+			if not _enemy_can_step_to(main, enemy, n2):
+				continue
+
+			var cost2: int = 1
+			var grid_node2: Node = _get_child_or_prop(main, "grid")
+			if grid_node2 != null and grid_node2.has_method("get_move_cost"):
+				cost2 = int(grid_node2.get_move_cost(n2))
+			if cost2 > budget:
+				continue
+
+			var d2: int = _distance(n2, target_pos)
+			if d2 < best_d:
+				best_d = d2
+				chase_best = n2
+
+		if chase_best != current:
+			return chase_best
 
 	return best
 
@@ -728,6 +808,37 @@ func _find_closest_player(enemy: Node, players: Array) -> Node:
 
 	return closest
 
+func _min_distance_to_players(enemy: Node, players: Array) -> int:
+	var enemy_tile: Vector2i = _get_v2i(enemy, "grid_position", Vector2i.ZERO)
+	var best: int = 999999
+
+	for p in players:
+		if p == null or not is_instance_valid(p):
+			continue
+		if _get_int(p, "hp", 0) <= 0:
+			continue
+		var p_tile: Vector2i = _get_v2i(p, "grid_position", Vector2i.ZERO)
+		var d: int = _distance(enemy_tile, p_tile)
+		if d < best:
+			best = d
+
+	return best
+
+func _skill_priority_bias(skill) -> float:
+	# Small biases so enemies feel smarter without huge refactors.
+	# Higher = more likely to be chosen.
+	if skill == null:
+		return 0.0
+
+	if _is_heal_skill(skill):
+		return 4.0
+	if _is_damage_skill(skill):
+		return 2.0
+	if _is_buff_skill(skill):
+		return 1.0
+
+	# debuffs / others
+	return 0.5
 
 func _distance(a: Vector2i, b: Vector2i) -> int:
 	return abs(a.x - b.x) + abs(a.y - b.y)
@@ -780,6 +891,13 @@ func _is_buff_skill(skill) -> bool:
 		return false
 	if _has_prop(skill, "effect_type"):
 		return int(skill.get("effect_type")) == 2 # Skill.EffectType.BUFF
+	return false
+
+func _is_damage_skill(skill) -> bool:
+	if skill == null:
+		return false
+	if _has_prop(skill, "effect_type"):
+		return int(skill.get("effect_type")) == 0 # Skill.EffectType.DAMAGE
 	return false
 
 

@@ -11,4 +11,5 @@ mana_cost = 5
 cast_range = 5
 aoe_radius = 2
 flat_power = 1
+target_type = 1
 icon_texture = ExtResource("1_wub75")
