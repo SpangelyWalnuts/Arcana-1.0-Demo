@@ -1,8 +1,10 @@
-[gd_resource type="Resource" script_class="Equipment" load_steps=2 format=3 uid="uid://cn86wwggpeovk"]
+[gd_resource type="Resource" script_class="Equipment" load_steps=3 format=3 uid="uid://cn86wwggpeovk"]
 
 [ext_resource type="Script" uid="uid://bnsyp2yvudsd2" path="res://scripts/data/equipment.gd" id="1_584gu"]
+[ext_resource type="Texture2D" uid="uid://cu28gfgv43ep0" path="res://art/equipment/common/Book.png" id="1_jqo2j"]
 
 [resource]
 script = ExtResource("1_584gu")
 name = "Basic Magical Practices"
+icon_texture = ExtResource("1_jqo2j")
 bonus_atk = 2

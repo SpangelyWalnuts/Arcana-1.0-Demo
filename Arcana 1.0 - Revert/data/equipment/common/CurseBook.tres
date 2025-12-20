@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="Equipment" load_steps=2 format=3 uid="uid://blf0fpyeslxls"]
+
+[ext_resource type="Script" uid="uid://bnsyp2yvudsd2" path="res://scripts/data/equipment.gd" id="1_y3r0q"]
+
+[resource]
+script = ExtResource("1_y3r0q")
+name = "Theory of Curse Application"
+description = "Increase the duration of debuffs you apply by 1 turn."
+rarity = "Rare"
+bonus_status_duration_applied = 1

@@ -372,11 +372,11 @@ func _execute_cast_plan(main: Node, enemy: Node, plan: Dictionary) -> void:
 						break
 				# After casting, set a cooldown for buffs so they don't get spammed.
 			# ✅ Set AI cooldown after a successful cast
-					if _is_buff_skill(skill):
-						var cd: int = 2
-						if _has_prop(skill, "duration_turns"):
-							cd = max(2, int(skill.get("duration_turns")))
-						_apply_buff_cooldown_after_cast(enemy, skill)
+			if _is_buff_skill(skill):
+				var cd: int = 2
+				if _has_prop(skill, "duration_turns"):
+					cd = max(2, int(skill.get("duration_turns")))
+				_apply_buff_cooldown_after_cast(enemy, skill)
 			return
 
 	# Single-target: route through SkillSystem if available
@@ -869,12 +869,19 @@ func _set_skill_cooldown(enemy: Node, skill, turns: int) -> void:
 
 # Buff cleaner HELPER to avoid duplicate code
 func _apply_buff_cooldown_after_cast(enemy: Node, skill) -> void:
+	if enemy == null or not is_instance_valid(enemy):
+		return
+	if skill == null:
+		return
 	if not _is_buff_skill(skill):
 		return
+
 	var cd: int = 2
 	if _has_prop(skill, "duration_turns"):
 		cd = max(2, int(skill.get("duration_turns")))
+
 	_set_skill_cooldown(enemy, skill, cd)
+
 
 # -----------------------------
 # Safe property helpers (Godot 4)

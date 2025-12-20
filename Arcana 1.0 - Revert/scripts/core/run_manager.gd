@@ -69,6 +69,8 @@ enum RewardType { GOLD, ITEM, EQUIPMENT, EXP_BOOST, ARTIFACT }
 # { "type": RewardType, "resource": Resource or null, "amount": int, "desc": String }
 var pending_rewards: Array = []
 
+var run_seed: int = 0
+
 @export var available_equipment: Array = []  # list of Equipment resources to choose from
 @export var available_items: Array = []      # list of Item resources to choose from
 
@@ -107,6 +109,8 @@ const EQUIPMENT_DEF_PATHS := [
 	"res://data/equipment/legendary/ParallelThought.tres",
 	"res://data/equipment/rare/StartingGear.tres",
 	"res://data/equipment/common/VitalityStone.tres",
+	"res://data/equipment/rare/CurseBook.tres",
+	"res://data/equipment/legendary/MiracleIdol.tres",
 ]
 
 var item_defs: Array[Item] = []
@@ -125,12 +129,25 @@ var shop_stock: Array = []
 func _ready() -> void:
 	randomize()
 
+func _new_run_seed() -> void:
+	# Deterministic per run, different per new run
+	run_seed = int(randi())
 
+
+func _shop_rng_for_floor(floor: int, salt: int) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	# Make stable for this run + floor + salt (salt lets you roll separate sections)
+	var s: int = run_seed
+	s += floor * 10007
+	s += salt * 1009
+	rng.seed = int(s)
+	return rng
 # -------------------------------------------------------------------
 #  START / END OF RUN
 # -------------------------------------------------------------------
 func start_new_run() -> void:
 	run_active = true
+	_new_run_seed()
 	current_floor = 1
 	refresh_floor_config()
 	gold = 100
@@ -145,6 +162,7 @@ func start_new_run() -> void:
 	_load_item_defs()
 	_load_equipment_defs()
 	_load_all_unit_classes()
+	
 
 	draft_round = 0
 	# Start the first draft round (also changes scene to DraftScreen)
@@ -566,6 +584,28 @@ func _setup_starting_inventory() -> void:
 		var shield: Equipment = equipment_defs[0]
 		inventory_equipment[shield] = 1
 
+#SHOP PRE HELP
+func _pick_unique_equipment(
+	rng: RandomNumberGenerator,
+	list: Array,
+	used: Dictionary
+) -> Equipment:
+	if list.is_empty():
+		return null
+
+	var tries: int = 0
+	while tries < 20:
+		tries += 1
+		var idx: int = int(rng.randi_range(0, list.size() - 1))
+		var choice: Equipment = list[idx]
+		if choice == null:
+			continue
+		if used.has(choice):
+			continue
+		return choice
+
+	return null
+
 
 # -------------------------------------------------------------------
 #  SHOP
@@ -573,37 +613,162 @@ func _setup_starting_inventory() -> void:
 func generate_shop_stock(floor: int) -> void:
 	shop_stock.clear()
 
+	# Local seeded RNG (stable per run+floor)
+	var rng_items: RandomNumberGenerator = _shop_rng_for_floor(floor, 1)
+	var rng_equips: RandomNumberGenerator = _shop_rng_for_floor(floor, 2)
+
+	# Prices scale gently with floor
 	var base_item_price: int = 20 + floor * 5
-	var base_equip_price: int = 40 + floor * 10
+	var base_equip_price: int = 50 + floor * 10
 
-	var num_items: int = min(3, item_defs.size())
-	var num_equips: int = min(3, equipment_defs.size())
+	# Slot counts (keep stable for readability; adjust later if you want)
+	var num_items: int = mini(3, item_defs.size())
+	var num_equips: int = mini(3, equipment_defs.size())
 
+	# Boss floor? Guarantee 1 rare+ equipment slot if possible
+	var boss: bool = (floor % 5) == 0
+
+	# -------------------------
+	# Items: unique picks, moderate stock
+	# -------------------------
 	var items_pool: Array[Item] = item_defs.duplicate()
-	var equips_pool: Array[Equipment] = equipment_defs.duplicate()
-	items_pool.shuffle()
-	equips_pool.shuffle()
+	var used_items: Dictionary = {}
 
-	for i in range(num_items):
-		var it: Item = items_pool[i]
+	var i: int = 0
+	while i < num_items and items_pool.size() > 0:
+		var pick_i: int = int(rng_items.randi_range(0, items_pool.size() - 1))
+		var it: Item = items_pool[pick_i]
+		items_pool.remove_at(pick_i)
+
+		if it == null:
+			continue
+		if used_items.has(it):
+			continue
+
+		used_items[it] = true
+
+		# Stock: 2–4
+		var stock_i: int = int(rng_items.randi_range(2, 4))
+
 		var entry_item: Dictionary = {
 			"resource": it,
 			"type": "item",
 			"price": base_item_price,
-			"stock": 3
+			"stock": stock_i
 		}
 		shop_stock.append(entry_item)
+		i += 1
 
-	for j in range(num_equips):
-		var eq: Equipment = equips_pool[j]
+	# -------------------------
+	# Equipment: rarity scaling + unique picks
+	# -------------------------
+	var commons: Array[Equipment] = []
+	var uncommons: Array[Equipment] = []
+	var rares: Array[Equipment] = []
+	var legendaries: Array[Equipment] = []
+
+	for e in equipment_defs:
+		var eq: Equipment = e
+		if eq == null:
+			continue
+		var r: StringName = _equip_rarity(eq)
+		if r == &"legendary":
+			legendaries.append(eq)
+		elif r == &"rare":
+			rares.append(eq)
+		elif r == &"uncommon":
+			uncommons.append(eq)
+		else:
+			commons.append(eq)
+
+	# Rarity weights scale by floor
+	# (simple, readable, tweakable)
+	var w_common: float = 1.0
+	var w_uncommon: float = 0.25 + float(floor) * 0.03
+	var w_rare: float = 0.05 + float(floor) * 0.015
+	var w_legend: float = 0.01 + float(floor) * 0.003
+
+	# Clamp so it doesn't get silly
+	w_uncommon = clampf(w_uncommon, 0.25, 0.75)
+	w_rare = clampf(w_rare, 0.05, 0.40)
+	w_legend = clampf(w_legend, 0.01, 0.12)
+
+	var equip_used: Dictionary = {}
+
+	# Boss rare guarantee (if possible)
+	var guaranteed_rare_done: bool = false
+	if boss:
+		var boss_pick: Equipment = null
+		if not legendaries.is_empty():
+			boss_pick = _pick_unique_equipment(rng_equips, legendaries, equip_used)
+		if boss_pick == null and not rares.is_empty():
+			boss_pick = _pick_unique_equipment(rng_equips, rares, equip_used)
+
+
+		if boss_pick != null:
+			equip_used[boss_pick] = true
+			var rr: StringName = _equip_rarity(boss_pick)
+			var price_boss: int = int(float(base_equip_price) * _rarity_mult(rr))
+			var entry_boss: Dictionary = {
+				"resource": boss_pick,
+				"type": "equipment",
+				"price": price_boss,
+				"stock": 1
+			}
+			shop_stock.append(entry_boss)
+			guaranteed_rare_done = true
+			num_equips = maxi(0, num_equips - 1)
+
+	# Fill remaining equipment slots
+	var j: int = 0
+	while j < num_equips:
+		# Weighted roll
+		var roll: float = rng_equips.randf()
+
+		# Convert weights to thresholds
+		var total: float = w_common + w_uncommon + w_rare + w_legend
+		var t_common: float = w_common / total
+		var t_uncommon: float = (w_common + w_uncommon) / total
+		var t_rare: float = (w_common + w_uncommon + w_rare) / total
+
+		var picked: Equipment = null
+		if roll < t_common:
+			picked = _pick_unique_equipment(rng_equips, commons, equip_used)
+
+		elif roll < t_uncommon:
+			picked = _pick_unique_equipment(rng_equips, uncommons, equip_used)
+
+		elif roll < t_rare:
+			picked = _pick_unique_equipment(rng_equips, rares, equip_used)
+		else:
+			picked = _pick_unique_equipment(rng_equips, legendaries, equip_used)
+
+		# Fallback if chosen bucket empty
+		if picked == null:
+			picked = _pick_unique_equipment(rng_equips, uncommons, equip_used)
+		if picked == null:
+			picked = _pick_unique_equipment(rng_equips, commons, equip_used)
+		if picked == null:
+			picked = _pick_unique_equipment(rng_equips, rares, equip_used)
+		if picked == null:
+			picked = _pick_unique_equipment(rng_equips, legendaries, equip_used)
+
+		if picked == null:
+			break
+
+		equip_used[picked] = true
+
+		var r2: StringName = _equip_rarity(picked)
+		var price: int = int(float(base_equip_price) * _rarity_mult(r2))
+
 		var entry_eq: Dictionary = {
-			"resource": eq,
+			"resource": picked,
 			"type": "equipment",
-			"price": base_equip_price,
+			"price": price,
 			"stock": 1
 		}
 		shop_stock.append(entry_eq)
-
+		j += 1
 
 func try_buy_from_shop(index: int) -> Dictionary:
 	var result: Dictionary = {
@@ -645,6 +810,33 @@ func try_buy_from_shop(index: int) -> Dictionary:
 	result["success"] = true
 	result["entry"] = entry
 	return result
+
+func _equip_rarity(eq: Resource) -> StringName:
+	if eq == null:
+		return &"common"
+
+	var path: String = ""
+	if "resource_path" in eq:
+		path = String(eq.get("resource_path"))
+
+	path = path.to_lower()
+	if path.find("/legendary/") != -1:
+		return &"legendary"
+	if path.find("/rare/") != -1:
+		return &"rare"
+	if path.find("/uncommon/") != -1:
+		return &"uncommon"
+	return &"common"
+
+
+func _rarity_mult(r: StringName) -> float:
+	if r == &"legendary":
+		return 5.0
+	if r == &"rare":
+		return 4.0
+	if r == &"uncommon":
+		return 2.0
+	return 1.0
 
 
 # -------------------------------------------------------------------

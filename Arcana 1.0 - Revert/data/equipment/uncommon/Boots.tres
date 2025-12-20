@@ -1,10 +1,12 @@
-[gd_resource type="Resource" script_class="Equipment" load_steps=2 format=3 uid="uid://bfv24mujno8tk"]
+[gd_resource type="Resource" script_class="Equipment" load_steps=3 format=3 uid="uid://bfv24mujno8tk"]
 
 [ext_resource type="Script" uid="uid://bnsyp2yvudsd2" path="res://scripts/data/equipment.gd" id="1_3lur4"]
+[ext_resource type="Texture2D" uid="uid://cgv45fi1e2niu" path="res://art/equipment/uncommon/Boots.png" id="1_fr0vm"]
 
 [resource]
 script = ExtResource("1_3lur4")
 name = "Leather Boots"
 description = "Increase movement by 1."
 rarity = "Uncommon"
+icon_texture = ExtResource("1_fr0vm")
 bonus_move = 1

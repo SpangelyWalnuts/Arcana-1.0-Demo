@@ -659,6 +659,56 @@ func _on_items_popup_confirmed() -> void:
 	data.item_slots = final_selected
 
 	_show_unit_details_from_roster_index(_selected_roster_index)
+func _shop_get_icon(res: Resource) -> Texture2D:
+	if res == null:
+		return null
+
+	# Common conventions across your resources
+	if "icon_texture" in res and res.icon_texture != null:
+		return res.icon_texture
+	if "icon" in res and res.icon != null:
+		return res.icon
+	if "texture" in res and res.texture != null:
+		return res.texture
+	if "portrait_texture" in res and res.portrait_texture != null:
+		return res.portrait_texture
+
+	return null
+
+
+func _shop_get_rarity_label(res: Resource) -> String:
+	if res == null:
+		return "Common"
+
+	var path: String = ""
+	if "resource_path" in res:
+		path = String(res.resource_path).to_lower()
+
+	# Folder-based rarity (matches how you organized equipment)
+	if path.find("/legendary/") != -1:
+		return "Legendary"
+	if path.find("/rare/") != -1:
+		return "Rare"
+	if path.find("/uncommon/") != -1:
+		return "Uncommon"
+
+	return "Common"
+
+
+func _shop_entry_name(res: Resource) -> String:
+	if res == null:
+		return "Unknown"
+	if "name" in res:
+		return String(res.name)
+	return "Unknown"
+
+
+func _shop_entry_desc(res: Resource) -> String:
+	if res == null:
+		return ""
+	if "description" in res:
+		return String(res.description)
+	return ""
 
 #SHOP UI Logic
 func _on_shop_button_pressed() -> void:
@@ -673,59 +723,122 @@ func _refresh_shop_ui() -> void:
 
 	for i in range(stock.size()):
 		var entry = stock[i]
-		var res = entry.get("resource", null)
+		var res: Resource = entry.get("resource", null)
 		var type_str: String = String(entry.get("type", ""))
 		var price: int = int(entry.get("price", 0))
 		var remaining: int = int(entry.get("stock", 0))
 
-		var name: String = "Unknown"
-		if res is Equipment or res is Item:
-			name = res.name
+		var name: String = _shop_entry_name(res)
+		var desc: String = _shop_entry_desc(res)
 
-		var text := "%s - %dG (x%d)" % [name, price, remaining]
+		var rarity_label: String = ""
+		if res is Equipment:
+			rarity_label = _shop_get_rarity_label(res)
+
+		var text: String = ""
+		if rarity_label != "":
+			text = "%s [%s] - %dG (x%d)" % [name, rarity_label, price, remaining]
+		else:
+			text = "%s - %dG (x%d)" % [name, price, remaining]
+
+		if remaining <= 0:
+			text = "✖ " + text + "  SOLD OUT"
+
+		# ADD ITEM FIRST
 		shop_list.add_item(text)
+		var item_index: int = shop_list.get_item_count() - 1
+
+		# Icon support
+		var icon: Texture2D = _shop_get_icon(res)
+		if icon != null:
+			shop_list.set_item_icon(item_index, icon)
+
+		# Tooltip
+		if desc != "":
+			shop_list.set_item_tooltip(item_index, desc)
+
+		# Sold out: disable row + dim it
+		if remaining <= 0:
+			shop_list.set_item_disabled(item_index, true)
+			shop_list.set_item_custom_fg_color(
+				item_index,
+				Color(0.55, 0.55, 0.55)
+			)
 
 	shop_gold_label.text = "Gold: %d" % RunManager.gold
 	shop_details_label.text = "Select an item to see details."
+	shop_buy_button.disabled = true
+
+
 
 
 func _on_shop_item_selected(index: int) -> void:
 	var stock: Array = RunManager.shop_stock
 	if index < 0 or index >= stock.size():
+		shop_buy_button.disabled = true
 		return
 
 	var entry = stock[index]
-	var res = entry.get("resource", null)
-	var desc: String = ""
-
-	if res is Equipment or res is Item:
-		desc = res.description
-
+	var res: Resource = entry.get("resource", null)
 	var price: int = int(entry.get("price", 0))
 	var remaining: int = int(entry.get("stock", 0))
 
-	shop_details_label.text = "%s\n\nPrice: %dG\nStock: %d" % [desc, price, remaining]
+	var name: String = _shop_entry_name(res)
+	var desc: String = _shop_entry_desc(res)
+
+	var rarity_label: String = ""
+	if res is Equipment:
+		rarity_label = _shop_get_rarity_label(res)
+
+	var header: String = name
+	if rarity_label != "":
+		header += " [%s]" % rarity_label
+
+	var details := "%s\n\n%s\n\nPrice: %dG\nStock: %d" % [
+		header,
+		desc,
+		price,
+		remaining
+	]
+
+	# --- Not enough gold message ---
+	if RunManager.gold < price:
+		details += "\n\n[color=red]Not enough gold.[/color]"
+
+	shop_details_label.text = details
+
+	# Enable buy only if:
+	# - in stock
+	# - player has enough gold
+	shop_buy_button.disabled = (remaining <= 0) or (RunManager.gold < price)
+
+
 #Buy Handler
 func _on_shop_buy_pressed() -> void:
 	var selected_indices := shop_list.get_selected_items()
 	if selected_indices.is_empty():
 		shop_details_label.text = "No item selected."
+		shop_buy_button.disabled = true
 		return
 
-	var idx: int = selected_indices[0]
+	var idx: int = int(selected_indices[0])
 
 	var result: Dictionary = RunManager.try_buy_from_shop(idx)
 	if not bool(result.get("success", false)):
 		var reason: String = String(result.get("reason", "Cannot buy."))
 		shop_details_label.text = reason
+		_refresh_shop_ui()
 		return
 
 	# Purchase successful
 	shop_details_label.text = "Purchased!"
 	_refresh_shop_ui()
 
-	# Optional: you could also refresh the details panel of the selected unit
-	# if you want to auto-show new equipment options, etc.
+	# Try to reselect the same index and refresh details/buy state
+	if idx >= 0 and idx < shop_list.get_item_count():
+		shop_list.select(idx)
+		_on_shop_item_selected(idx)
+
 #ENCOUNTER TAG HELPER
 func _update_encounter_tag_ui() -> void:
 	if encounter_tag_label == null:

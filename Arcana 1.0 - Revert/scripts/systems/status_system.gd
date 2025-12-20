@@ -41,12 +41,28 @@ func apply_status_to_unit(unit, skill: Skill, source_unit: Node = null) -> void:
 	if unit == null or skill == null:
 		return
 
+		# ✅ Equipment immunity check
+	if _unit_is_immune_to_status(unit, skill):
+		if CombatLog != null:
+			var src_name: String = source_unit.name if source_unit != null else "<?>"
+			CombatLog.add("%s's %s is blocked (immune)." % [unit.name, skill.name],
+				{"type":"status_blocked", "skill": skill.name, "target": unit.name, "source": src_name})
+		print("[STATUS BLOCKED] unit=", unit.name, " skill=", skill.name, " status_key=", skill.status_key)
+		return
+	
+
 	var list: Array = _get_status_list(unit)
+	# ✅ Duration bonus from source equipment (e.g. +1)
+	var bonus_dur: int = _get_bonus_duration_from_source(source_unit)
+	var base_dur: int = int(skill.duration_turns)
+	var final_dur: int = base_dur
+	if base_dur > 0 and bonus_dur != 0:
+		final_dur = max(1, base_dur + bonus_dur)
 
 	var status: Dictionary = {
 		"skill": skill,
 		"source": source_unit,
-		"remaining_turns": int(skill.duration_turns),
+		"remaining_turns": final_dur,
 		"status_key": skill.status_key,
 
 		# numeric mods
@@ -68,8 +84,8 @@ func apply_status_to_unit(unit, skill: Skill, source_unit: Node = null) -> void:
 	
 	if CombatLog != null:
 		var src_name: String = source_unit.name if source_unit != null else "<?>"
-		CombatLog.add("%s applies %s to %s (%d turns)" % [src_name, skill.name, unit.name, int(skill.duration_turns)],
-			{"type":"status_apply", "skill": skill.name, "target": unit.name, "duration": int(skill.duration_turns)})
+		CombatLog.add("%s applies %s to %s (%d turns)" % [src_name, skill.name, unit.name, (final_dur)],
+			{"type":"status_apply", "skill": skill.name, "target": unit.name, "duration": (final_dur)})
 	print("[STATUS APPLY] unit=", unit.name, " skill=", skill.name, " status_key=", skill.status_key)
 
 	# IMPORTANT: deferred emit avoids re-entrancy/stack overflow
@@ -267,3 +283,80 @@ func get_status_display_name(key: StringName) -> String:
 		&"shocked": return "Shocked"
 		&"frozen": return "Frozen"
 		_: return String(key)
+
+#EQUIPMENT HELPERS
+func _get_equipment_list(unit) -> Array:
+	if unit == null:
+		return []
+	# Your Unit stores equipment on UnitData.equipment_slots
+	if "unit_data" in unit and unit.unit_data != null and "equipment_slots" in unit.unit_data:
+		var arr = unit.unit_data.equipment_slots
+		if typeof(arr) == TYPE_ARRAY:
+			return arr
+	return []
+
+
+func _is_negative_status_skill(skill: Skill) -> bool:
+	if skill == null:
+		return false
+
+	# Primary rule: DEBUFF
+	if skill.effect_type == Skill.EffectType.DEBUFF:
+		return true
+
+	# Extra safety: treat lockouts and negative mods as "negative"
+	if skill.prevent_move or skill.prevent_arcana:
+		return true
+	if skill.atk_mod < 0 or skill.def_mod < 0 or skill.move_mod < 0 or skill.mana_regen_mod < 0:
+		return true
+
+	return false
+
+
+func _unit_is_immune_to_status(unit, skill: Skill) -> bool:
+	if unit == null or skill == null:
+		return false
+
+	var skey: StringName = skill.status_key
+	if skey == &"":
+		return false
+
+	var eq_list: Array = _get_equipment_list(unit)
+	if eq_list.is_empty():
+		return false
+
+	# Specific immunity
+	for eq in eq_list:
+		if eq == null:
+			continue
+		# immune_status_keys: Array[StringName]
+		if "immune_status_keys" in eq:
+			var keys = eq.immune_status_keys
+			if typeof(keys) == TYPE_ARRAY and keys.has(skey):
+				return true
+
+	# Blanket negative immunity
+	if _is_negative_status_skill(skill):
+		for eq2 in eq_list:
+			if eq2 == null:
+				continue
+			if "immune_negative_statuses" in eq2 and bool(eq2.immune_negative_statuses):
+				return true
+
+	return false
+
+
+func _get_bonus_duration_from_source(source_unit) -> int:
+	if source_unit == null:
+		return 0
+
+	var eq_list: Array = _get_equipment_list(source_unit)
+	var bonus: int = 0
+
+	for eq in eq_list:
+		if eq == null:
+			continue
+		if "bonus_status_duration_applied" in eq:
+			bonus += int(eq.bonus_status_duration_applied)
+
+	return bonus
