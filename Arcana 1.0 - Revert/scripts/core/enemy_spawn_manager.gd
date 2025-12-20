@@ -21,6 +21,11 @@ class_name EnemySpawnManager
 @export var weight_defense: float = 0.35
 @export var weight_support: float = 0.15
 
+# --- AI Profiles by ROLE (optional; drag AIProfile .tres here) ---
+@export var offense_profiles: Array[AIProfile] = []
+@export var defense_profiles: Array[AIProfile] = []
+@export var support_profiles: Array[AIProfile] = []
+
 # Minimum manhattan distance from any player unit's tile
 @export var min_spawn_distance: int = 6
 
@@ -264,6 +269,10 @@ func _spawn_enemy_instance(
 # --- Build UnitData (reliable for script classes) ---
 	var data: UnitData = UnitData.new()
 
+	if data != null and _has_prop(data, "ai_profile"):
+		var profile: AIProfile = _pick_profile_for_role(role)
+		if profile != null:
+			data.set("ai_profile", profile)
 
 	# Scale / setup data if possible
 	if data != null:
@@ -463,6 +472,23 @@ func _pick_role(
 
 	return "support"
 
+func _pick_profile_for_role(role: String) -> AIProfile:
+	var pool: Array[AIProfile] = []
+	match role:
+		"offense":
+			pool = offense_profiles
+		"defense":
+			pool = defense_profiles
+		"support":
+			pool = support_profiles
+		_:
+			pool = []
+
+	if pool == null or pool.is_empty():
+		return null
+
+	var idx: int = _rng.randi_range(0, pool.size() - 1)
+	return pool[idx]
 
 
 

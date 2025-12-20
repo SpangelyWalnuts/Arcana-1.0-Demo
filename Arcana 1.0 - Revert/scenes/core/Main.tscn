@@ -1,4 +1,4 @@
-[gd_scene load_steps=61 format=3 uid="uid://n3fdkibgiero"]
+[gd_scene load_steps=63 format=3 uid="uid://n3fdkibgiero"]
 
 [ext_resource type="Script" uid="uid://h2yfgpr5nkon" path="res://scripts/core/Main.gd" id="1_v0fxp"]
 [ext_resource type="PackedScene" uid="uid://dtcrbthviju4m" path="res://scenes/ui/SelectionRing.tscn" id="2_8kqbm"]
@@ -42,6 +42,8 @@
 [ext_resource type="Resource" uid="uid://dy0tp2axtcqvr" path="res://data/unit_classes/Pyromancer.tres" id="45_gnjag"]
 [ext_resource type="Resource" uid="uid://bjrnn7q0lcs5g" path="res://data/unit_classes/Electromancer.tres" id="46_leefl"]
 [ext_resource type="Resource" uid="uid://bwlb1xfhjqbtr" path="res://data/unit_classes/Cryomancer.tres" id="47_8kqbm"]
+[ext_resource type="Script" uid="uid://clgccvby50bo6" path="res://scripts/ai/AIProfile.gd" id="47_do1pq"]
+[ext_resource type="Resource" uid="uid://btrdvihvtdq5g" path="res://data/ai_profiles/Sentry.tres" id="48_gm45u"]
 [ext_resource type="Resource" uid="uid://r0vriv0j5ote" path="res://data/unit_classes/Geomancer.tres" id="48_kylyq"]
 [ext_resource type="Resource" uid="uid://dr514xgg3ujki" path="res://data/unit_classes/Druid.tres" id="49_0l231"]
 [ext_resource type="Resource" uid="uid://cbmgvrsa3mg1a" path="res://data/unit_classes/Cleric.tres" id="51_oh68v"]
@@ -669,6 +671,7 @@ enemies_per_floor = 10
 offense_classes = [ExtResource("46_leefl"), ExtResource("45_gnjag")]
 defense_classes = [ExtResource("48_kylyq"), ExtResource("47_8kqbm")]
 support_classes = [ExtResource("51_oh68v"), ExtResource("52_bwyab"), ExtResource("49_0l231")]
+support_profiles = Array[ExtResource("47_do1pq")]([ExtResource("48_gm45u")])
 arcana_chance = 0.25
 
 [node name="SkillSystem" type="Node" parent="."]

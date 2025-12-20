@@ -74,7 +74,7 @@ func take_turn(main: Node, enemy: Node, players: Array) -> void:
 	_tick_ai_cooldowns(enemy)
 
 	# 0) Cast arcana if possible (so intent "cast" is truthful)
-	if arcana_intent_enabled:
+	if _effective_arcana_intent_enabled(enemy):
 		var cast_plan: Dictionary = _choose_cast_plan(enemy, players)
 		if not cast_plan.is_empty():
 			await _execute_cast_plan(main, enemy, cast_plan)
@@ -113,7 +113,7 @@ func take_turn(main: Node, enemy: Node, players: Array) -> void:
 # Try to cast (if possible) or attack (if possible); otherwise wait.
 	if _unit_cannot_move(enemy):
 		# If we can cast, do it (keeps turns meaningful while rooted)
-		if arcana_intent_enabled and not _unit_cannot_cast(enemy):
+		if _effective_arcana_intent_enabled(enemy) and not _unit_cannot_cast(enemy):
 			var cast_plan_locked: Dictionary = _choose_cast_plan(enemy, players)
 			if not cast_plan_locked.is_empty():
 				await _execute_cast_plan(main, enemy, cast_plan_locked)
@@ -176,7 +176,7 @@ func get_intent(main: Node, enemy: Node, players: Array) -> String:
 	_set_intent_skill(enemy, null)
 
 # If we can/plan to cast, show cast intent + store which skill
-	if arcana_intent_enabled:
+	if _effective_arcana_intent_enabled(enemy):
 		var cast_plan: Dictionary = _choose_cast_plan(enemy, players)
 		if not cast_plan.is_empty():
 			if cast_plan.has("skill"):
@@ -251,13 +251,16 @@ func _choose_cast_plan(enemy: Node, players: Array) -> Dictionary:
 				# --- Buff distance gating ---
 		# Only cast buffs when we're close enough to the players to matter.
 		if _is_buff_skill(skill):
+			var buff_min_dist: int = _effective_buff_cast_min_player_distance(enemy)
+			var buff_when_rooted: bool = _effective_buff_cast_when_rooted(enemy)
+
 			var far_ok: bool = false
-			if buff_cast_when_rooted and _unit_cannot_move(enemy):
+			if buff_when_rooted and _unit_cannot_move(enemy):
 				far_ok = true
 
 			if not far_ok:
 				var nearest_player_d: int = _min_distance_to_players(enemy, players)
-				if nearest_player_d > buff_cast_min_player_distance:
+				if nearest_player_d > buff_min_dist:
 					continue
 
 		# Buff cooldown gate (AI-only)
@@ -515,8 +518,17 @@ func _get_profile_weights(role: String) -> Dictionary:
 
 func _get_effective_weights(main: Node, enemy: Node) -> Dictionary:
 	var role: String = _get_ai_role(enemy)
-	var w: Dictionary = _get_profile_weights(role)
 	var aggression: float = _get_objective_aggression(main)
+
+	# Start with role weights (existing behavior)
+	var w: Dictionary = _get_profile_weights(role)
+
+	# If an AIProfile is assigned, override base weights from it
+	var p: AIProfile = _get_ai_profile(enemy)
+	if p != null:
+		w["move_cost_weight"] = float(p.move_cost_weight)
+		w["defense_weight"] = float(p.defense_weight)
+		w["threat_bonus"] = float(p.threat_bonus)
 
 	return {
 		"move_cost_weight": float(w.get("move_cost_weight", move_cost_weight)),
@@ -544,6 +556,69 @@ func _get_objective_aggression(main: Node) -> float:
 			return 0.8
 		_:
 			return 1.0
+
+func _get_ai_profile(enemy: Node) -> AIProfile:
+	if enemy == null or not is_instance_valid(enemy):
+		return null
+
+	# Prefer UnitData.ai_profile if present
+	if _has_prop(enemy, "unit_data"):
+		var ud = enemy.get("unit_data")
+		if ud != null and is_instance_valid(ud) and ("ai_profile" in ud):
+			var p = ud.ai_profile
+			if p != null:
+				return p as AIProfile
+
+	return null
+
+
+func _effective_arcana_intent_enabled(enemy: Node) -> bool:
+	var p: AIProfile = _get_ai_profile(enemy)
+	if p != null:
+		return bool(p.arcana_intent_enabled)
+	return arcana_intent_enabled
+
+
+func _effective_buff_cast_min_player_distance(enemy: Node) -> int:
+	var p: AIProfile = _get_ai_profile(enemy)
+	if p != null:
+		return int(p.buff_cast_min_player_distance)
+	return buff_cast_min_player_distance
+
+
+func _effective_buff_cast_when_rooted(enemy: Node) -> bool:
+	var p: AIProfile = _get_ai_profile(enemy)
+	if p != null:
+		return bool(p.buff_cast_when_rooted)
+	return buff_cast_when_rooted
+
+
+func _effective_hold_margin_base(enemy: Node) -> float:
+	var p: AIProfile = _get_ai_profile(enemy)
+	if p != null:
+		return float(p.hold_margin_base)
+	return hold_margin_base
+
+
+func _effective_hold_margin_defense_role(enemy: Node) -> float:
+	var p: AIProfile = _get_ai_profile(enemy)
+	if p != null:
+		return float(p.hold_margin_defense_role)
+	return hold_margin_defense_role
+
+
+func _effective_hold_margin_support_role(enemy: Node) -> float:
+	var p: AIProfile = _get_ai_profile(enemy)
+	if p != null:
+		return float(p.hold_margin_support_role)
+	return hold_margin_support_role
+
+
+func _effective_hold_margin_offense_role(enemy: Node) -> float:
+	var p: AIProfile = _get_ai_profile(enemy)
+	if p != null:
+		return float(p.hold_margin_offense_role)
+	return hold_margin_offense_role
 
 
 # -----------------------------
@@ -673,13 +748,13 @@ func _should_move(main: Node, enemy: Node, target: Node, dest: Vector2i) -> bool
 
 	var aggression: float = _get_objective_aggression(main)
 
-	var margin: float = hold_margin_base
+	var margin: float = _effective_hold_margin_base(enemy)
 	if aggression < 1.0:
 		margin += (1.0 - aggression) * 2.0
 
 	match role:
 		"defense":
-			margin += hold_margin_defense_role
+			margin += _effective_hold_margin_defense_role(enemy)
 		"support":
 			margin += hold_margin_support_role
 		"offense":

@@ -8,6 +8,7 @@ var skills: Array = []   # array of Skill resources
 var level: int = 1
 var exp: int = 0
 var unit_data: UnitData = null
+@export var ai_profile: AIProfile = null
 
 @export var unit_class: UnitClass
 @export var is_active: bool = true
