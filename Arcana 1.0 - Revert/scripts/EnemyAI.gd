@@ -23,6 +23,61 @@ class_name EnemyAI
 @export var buff_cast_min_player_distance: int = 6  # only cast buffs if within this manhattan distance
 @export var buff_cast_when_rooted: bool = true      # if can't move, allow buff regardless of distance
 
+class AIContext:
+	var main: Node
+	var enemy: Node
+	var players: Array
+
+	var enemy_tile: Vector2i
+	var nearest_player: Node
+	var nearest_player_tile: Vector2i
+	var nearest_player_dist: int
+
+	var attack_range: int
+	var move_budget: int
+
+	var cannot_move: bool
+	var cannot_cast: bool
+
+	var role: String
+	var aggression: float
+	var effective_weights: Dictionary
+
+	var arcana_enabled: bool
+	var opening_priority: StringName
+
+
+func _build_ai_context(main: Node, enemy: Node, players: Array) -> AIContext:
+	var ctx := AIContext.new()
+	ctx.main = main
+	ctx.enemy = enemy
+	ctx.players = players
+	ctx.enemy_tile = _get_v2i(enemy, "grid_position", Vector2i.ZERO)
+
+	ctx.nearest_player = _find_closest_player(enemy, players)
+	if ctx.nearest_player != null and is_instance_valid(ctx.nearest_player):
+		ctx.nearest_player_tile = _get_v2i(ctx.nearest_player, "grid_position", Vector2i.ZERO)
+		ctx.nearest_player_dist = _distance(ctx.enemy_tile, ctx.nearest_player_tile)
+	else:
+		ctx.nearest_player_tile = Vector2i.ZERO
+		ctx.nearest_player_dist = 999999
+
+	ctx.attack_range = _get_int(enemy, "attack_range", 1)
+	ctx.move_budget = _get_move_budget(enemy)
+
+	ctx.cannot_move = _unit_cannot_move(enemy)
+	ctx.cannot_cast = _unit_cannot_cast(enemy)
+
+	ctx.role = _get_ai_role(enemy)
+	ctx.aggression = _get_objective_aggression(main)
+	ctx.effective_weights = _get_effective_weights(main, enemy)
+
+	ctx.arcana_enabled = _effective_arcana_intent_enabled(enemy)
+	ctx.opening_priority = _effective_opening_priority(enemy)
+
+
+	return ctx
+
 #STATUS INFLUENCE
 func _has_status(unit: Node, key: StringName) -> bool:
 	if unit == null:
@@ -67,68 +122,52 @@ func take_turn(main: Node, enemy: Node, players: Array) -> void:
 	if players.is_empty():
 		return
 
-	var target: Node = _find_closest_player(enemy, players)
+	var ctx: AIContext = _build_ai_context(main, enemy, players)
+
+	var target: Node = ctx.nearest_player
 	if target == null or not is_instance_valid(target):
 		return
 
 	_tick_ai_cooldowns(enemy)
 
-	# 0) Cast arcana if possible (so intent "cast" is truthful)
-	if _effective_arcana_intent_enabled(enemy):
-		var cast_plan: Dictionary = _choose_cast_plan(enemy, players)
-		if not cast_plan.is_empty():
-			await _execute_cast_plan(main, enemy, cast_plan)
+	var prio: StringName = ctx.opening_priority
+
+	match prio:
+		&"attack_first":
+			if await _attempt_attack(ctx, target):
+				return
+			if await _attempt_cast(ctx):
+				return
+			if await _attempt_move(ctx, target):
+				return
+			return
+
+		&"move_first":
+			if await _attempt_move(ctx, target):
+				return
+			if await _attempt_cast(ctx):
+				return
+			if await _attempt_attack(ctx, target):
+				return
+			return
+
+		&"wait_first":
+			# Sentry behavior: only attack if already in range, otherwise do nothing.
+			if await _attempt_attack(ctx, target):
+				return
+			return
+
+		_:
+			# &"cast_first" default (current behavior)
+			if await _attempt_cast(ctx):
+				return
+			if await _attempt_attack(ctx, target):
+				return
+			if await _attempt_move(ctx, target):
+				return
 			return
 
 
-	# 1) Attack if already in range
-	var dist_to_target: int = _distance(_get_v2i(enemy, "grid_position", Vector2i.ZERO), _get_v2i(target, "grid_position", Vector2i.ZERO))
-	var attack_range: int = _get_int(enemy, "attack_range", 1)
-	if dist_to_target <= attack_range:
-		var cm: Node = _get_child_or_prop(main, "combat_manager")
-		if cm != null and cm.has_method("perform_attack"):
-			print("[AI] %s BASIC ATTACK start -> %s" % [enemy.name, target.name])
-			cm.perform_attack(enemy, target)
-
-			if cm.has_signal("attack_sequence_finished"):
-				# Timeout safety so we never hard-hang during debugging.
-				var timeout := get_tree().create_timer(1.0)
-				while true:
-					var emitted_attacker = await cm.attack_sequence_finished
-					print("[AI] attack_sequence_finished emitted for:", emitted_attacker)
-					if emitted_attacker == enemy:
-						print("[AI] %s BASIC ATTACK end (signal)" % enemy.name)
-						break
-					if timeout.time_left <= 0.0:
-						print("[AI] %s BASIC ATTACK end (TIMEOUT FALLBACK)" % enemy.name)
-						break
-			else:
-				print("[AI] %s no attack_sequence_finished signal; using timer fallback" % enemy.name)
-				await get_tree().create_timer(0.25).timeout
-				print("[AI] %s BASIC ATTACK end (timer)" % enemy.name)
-		return
-
-
-	# 2) If prevented from moving (prevent_move / shocked / frozen), we cannot reposition.
-# Try to cast (if possible) or attack (if possible); otherwise wait.
-	if _unit_cannot_move(enemy):
-		# If we can cast, do it (keeps turns meaningful while rooted)
-		if _effective_arcana_intent_enabled(enemy) and not _unit_cannot_cast(enemy):
-			var cast_plan_locked: Dictionary = _choose_cast_plan(enemy, players)
-			if not cast_plan_locked.is_empty():
-				await _execute_cast_plan(main, enemy, cast_plan_locked)
-				return
-		# Otherwise just wait (do nothing)
-		return
-
-
-# 3) Otherwise MOVE (multi-tile greedy), then end action
-	var final_tile: Vector2i = _choose_greedy_destination(main, enemy, target)
-	var enemy_tile: Vector2i = _get_v2i(enemy, "grid_position", Vector2i.ZERO)
-	if final_tile == enemy_tile:
-		return
-
-	_move_enemy_to_tile(main, enemy, final_tile)
 
 func _wait_skill_finished_safe(main: Node, enemy: Node, timeout_sec: float = 0.6) -> void:
 	if main == null or enemy == null or not is_instance_valid(enemy):
@@ -172,184 +211,172 @@ func get_intent(main: Node, enemy: Node, players: Array) -> String:
 	if players.is_empty():
 		return ""
 
-# Clear intent payload by default
+	var ctx: AIContext = _build_ai_context(main, enemy, players)
+
+	# Clear intent payload by default
 	_set_intent_skill(enemy, null)
 
-# If we can/plan to cast, show cast intent + store which skill
-	if _effective_arcana_intent_enabled(enemy):
-		var cast_plan: Dictionary = _choose_cast_plan(enemy, players)
-		if not cast_plan.is_empty():
-			if cast_plan.has("skill"):
-				_set_intent_skill(enemy, cast_plan["skill"])
-			return "cast"
+	var prio: StringName = ctx.opening_priority
+
+	match prio:
+		&"attack_first":
+			if _can_attack_now(ctx):
+				return "attack"
+			if ctx.arcana_enabled:
+				var cast_plan_a: Dictionary = _choose_cast_plan_ctx(ctx)
+				if not cast_plan_a.is_empty():
+					if cast_plan_a.has("skill"):
+						_set_intent_skill(enemy, cast_plan_a["skill"])
+					return "cast"
+			return _intent_move_or_wait(ctx)
+
+		&"move_first":
+			var intent_m: String = _intent_move_or_wait(ctx)
+			if intent_m == "move":
+				return "move"
+			if ctx.arcana_enabled:
+				var cast_plan_m: Dictionary = _choose_cast_plan_ctx(ctx)
+				if not cast_plan_m.is_empty():
+					if cast_plan_m.has("skill"):
+						_set_intent_skill(enemy, cast_plan_m["skill"])
+					return "cast"
+			if _can_attack_now(ctx):
+				return "attack"
+			return "wait"
+
+		&"wait_first":
+			if _can_attack_now(ctx):
+				return "attack"
+			return "wait"
+
+		_:
+			# &"cast_first" default (current behavior)
+			if ctx.arcana_enabled:
+				var cast_plan: Dictionary = _choose_cast_plan_ctx(ctx)
+				if not cast_plan.is_empty():
+					if cast_plan.has("skill"):
+						_set_intent_skill(enemy, cast_plan["skill"])
+					return "cast"
+
+			if _can_attack_now(ctx):
+				return "attack"
+
+			return _intent_move_or_wait(ctx)
+
+func _can_attack_now(ctx: AIContext) -> bool:
+	if ctx == null:
+		return false
+	if ctx.nearest_player == null or not is_instance_valid(ctx.nearest_player):
+		return false
+	return ctx.nearest_player_dist <= ctx.attack_range
 
 
-	var target: Node = _find_closest_player(enemy, players)
-	if target == null or not is_instance_valid(target):
-		return ""
-
-	var enemy_tile: Vector2i = _get_v2i(enemy, "grid_position", Vector2i.ZERO)
-	var target_tile: Vector2i = _get_v2i(target, "grid_position", Vector2i.ZERO)
-
-	var dist_to_target: int = _distance(enemy_tile, target_tile)
-	var attack_range: int = _get_int(enemy, "attack_range", 1)
-
-	if dist_to_target <= attack_range:
-		return "attack"
-
-	if _unit_cannot_move(enemy):
+func _intent_move_or_wait(ctx: AIContext) -> String:
+	if ctx == null:
+		return "wait"
+	if ctx.cannot_move:
 		return "wait"
 
-	var dest: Vector2i = _choose_greedy_destination(main, enemy, target)
+	var enemy_tile: Vector2i = ctx.enemy_tile
+	var target: Node = ctx.nearest_player
+	if target == null or not is_instance_valid(target):
+		return "wait"
+
+	var dest: Vector2i = _choose_greedy_destination_ctx(ctx, target)
 	if dest != enemy_tile:
-		if not _should_move(main, enemy, target, dest):
+		if not _should_move_ctx(ctx, target, dest):
 			return "wait"
 		return "move"
 
 	return "wait"
 
 
+func _attempt_cast(ctx: AIContext) -> bool:
+	if ctx == null:
+		return false
+	if not ctx.arcana_enabled:
+		return false
+	if ctx.cannot_cast:
+		return false
+
+	var plan: Dictionary = _choose_cast_plan_ctx(ctx)
+	if plan.is_empty():
+		return false
+
+	await _execute_cast_plan(ctx.main, ctx.enemy, plan)
+	return true
+
+
+func _attempt_attack(ctx: AIContext, target: Node) -> bool:
+	if ctx == null:
+		return false
+	if target == null or not is_instance_valid(target):
+		return false
+	if not _can_attack_now(ctx):
+		return false
+
+	var enemy: Node = ctx.enemy
+	var cm: Node = _get_child_or_prop(ctx.main, "combat_manager")
+	if cm != null and cm.has_method("perform_attack"):
+		print("[AI] %s BASIC ATTACK start -> %s" % [enemy.name, target.name])
+		cm.perform_attack(enemy, target)
+
+		if cm.has_signal("attack_sequence_finished"):
+			# Timeout safety so we never hard-hang during debugging.
+			var timeout := get_tree().create_timer(1.0)
+			while true:
+				var emitted_attacker = await cm.attack_sequence_finished
+				print("[AI] attack_sequence_finished emitted for:", emitted_attacker)
+				if emitted_attacker == enemy:
+					print("[AI] %s BASIC ATTACK end (signal)" % enemy.name)
+					break
+				if timeout.time_left <= 0.0:
+					print("[AI] %s BASIC ATTACK end (TIMEOUT FALLBACK)" % enemy.name)
+					break
+		else:
+			print("[AI] %s no attack_sequence_finished signal; using timer fallback" % enemy.name)
+			await get_tree().create_timer(0.25).timeout
+			print("[AI] %s BASIC ATTACK end (timer)" % enemy.name)
+
+		return true
+
+	return false
+
+
+func _attempt_move(ctx: AIContext, target: Node) -> bool:
+	if ctx == null:
+		return false
+	if ctx.cannot_move:
+		return false
+	if target == null or not is_instance_valid(target):
+		return false
+
+	var final_tile: Vector2i = _choose_greedy_destination_ctx(ctx, target)
+	if final_tile == ctx.enemy_tile:
+		return false
+
+	# Preserve your existing "should move" guard used by intent (avoid wobble)
+	if not _should_move_ctx(ctx, target, final_tile):
+		return false
+
+	_move_enemy_to_tile(ctx.main, ctx.enemy, final_tile)
+	return true
+
+
+
 # -----------------------------
 # Casting (Arcana) planning
 # -----------------------------
 func _choose_cast_plan(enemy: Node, players: Array) -> Dictionary:
-	# Returns {} if no cast. Otherwise:
-	# { "skill": Skill, "target_unit": Node, "center_tile": Vector2i, "score": float }
-
+	# Keep signature for compatibility; internally use context.
 	if enemy == null or not is_instance_valid(enemy):
 		return {}
-	if _unit_cannot_cast(enemy):
+	if players == null or players.is_empty():
 		return {}
 
-	if not _has_prop(enemy, "skills"):
-		return {}
-	var skills: Array = enemy.get("skills")
-	if skills == null or skills.is_empty():
-		return {}
-
-	var best_pick: Dictionary = {}
-	var best_value: float = -999999.0
-
-	for s in skills:
-		var skill = s
-		if skill == null:
-			continue
-
-		# Must have mana
-		var mana_cost: int = _get_int(skill, "mana_cost", 0)
-		if _has_prop(enemy, "mana"):
-			var mana: int = _get_int(enemy, "mana", 0)
-			if mana < mana_cost:
-				continue
-
-		# Ignore terrain-object skills for now (you can enable later)
-		if _has_prop(skill, "is_terrain_object_skill") and bool(skill.get("is_terrain_object_skill")):
-			continue
-		if _has_prop(skill, "effect_type") and int(skill.get("effect_type")) == 4:
-			continue
-
-				# --- Buff distance gating ---
-		# Only cast buffs when we're close enough to the players to matter.
-		if _is_buff_skill(skill):
-			var buff_min_dist: int = _effective_buff_cast_min_player_distance(enemy)
-			var buff_when_rooted: bool = _effective_buff_cast_when_rooted(enemy)
-
-			var far_ok: bool = false
-			if buff_when_rooted and _unit_cannot_move(enemy):
-				far_ok = true
-
-			if not far_ok:
-				var nearest_player_d: int = _min_distance_to_players(enemy, players)
-				if nearest_player_d > buff_min_dist:
-					continue
-
-		# Buff cooldown gate (AI-only)
-		if _is_buff_skill(skill):
-			if _get_skill_cooldown(enemy, skill) > 0:
-				continue
-
-		# -------------------------
-		# Target pool selection
-		# -------------------------
-		var target_pool: Array = players
-
-		if _has_prop(skill, "target_type"):
-			var tt: int = int(skill.get("target_type"))
-			match tt:
-				2: # ALLY_UNITS
-					target_pool = _get_enemy_allies(enemy)
-
-				3: # SELF
-					target_pool = [enemy]
-
-				1: # ALL_UNITS
-					# Enemies should not friendly-fire with DAMAGE skills by default.
-					if _is_damage_skill(skill):
-						target_pool = players
-					else:
-						target_pool = []
-						target_pool.append_array(players)
-						target_pool.append_array(_get_enemy_allies(enemy))
-
-				0: # ENEMY_UNITS
-					target_pool = players
-
-				_:
-					target_pool = players
-
-		# Healing should never target players even if misconfigured
-		if _is_heal_skill(skill):
-			target_pool = _get_enemy_allies(enemy)
-
-		# -------------------------
-		# Prevent buff spam on already-buffed targets
-		# (only works for buffs that create status entries)
-		# -------------------------
-		if _is_buff_skill(skill):
-			var any_valid: bool = false
-			for t in target_pool:
-				if t == null or not is_instance_valid(t):
-					continue
-				if _get_int(t, "hp", 0) <= 0:
-					continue
-				if _unit_has_buff_from_skill(t, skill):
-					continue
-				any_valid = true
-				break
-			if not any_valid:
-				continue
-
-		# Pick best target for this skill
-		var pick: Dictionary = _pick_cast_target(enemy, target_pool, skill)
-		if pick.is_empty():
-			continue
-
-		# -------------------------
-		# Priority ordering
-		# -------------------------
-		var v: float = 0.0
-		if pick.has("score"):
-			v = float(pick["score"])
-
-		# Bias by skill type so enemies feel smarter.
-		if _is_heal_skill(skill):
-			v += 4.0
-		elif _is_damage_skill(skill):
-			v += 2.0
-		elif _is_buff_skill(skill):
-			v += 1.0
-		else:
-			v += 0.5
-
-		if v > best_value:
-			best_value = v
-			best_pick = pick
-
-	if not best_pick.is_empty():
-		return best_pick
-	return {}
-
-
+	# _choose_cast_plan never needed main; context builder accepts null.
+	var ctx: AIContext = _build_ai_context(null, enemy, players)
+	return _choose_cast_plan_ctx(ctx)
 
 func _pick_cast_target(enemy: Node, players: Array, skill) -> Dictionary:
 	var best_target: Node = null
@@ -577,6 +604,12 @@ func _effective_arcana_intent_enabled(enemy: Node) -> bool:
 	if p != null:
 		return bool(p.arcana_intent_enabled)
 	return arcana_intent_enabled
+	
+func _effective_opening_priority(enemy: Node) -> StringName:
+	var p: AIProfile = _get_ai_profile(enemy)
+	if p != null:
+		return p.opening_priority
+	return &"cast_first"
 
 
 func _effective_buff_cast_min_player_distance(enemy: Node) -> int:
@@ -625,47 +658,14 @@ func _effective_hold_margin_offense_role(enemy: Node) -> float:
 # Greedy multi-tile movement
 # -----------------------------
 func _choose_greedy_destination(main: Node, enemy: Node, target: Node) -> Vector2i:
-	var move_points: int = _get_move_budget(enemy)
-	if move_points <= 0:
+	if enemy == null or not is_instance_valid(enemy):
+		return Vector2i.ZERO
+	if target == null or not is_instance_valid(target):
 		return _get_v2i(enemy, "grid_position", Vector2i.ZERO)
 
-	var w: Dictionary = _get_effective_weights(main, enemy)
-	var e_move_cost_weight: float = float(w.get("move_cost_weight", move_cost_weight))
-	var e_defense_weight: float = float(w.get("defense_weight", defense_weight))
-	var e_threat_bonus: float = float(w.get("threat_bonus", threat_bonus))
+	var ctx: AIContext = _build_ai_context(main, enemy, [])
+	return _choose_greedy_destination_ctx(ctx, target)
 
-	var current: Vector2i = _get_v2i(enemy, "grid_position", Vector2i.ZERO)
-	var best_reached: Vector2i = current
-	var ar: int = _get_int(enemy, "attack_range", 1)
-
-	var best_score: float = _tile_score(main, current, _get_v2i(target, "grid_position", Vector2i.ZERO), ar, e_move_cost_weight, e_defense_weight, e_threat_bonus)
-
-	var visited: Dictionary = {}
-	visited[current] = true
-
-	while move_points > 0:
-		var next: Vector2i = _choose_best_neighbor(main, enemy, current, _get_v2i(target, "grid_position", Vector2i.ZERO), move_points, visited, e_move_cost_weight, e_defense_weight, e_threat_bonus)
-		if next == current:
-			break
-
-		var cost: int = 1
-		var grid_node: Node = _get_child_or_prop(main, "grid")
-		if grid_node != null and grid_node.has_method("get_move_cost"):
-			cost = int(grid_node.get_move_cost(next))
-
-		move_points -= cost
-		current = next
-		visited[current] = true
-
-		var s: float = _tile_score(main, current, _get_v2i(target, "grid_position", Vector2i.ZERO), ar, e_move_cost_weight, e_defense_weight, e_threat_bonus)
-		if s < best_score:
-			best_score = s
-			best_reached = current
-
-	if best_reached == _get_v2i(enemy, "grid_position", Vector2i.ZERO) and current != _get_v2i(enemy, "grid_position", Vector2i.ZERO):
-		best_reached = current
-
-	return best_reached
 
 
 func _choose_best_neighbor(
@@ -735,37 +735,14 @@ func _choose_best_neighbor(
 
 
 func _should_move(main: Node, enemy: Node, target: Node, dest: Vector2i) -> bool:
-	var w: Dictionary = _get_effective_weights(main, enemy)
-	var e_move_cost_weight: float = float(w.get("move_cost_weight", move_cost_weight))
-	var e_defense_weight: float = float(w.get("defense_weight", defense_weight))
-	var e_threat_bonus: float = float(w.get("threat_bonus", threat_bonus))
-	var role: String = String(w.get("role", "offense"))
+	if enemy == null or not is_instance_valid(enemy):
+		return false
+	if target == null or not is_instance_valid(target):
+		return false
 
-	var ar: int = _get_int(enemy, "attack_range", 1)
+	var ctx: AIContext = _build_ai_context(main, enemy, [])
+	return _should_move_ctx(ctx, target, dest)
 
-	var stay_score: float = _tile_score(main, _get_v2i(enemy, "grid_position", Vector2i.ZERO), _get_v2i(target, "grid_position", Vector2i.ZERO), ar, e_move_cost_weight, e_defense_weight, e_threat_bonus)
-	var move_score: float = _tile_score(main, dest, _get_v2i(target, "grid_position", Vector2i.ZERO), ar, e_move_cost_weight, e_defense_weight, e_threat_bonus)
-
-	var aggression: float = _get_objective_aggression(main)
-
-	var margin: float = _effective_hold_margin_base(enemy)
-	if aggression < 1.0:
-		margin += (1.0 - aggression) * 2.0
-
-	match role:
-		"defense":
-			margin += _effective_hold_margin_defense_role(enemy)
-		"support":
-			margin += hold_margin_support_role
-		"offense":
-			margin += hold_margin_offense_role
-		_:
-			pass
-	# Chilled units are less eager to reposition (helps readability, matches theme)
-	if _unit_is_chilled(enemy):
-		margin += 0.75
-	
-	return move_score < (stay_score - margin)
 
 
 func _tile_score(
@@ -1187,3 +1164,238 @@ func _await_skill_finished_or_timeout(main: Node, enemy: Node, timeout_sec: floa
 
 		if caster == enemy:
 			return
+
+func _choose_cast_plan_ctx(ctx: AIContext) -> Dictionary:
+	# Returns {} if no cast. Otherwise:
+	# { "skill": Skill, "target_unit": Node, "center_tile": Vector2i, "score": float }
+
+	if ctx == null:
+		return {}
+	var enemy: Node = ctx.enemy
+	if enemy == null or not is_instance_valid(enemy):
+		return {}
+	if ctx.cannot_cast:
+		return {}
+
+	if not _has_prop(enemy, "skills"):
+		return {}
+	var skills: Array = enemy.get("skills")
+	if skills == null or skills.is_empty():
+		return {}
+
+	var best_pick: Dictionary = {}
+	var best_value: float = -999999.0
+
+	for s in skills:
+		var skill = s
+		if skill == null:
+			continue
+
+		# Must have mana
+		var mana_cost: int = _get_int(skill, "mana_cost", 0)
+		if _has_prop(enemy, "mana"):
+			var mana: int = _get_int(enemy, "mana", 0)
+			if mana < mana_cost:
+				continue
+
+		# Ignore terrain-object skills for now (you can enable later)
+		if _has_prop(skill, "is_terrain_object_skill") and bool(skill.get("is_terrain_object_skill")):
+			continue
+		if _has_prop(skill, "effect_type") and int(skill.get("effect_type")) == 4:
+			continue
+
+		# --- Buff distance gating ---
+		# Only cast buffs when we're close enough to the players to matter.
+		if _is_buff_skill(skill):
+			var buff_min_dist: int = _effective_buff_cast_min_player_distance(enemy)
+			var buff_when_rooted: bool = _effective_buff_cast_when_rooted(enemy)
+
+			var far_ok: bool = false
+			if buff_when_rooted and ctx.cannot_move:
+				far_ok = true
+
+			if not far_ok:
+				# Use cached nearest distance (Stage 1)
+				var nearest_player_d: int = ctx.nearest_player_dist
+				if nearest_player_d > buff_min_dist:
+					continue
+
+		# Buff cooldown gate (AI-only)
+		if _is_buff_skill(skill):
+			if _get_skill_cooldown(enemy, skill) > 0:
+				continue
+
+		# -------------------------
+		# Target pool selection
+		# -------------------------
+		var target_pool: Array = ctx.players
+
+		if _has_prop(skill, "target_type"):
+			var tt: int = int(skill.get("target_type"))
+			match tt:
+				2: # ALLY_UNITS
+					target_pool = _get_enemy_allies(enemy)
+
+				3: # SELF
+					target_pool = [enemy]
+
+				1: # ALL_UNITS
+					# Enemies should not friendly-fire with DAMAGE skills by default.
+					if _is_damage_skill(skill):
+						target_pool = ctx.players
+					else:
+						target_pool = []
+						target_pool.append_array(ctx.players)
+						target_pool.append_array(_get_enemy_allies(enemy))
+
+				0: # ENEMY_UNITS
+					target_pool = ctx.players
+
+				_:
+					target_pool = ctx.players
+
+		# Healing should never target players even if misconfigured
+		if _is_heal_skill(skill):
+			target_pool = _get_enemy_allies(enemy)
+
+		# -------------------------
+		# Prevent buff spam on already-buffed targets
+		# (only works for buffs that create status entries)
+		# -------------------------
+		if _is_buff_skill(skill):
+			var any_valid: bool = false
+			for t in target_pool:
+				if t == null or not is_instance_valid(t):
+					continue
+				if _get_int(t, "hp", 0) <= 0:
+					continue
+				if _unit_has_buff_from_skill(t, skill):
+					continue
+				any_valid = true
+				break
+			if not any_valid:
+				continue
+
+		# Pick best target for this skill
+		var pick: Dictionary = _pick_cast_target(enemy, target_pool, skill)
+		if pick.is_empty():
+			continue
+
+		# -------------------------
+		# Priority ordering
+		# -------------------------
+		var v: float = 0.0
+		if pick.has("score"):
+			v = float(pick["score"])
+
+		# Bias by skill type so enemies feel smarter.
+		if _is_heal_skill(skill):
+			v += 4.0
+		elif _is_damage_skill(skill):
+			v += 2.0
+		elif _is_buff_skill(skill):
+			v += 1.0
+		else:
+			v += 0.5
+
+		if v > best_value:
+			best_value = v
+			best_pick = pick
+
+	if not best_pick.is_empty():
+		return best_pick
+	return {}
+
+func _choose_greedy_destination_ctx(ctx: AIContext, target: Node) -> Vector2i:
+	if ctx == null:
+		return Vector2i.ZERO
+	var enemy: Node = ctx.enemy
+	if enemy == null or not is_instance_valid(enemy):
+		return Vector2i.ZERO
+
+	var move_points: int = ctx.move_budget
+	if move_points <= 0:
+		return ctx.enemy_tile
+
+	var w: Dictionary = ctx.effective_weights
+	var e_move_cost_weight: float = float(w.get("move_cost_weight", move_cost_weight))
+	var e_defense_weight: float = float(w.get("defense_weight", defense_weight))
+	var e_threat_bonus: float = float(w.get("threat_bonus", threat_bonus))
+
+	var current: Vector2i = ctx.enemy_tile
+	var best_reached: Vector2i = current
+	var ar: int = ctx.attack_range
+
+	var target_tile: Vector2i = _get_v2i(target, "grid_position", Vector2i.ZERO)
+	var best_score: float = _tile_score(ctx.main, current, target_tile, ar, e_move_cost_weight, e_defense_weight, e_threat_bonus)
+
+	var visited: Dictionary = {}
+	visited[current] = true
+
+	while move_points > 0:
+		var next: Vector2i = _choose_best_neighbor(ctx.main, enemy, current, target_tile, move_points, visited, e_move_cost_weight, e_defense_weight, e_threat_bonus)
+		if next == current:
+			break
+
+		var cost: int = 1
+		var grid_node: Node = _get_child_or_prop(ctx.main, "grid")
+		if grid_node != null and grid_node.has_method("get_move_cost"):
+			cost = int(grid_node.get_move_cost(next))
+
+		move_points -= cost
+		current = next
+		visited[current] = true
+
+		var s: float = _tile_score(ctx.main, current, target_tile, ar, e_move_cost_weight, e_defense_weight, e_threat_bonus)
+		if s < best_score:
+			best_score = s
+			best_reached = current
+
+	if best_reached == ctx.enemy_tile and current != ctx.enemy_tile:
+		best_reached = current
+
+	return best_reached
+
+
+func _should_move_ctx(ctx: AIContext, target: Node, dest: Vector2i) -> bool:
+	if ctx == null:
+		return false
+	var enemy: Node = ctx.enemy
+	if enemy == null or not is_instance_valid(enemy):
+		return false
+
+	var w: Dictionary = ctx.effective_weights
+	var e_move_cost_weight: float = float(w.get("move_cost_weight", move_cost_weight))
+	var e_defense_weight: float = float(w.get("defense_weight", defense_weight))
+	var e_threat_bonus: float = float(w.get("threat_bonus", threat_bonus))
+	var role: String = String(w.get("role", "offense"))
+
+	var ar: int = ctx.attack_range
+	var target_tile: Vector2i = _get_v2i(target, "grid_position", Vector2i.ZERO)
+
+	var stay_score: float = _tile_score(ctx.main, ctx.enemy_tile, target_tile, ar, e_move_cost_weight, e_defense_weight, e_threat_bonus)
+	var move_score: float = _tile_score(ctx.main, dest, target_tile, ar, e_move_cost_weight, e_defense_weight, e_threat_bonus)
+
+	var aggression: float = ctx.aggression
+
+	var margin: float = _effective_hold_margin_base(enemy)
+	if aggression < 1.0:
+		margin += (1.0 - aggression) * 2.0
+
+	match role:
+		"defense":
+			margin += _effective_hold_margin_defense_role(enemy)
+		"support":
+			# Intentionally preserve your current behavior here (uses the exported var)
+			margin += _effective_hold_margin_support_role(enemy)
+		"offense":
+			# Intentionally preserve your current behavior here (uses the exported var)
+			margin += _effective_hold_margin_offense_role(enemy)
+		_:
+			pass
+
+	# Chilled units are less eager to reposition (helps readability, matches theme)
+	if _unit_is_chilled(enemy):
+		margin += 0.75
+
+	return move_score < (stay_score - margin)

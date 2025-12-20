@@ -26,3 +26,13 @@ class_name AIProfile
 # Buff casting distance gating
 @export var buff_cast_min_player_distance: int = 6
 @export var buff_cast_when_rooted: bool = true
+
+# -----------------------------
+# Turn decision ordering
+# -----------------------------
+# Allowed:
+# &"cast_first"  (default / current behavior)
+# &"attack_first"
+# &"move_first"
+# &"wait_first" (attack if in range, otherwise do nothing)
+@export var opening_priority: StringName = &"cast_first"
