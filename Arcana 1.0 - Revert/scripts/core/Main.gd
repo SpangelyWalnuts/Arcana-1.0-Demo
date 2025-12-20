@@ -168,6 +168,19 @@ func _ready() -> void:
 			map_generator.chunks_high = RunManager.current_map_chunks.y
 
 	spawn_units_from_run()
+	# Reset per-battle temp buffs (e.g. on-kill ATK stacks)
+	for u in get_tree().get_nodes_in_group("player_units"):
+		if u != null and is_instance_valid(u):
+			u.set_meta(&"temp_atk_bonus", 0)
+
+	for u2 in get_tree().get_nodes_in_group("enemy_units"):
+		if u2 != null and is_instance_valid(u2):
+			u2.set_meta(&"temp_atk_bonus", 0)
+
+		# Reset per-battle equipment counters (e.g. negative-status blocks)
+	if StatusManager != null and StatusManager.has_method("reset_battle_status_blocks_for_team"):
+		StatusManager.reset_battle_status_blocks_for_team("player")
+		StatusManager.reset_battle_status_blocks_for_team("enemy")
 	turn_manager.phase_changed.connect(_on_phase_changed)
 	action_menu.action_selected.connect(_on_action_menu_selected)
 	skill_menu.skill_selected.connect(_on_skill_menu_selected)

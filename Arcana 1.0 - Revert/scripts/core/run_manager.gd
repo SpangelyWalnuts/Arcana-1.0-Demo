@@ -104,13 +104,17 @@ const ITEM_DEF_PATHS := [
 const EQUIPMENT_DEF_PATHS := [
 	"res://data/equipment/common/Book.tres",
 	"res://data/equipment/uncommon/Boots.tres",
+	"res://data/equipment/uncommon/CounterCurse.tres",
+	"res://data/equipment/rare/FurCoat.tres",
 	"res://data/equipment/common/RefinedRing.tres",
 	"res://data/equipment/common/ProtectionStone.tres",
 	"res://data/equipment/legendary/ParallelThought.tres",
 	"res://data/equipment/rare/StartingGear.tres",
 	"res://data/equipment/common/VitalityStone.tres",
 	"res://data/equipment/rare/CurseBook.tres",
+	"res://data/equipment/rare/DryMantle.tres",
 	"res://data/equipment/legendary/MiracleIdol.tres",
+	"res://data/equipment/common/SoulStone.tres",
 ]
 
 var item_defs: Array[Item] = []

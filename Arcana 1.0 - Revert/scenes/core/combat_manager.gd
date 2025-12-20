@@ -31,8 +31,9 @@ func perform_attack(attacker, defender, is_counter: bool = false) -> void:
 	# Effective stats with buffs/debuffs
 	var atk_bonus: int = StatusManager.get_atk_bonus(attacker)
 	var def_bonus: int = StatusManager.get_def_bonus(defender)
+	var temp_atk: int = _get_temp_atk_bonus(attacker)
 
-	var effective_atk: int = attacker.atk + atk_bonus
+	var effective_atk: int = attacker.atk + atk_bonus + temp_atk
 	var effective_def: int = defender.defense + def_bonus
 
 	var terrain_def: int = grid.get_defense_bonus(defender.grid_position)
@@ -63,7 +64,9 @@ func perform_attack(attacker, defender, is_counter: bool = false) -> void:
 		defender.play_hit_react()
 
 	var defender_survived: bool = defender.take_damage(damage)
-	
+	if not defender_survived:
+		_apply_on_kill_rewards(attacker, defender)
+
 	if CombatLog != null and not defender_survived:
 		CombatLog.add("%s is defeated!" % defender.name, {"type":"ko"})
 
@@ -292,9 +295,27 @@ func _apply_skill_damage(user, target, skill: Skill) -> void:
 	if user == null or target == null or skill == null:
 		return
 
-	# NOTE: simple formula for now: atk * mult + flat
-	var base_attack: int = user.atk
-	var raw: float = float(base_attack) * float(skill.power_multiplier) + float(skill.flat_power)
+	# Effective stats with buffs/debuffs
+	var atk_bonus: int = 0
+	var def_bonus: int = 0
+	if StatusManager != null:
+		atk_bonus = StatusManager.get_atk_bonus(user)
+		def_bonus = StatusManager.get_def_bonus(target)
+
+	var temp_atk: int = _get_temp_atk_bonus(user)
+
+	var effective_atk: int = int(user.atk) + atk_bonus + temp_atk
+	var effective_def: int = int(target.defense) + def_bonus
+
+	var terrain_def: int = 0
+	if grid != null and ("grid_position" in target):
+		terrain_def = int(grid.get_defense_bonus(target.grid_position))
+
+	# Skill formula (now respects defense/terrain):
+	# atk * mult + flat - (def + terrain_def)
+	var raw: float = float(effective_atk) * float(skill.power_multiplier) + float(skill.flat_power)
+	raw -= float(effective_def + terrain_def)
+
 	var amount: int = int(round(raw))
 	if amount < 1:
 		amount = 1
@@ -302,13 +323,22 @@ func _apply_skill_damage(user, target, skill: Skill) -> void:
 	var before_hp: int = int(target.hp)
 	var survived: bool = target.take_damage(amount)
 
-	# Keep your print if you want it in the console too
-	print(user.name, " hits ", target.name, " with ", skill.name, " for ", amount, " damage (skill).")
+	if not survived:
+		_apply_on_kill_rewards(user, target)
+
+	print(user.name, " hits ", target.name, " with ", skill.name,
+		" for ", amount, " damage (skill) (atk=", effective_atk,
+		", def=", effective_def, ", terrain def +", terrain_def, ")")
 
 	if CombatLog != null:
-		CombatLog.add("  -> hits %s for %d (HP %d/%d → %d/%d)%s" % [
+		CombatLog.add("  -> %s hits %s with %s for %d (atk=%d, def=%d, terrain=%d) (HP %d/%d → %d/%d)%s" % [
+			user.name,
 			target.name,
+			skill.name,
 			amount,
+			effective_atk,
+			effective_def,
+			terrain_def,
 			before_hp, int(target.max_hp),
 			int(target.hp), int(target.max_hp),
 			"" if survived else " (KO)"
@@ -545,3 +575,64 @@ func _resolve_status_reactions(user, target, skill: Skill) -> void:
 
 		if CombatLog != null:
 			CombatLog.add("Reaction: Chilled + Ice → Frozen (%s)" % target.name, {"type":"reaction"})
+
+const META_TEMP_ATK_BONUS := &"temp_atk_bonus"
+
+func _get_temp_atk_bonus(unit) -> int:
+	if unit == null or not is_instance_valid(unit):
+		return 0
+	if unit.has_meta(META_TEMP_ATK_BONUS):
+		return int(unit.get_meta(META_TEMP_ATK_BONUS))
+	return 0
+
+
+func _get_equipment_list(unit) -> Array:
+	if unit == null or not is_instance_valid(unit):
+		return []
+	if "unit_data" in unit and unit.unit_data != null and "equipment_slots" in unit.unit_data:
+		var arr = unit.unit_data.equipment_slots
+		if typeof(arr) == TYPE_ARRAY:
+			return arr
+	return []
+
+#KILL REWARDS HELPERS
+func _apply_on_kill_rewards(killer, victim) -> void:
+	if killer == null or victim == null:
+		return
+	if not is_instance_valid(killer) or not is_instance_valid(victim):
+		return
+
+	var eq_list: Array = _get_equipment_list(killer)
+	if eq_list.is_empty():
+		return
+
+	var atk_gain: int = 0
+	var mana_gain: int = 0
+
+	for eq in eq_list:
+		if eq == null:
+			continue
+		if "on_kill_atk_bonus" in eq:
+			atk_gain += int(eq.on_kill_atk_bonus)
+		if "on_kill_mana_restore" in eq:
+			mana_gain += int(eq.on_kill_mana_restore)
+
+	if atk_gain <= 0 and mana_gain <= 0:
+		return
+
+	if atk_gain > 0:
+		var cur: int = _get_temp_atk_bonus(killer)
+		killer.set_meta(META_TEMP_ATK_BONUS, cur + atk_gain)
+
+		if CombatLog != null:
+			CombatLog.add("%s gains +%d ATK (kill reward) until battle ends." % [killer.name, atk_gain],
+				{"type":"buff", "source": killer.name})
+
+	if mana_gain > 0 and ("mana" in killer) and ("max_mana" in killer):
+		var before: int = int(killer.mana)
+		var maxm: int = int(killer.max_mana)
+		killer.mana = min(maxm, before + mana_gain)
+
+		if CombatLog != null:
+			CombatLog.add("%s restores %d mana (kill reward)." % [killer.name, mana_gain],
+				{"type":"mana", "source": killer.name})

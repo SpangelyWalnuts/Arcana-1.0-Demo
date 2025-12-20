@@ -50,6 +50,20 @@ func apply_status_to_unit(unit, skill: Skill, source_unit: Node = null) -> void:
 		print("[STATUS BLOCKED] unit=", unit.name, " skill=", skill.name, " status_key=", skill.status_key)
 		return
 	
+		# ✅ Per-battle negative-status block (consumes only on NEGATIVE statuses)
+	if _is_negative_status_skill(skill):
+		var left: int = _get_neg_block_left(unit)
+		if left > 0:
+			_consume_neg_block(unit)
+
+			if CombatLog != null:
+				var src_name: String = source_unit.name if source_unit != null else "<?>"
+				CombatLog.add("%s blocks %s (%d left)" % [unit.name, skill.name, (left - 1)],
+					{"type":"status_blocked", "skill": skill.name, "target": unit.name, "source": src_name})
+
+			print("[STATUS BLOCKED] unit=", unit.name, " skill=", skill.name, " (battle block) left=", (left - 1))
+			return
+
 
 	var list: Array = _get_status_list(unit)
 	# ✅ Duration bonus from source equipment (e.g. +1)
@@ -360,3 +374,45 @@ func _get_bonus_duration_from_source(source_unit) -> int:
 			bonus += int(eq.bonus_status_duration_applied)
 
 	return bonus
+
+const META_NEG_BLOCK_LEFT := &"neg_status_block_left"
+
+func reset_battle_status_blocks_for_team(team: String) -> void:
+	var group_name := "player_units" if team == "player" else "enemy_units"
+	var units: Array = get_tree().get_nodes_in_group(group_name)
+	for u in units:
+		reset_battle_status_blocks_for_unit(u)
+
+func reset_battle_status_blocks_for_unit(unit) -> void:
+	if unit == null or not is_instance_valid(unit):
+		return
+
+	var blocks: int = _get_neg_status_block_from_equipment(unit)
+	unit.set_meta(META_NEG_BLOCK_LEFT, blocks)
+
+func _get_neg_status_block_from_equipment(unit) -> int:
+	var eq_list: Array = _get_equipment_list(unit)
+	var total: int = 0
+
+	for eq in eq_list:
+		if eq == null:
+			continue
+		if "neg_status_block_per_battle" in eq:
+			total += int(eq.neg_status_block_per_battle)
+
+	if total < 0:
+		total = 0
+	return total
+
+func _get_neg_block_left(unit) -> int:
+	if unit == null:
+		return 0
+	if not unit.has_meta(META_NEG_BLOCK_LEFT):
+		return 0
+	return int(unit.get_meta(META_NEG_BLOCK_LEFT))
+
+func _consume_neg_block(unit) -> void:
+	var left: int = _get_neg_block_left(unit)
+	if left <= 0:
+		return
+	unit.set_meta(META_NEG_BLOCK_LEFT, left - 1)

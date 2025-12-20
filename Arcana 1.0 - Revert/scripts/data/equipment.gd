@@ -19,6 +19,9 @@ var rarity: String = "Common"
 # Status interaction (Phase 1)
 # -----------------------------
 
+# Blocks the first N NEGATIVE statuses applied to this unit each battle.
+@export var neg_status_block_per_battle: int = 0
+
 # If true: immune to any NEGATIVE status (debuffs, prevent_move/arcana, negative mods)
 @export var immune_negative_statuses: bool = false
 
@@ -27,3 +30,13 @@ var rarity: String = "Common"
 
 # If > 0: statuses YOU apply last longer by this many turns (e.g. +1)
 @export var bonus_status_duration_applied: int = 0
+
+# -----------------------------
+# On-kill rewards (battle-only)
+# -----------------------------
+
+# Gain +ATK (stacking) until end of battle when this unit gets a kill.
+@export var on_kill_atk_bonus: int = 0
+
+# Restore mana on kill (clamped to max_mana).
+@export var on_kill_mana_restore: int = 0

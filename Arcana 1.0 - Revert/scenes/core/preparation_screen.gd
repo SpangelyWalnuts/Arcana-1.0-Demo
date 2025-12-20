@@ -186,14 +186,29 @@ func _show_unit_details_from_roster_index(roster_index: int) -> void:
 		arcana_label.text = "Arcana: " + ", ".join(arc_names)
 
 	# --- Equipment slots ---
+		# --- Equipment slots ---
 	if data.equipment_slots.size() == 0:
 		equipment_label.text = "Equipment: (none)"
 	else:
-		var eq_names: Array[String] = []
-		for eq in data.equipment_slots:
-			if eq != null:
-				eq_names.append(eq.name)
-		equipment_label.text = "Equipment: " + ", ".join(eq_names)
+		var lines: Array[String] = []
+		lines.append("Equipment:")
+
+		for eqr in data.equipment_slots:
+			if eqr == null:
+				continue
+			var eq: Equipment = eqr as Equipment
+			if eq == null:
+				continue
+
+			lines.append("- " + eq.name)
+
+			var fx: String = _equipment_effect_text(eq)
+			if fx != "":
+				# indent effect lines a bit for readability
+				for l in fx.split("\n"):
+					lines.append("   " + l)
+
+		equipment_label.text = "\n".join(lines)
 
 	# --- Item slots ---
 	if data.item_slots.size() == 0:
@@ -483,7 +498,13 @@ func _on_manage_equipment_pressed() -> void:
 
 		# Label shows name and stock info
 		cb.text = "%s (%d/%d)" % [eq.name, owned - used_by_others, owned]
+
+		var fx_text: String = _equipment_effect_text(eq)
+		if fx_text != "":
+			cb.tooltip_text = fx_text
+
 		cb.set_meta("equipment", eq)
+
 
 		# Pre-check if this unit already has it equipped
 		if already_equipped > 0:
@@ -710,6 +731,40 @@ func _shop_entry_desc(res: Resource) -> String:
 		return String(res.description)
 	return ""
 
+func _equipment_effect_lines(eq: Equipment) -> Array[String]:
+	var lines: Array[String] = []
+	if eq == null:
+		return lines
+
+	# Immunity: all negative statuses
+	if "immune_negative_statuses" in eq and bool(eq.immune_negative_statuses):
+		lines.append("• Immune to negative statuses")
+
+	# Immunity: specific status keys
+	if "immune_status_keys" in eq:
+		var keys = eq.immune_status_keys
+		if typeof(keys) == TYPE_ARRAY and not keys.is_empty():
+			var key_names: Array[String] = []
+			for k in keys:
+				key_names.append(String(k))
+			lines.append("• Immune: " + ", ".join(key_names))
+
+	# Duration bonus applied
+	if "bonus_status_duration_applied" in eq:
+		var b: int = int(eq.bonus_status_duration_applied)
+		if b != 0:
+			var sign := "+" if b > 0 else ""
+			lines.append("• Statuses you apply last %s%d turn(s)" % [sign, b])
+
+	return lines
+
+
+func _equipment_effect_text(eq: Equipment) -> String:
+	var lines := _equipment_effect_lines(eq)
+	if lines.is_empty():
+		return ""
+	return "\n".join(lines)
+
 #SHOP UI Logic
 func _on_shop_button_pressed() -> void:
 	_refresh_shop_ui()
@@ -800,6 +855,13 @@ func _on_shop_item_selected(index: int) -> void:
 		price,
 		remaining
 	]
+
+		# --- Equipment effects (UI clarity) ---
+	if res is Equipment:
+		var eq: Equipment = res as Equipment
+		var fx: String = _equipment_effect_text(eq)
+		if fx != "":
+			details += "\n\nEffects:\n" + fx
 
 	# --- Not enough gold message ---
 	if RunManager.gold < price:
