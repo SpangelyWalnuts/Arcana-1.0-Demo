@@ -9,4 +9,5 @@ name = "Firebolt"
 description = "Strike an enemy with a firebolt for massive damage."
 mana_cost = 3
 aoe_radius = 1
+tags = Array[StringName]([&"fire"])
 icon_texture = ExtResource("1_cst6a")

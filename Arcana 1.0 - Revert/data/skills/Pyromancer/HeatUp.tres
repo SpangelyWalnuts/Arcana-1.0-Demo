@@ -13,5 +13,6 @@ cast_range = 0
 target_type = 3
 can_target_self = true
 atk_mod = 3
+tags = Array[StringName]([&"fire"])
 duration_turns = 3
 icon_texture = ExtResource("1_lhxql")

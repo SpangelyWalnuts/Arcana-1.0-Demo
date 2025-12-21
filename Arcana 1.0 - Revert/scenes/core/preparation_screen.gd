@@ -65,6 +65,9 @@ func _ready() -> void:
 	floor_label.text = "Floor %d" % RunManager.current_floor
 	hint_label.text = "Select up to %d units to deploy." % max_deploy_slots
 
+	if RunManager.has_method("ensure_floor_config"):
+		RunManager.ensure_floor_config()
+
 	_populate_roster_lists()
 	_update_encounter_tag_ui()
 	_update_weather_ui()

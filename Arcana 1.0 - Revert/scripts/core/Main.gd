@@ -120,7 +120,9 @@ var _enemy_preview_unit: Node2D = null
 func _ready() -> void:
 	print("[BOSS DEBUG] floor=", RunManager.current_floor, " is_boss_floor=", RunManager.is_boss_floor)
 	# --- Apply floor scaling before spawning anything ---
-	if RunManager.has_method("refresh_floor_config"):
+	if RunManager.has_method("ensure_floor_config"):
+		RunManager.ensure_floor_config()
+	elif RunManager.has_method("refresh_floor_config"):
 		RunManager.refresh_floor_config()
 		
 		
@@ -251,8 +253,10 @@ func _input(event: InputEvent) -> void:
 	# --- DEBUG: Jump to floor 5 and reload scene ---
 	if event.is_action_pressed("debug_jump_floor_5"):
 		RunManager.current_floor = 5
-		if RunManager.has_method("refresh_floor_config"):
-			RunManager.refresh_floor_config()
+		if RunManager.has_method("ensure_floor_config"):
+			RunManager.ensure_floor_config()
+		else:
+			RunManager.refresh_floor_config() # fallback
 		get_tree().reload_current_scene()
 		return
 

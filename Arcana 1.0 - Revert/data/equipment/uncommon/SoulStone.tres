@@ -1,9 +1,10 @@
 [gd_resource type="Resource" script_class="Equipment" load_steps=2 format=3 uid="uid://ciducca7h4dsn"]
 
-[ext_resource type="Script" uid="uid://bnsyp2yvudsd2" path="res://scripts/data/equipment.gd" id="2_jorwl"]
+[ext_resource type="Script" uid="uid://bnsyp2yvudsd2" path="res://scripts/data/equipment.gd" id="1_cysmp"]
 
 [resource]
-script = ExtResource("2_jorwl")
+script = ExtResource("1_cysmp")
 name = "Soul Stone"
 description = "Upon defeating a unit gain +1ATK until end of map."
+rarity = "Uncommon"
 on_kill_atk_bonus = 1

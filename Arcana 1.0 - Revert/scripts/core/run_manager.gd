@@ -103,18 +103,21 @@ const ITEM_DEF_PATHS := [
 
 const EQUIPMENT_DEF_PATHS := [
 	"res://data/equipment/common/Book.tres",
-	"res://data/equipment/uncommon/Boots.tres",
-	"res://data/equipment/uncommon/CounterCurse.tres",
-	"res://data/equipment/rare/FurCoat.tres",
 	"res://data/equipment/common/RefinedRing.tres",
 	"res://data/equipment/common/ProtectionStone.tres",
-	"res://data/equipment/legendary/ParallelThought.tres",
-	"res://data/equipment/rare/StartingGear.tres",
 	"res://data/equipment/common/VitalityStone.tres",
+	
+	"res://data/equipment/uncommon/Boots.tres",
+	"res://data/equipment/uncommon/CounterCurse.tres",
+	"res://data/equipment/uncommon/SoulStone.tres",
+	
+	"res://data/equipment/rare/FurCoat.tres",
+	"res://data/equipment/rare/StartingGear.tres",
 	"res://data/equipment/rare/CurseBook.tres",
 	"res://data/equipment/rare/DryMantle.tres",
+	
+	"res://data/equipment/legendary/ParallelThought.tres",
 	"res://data/equipment/legendary/MiracleIdol.tres",
-	"res://data/equipment/common/SoulStone.tres",
 ]
 
 var item_defs: Array[Item] = []
@@ -191,12 +194,13 @@ func return_to_title() -> void:
 func advance_floor() -> bool:
 	current_floor += 1
 	refresh_floor_config()
+	generate_shop_stock(current_floor) # <-- reroll shop for the new floor
 	print("Advancing to floor", current_floor)
 	return true
 
 func get_floor_config(floor: int) -> Dictionary:
-	# Floor bands: every 3 floors increases map size + baseline counts.
-	var band: int = int((floor - 1) / 3)
+	# Floor bands: every 4 floors increases map size + baseline counts.
+	var band: int = int((floor - 1) / 4)
 # Map size progression:
 # 2x1 -> 2x2 -> 3x3 -> 4x4 -> 5x5 (then stay at 5x5)
 	var stage: int = clampi(band, 0, 4)
@@ -204,25 +208,24 @@ func get_floor_config(floor: int) -> Dictionary:
 	var map_chunks: Vector2i
 	match stage:
 		0:
-			map_chunks = Vector2i(2, 1)
+			map_chunks = Vector2i(1, 1)
 		1:
-			map_chunks = Vector2i(2, 2)
+			map_chunks = Vector2i(2, 1)
 		2:
-			map_chunks = Vector2i(3, 3)
+			map_chunks = Vector2i(2, 2)
 		3:
-			map_chunks = Vector2i(4, 4)
+			map_chunks = Vector2i(3, 3)
 		_:
-			map_chunks = Vector2i(5, 5)
+			map_chunks = Vector2i(4, 4)
 # Biome rotates every floor:
 # 1 ruins, 2 forest, 3 catacombs, 4 tundra, 5 volcano, 6 ruins...
 	var biome: StringName = &"taiga"
 	var biome_index: int = (floor - 1) % 5
-	var weather: StringName = _roll_weather_for_biome(biome)
 
 
 	match biome_index:
 		0:
-			biome = &"ruins"
+			biome = &"taiga"
 		1:
 			biome = &"forest"
 		2:
@@ -231,7 +234,7 @@ func get_floor_config(floor: int) -> Dictionary:
 			biome = &"taiga"
 		_:
 			biome = &"volcano"
-
+	var weather: StringName = _roll_weather_for_biome(biome)
 	# Boss floors
 	var boss: bool = (floor % 5) == 0
 
@@ -264,7 +267,7 @@ func get_floor_config(floor: int) -> Dictionary:
 
 func refresh_floor_config() -> void:
 	var cfg: Dictionary = get_floor_config(current_floor)
-
+	_floor_config_floor = current_floor
 	current_encounter_tag = StringName(cfg.get("encounter_tag", &"none"))
 	current_map_chunks = cfg["map_chunks"] as Vector2i
 	current_enemy_count = int(cfg["enemy_count"])
@@ -273,6 +276,7 @@ func refresh_floor_config() -> void:
 	is_boss_floor = bool(cfg["is_boss_floor"])
 	current_biome = StringName(cfg.get("biome", &"ruins"))
 	current_weather = StringName(cfg.get("weather", &"clear"))
+	print("[FLOOR CONFIG] floor=", current_floor, " tag=", current_encounter_tag, " weather=", current_weather)
 
 #UI ACCESSOR
 func get_biome() -> StringName:
@@ -296,6 +300,13 @@ func _roll_encounter_tag(floor: int, boss: bool) -> StringName:
 func get_deploy_limit() -> int:
 	# Safe accessor for UI scenes.
 	return current_deploy_limit
+
+#FLOOR CONFIG
+var _floor_config_floor: int = -1
+
+func ensure_floor_config() -> void:
+	if _floor_config_floor != current_floor:
+		refresh_floor_config()
 
 # -------------------------------------------------------------------
 #  DRAFT SYSTEM
@@ -847,6 +858,7 @@ func _rarity_mult(r: StringName) -> float:
 #  RUN REWARDS
 # -------------------------------------------------------------------
 func generate_rewards_for_floor(floor: int) -> void:
+	shop_stock.clear()
 	pending_rewards.clear()
 	for i in range(4):
 		var option: Dictionary = _make_random_reward(floor, i)

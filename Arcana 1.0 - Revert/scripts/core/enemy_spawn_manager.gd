@@ -46,6 +46,21 @@ const DIRS_4: Array[Vector2i] = [
 	Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN
 ]
 
+# ----------------------------------------------------
+#  Encounter compositions (group spawn plans)
+# ----------------------------------------------------
+const ROLE_OFFENSE: StringName = &"offense"
+const ROLE_DEFENSE: StringName = &"defense"
+const ROLE_SUPPORT: StringName = &"support"
+
+# Each slot is a Dictionary:
+# {
+#   "role": StringName,              # required: offense/defense/support
+#   "force_elite": bool,             # optional
+#   "force_profile": AIProfile,      # optional (null = role pool)
+#   "force_class": Resource          # optional UnitClass (null = role pool)
+# }
+
 func _flood_fill_reachable(
 	grid_node: Node,
 	terrain: TileMap,
@@ -94,6 +109,63 @@ func _flood_fill_reachable(
 func _ready() -> void:
 	_rng.randomize()
 
+func _build_spawn_plan(tag: StringName, count: int) -> Array[Dictionary]:
+	var plan: Array[Dictionary] = []
+	
+	# Helper: push a slot
+	var push_slot := func(role: StringName, force_elite: bool, force_profile: AIProfile, force_class: Resource) -> void:
+		plan.append({
+			"role": role,
+			"force_elite": force_elite,
+			"force_profile": force_profile,
+			"force_class": force_class
+		})
+
+	# Default: no composition
+	if tag == &"none":
+		return plan
+
+	# --- Compositions by tag (starter set) ---
+	match tag:
+		&"elite_guard":
+			# "Anchor + Escorts" feel
+			# - 1 elite defense anchor
+			# - 1 support backliner
+			# - rest offense pressure
+			push_slot.call(ROLE_DEFENSE, true, null, null)
+			if count >= 2:
+				push_slot.call(ROLE_SUPPORT, false, null, null)
+			for i: int in range(plan.size(), count):
+				push_slot.call(ROLE_OFFENSE, false, null, null)
+
+		&"caster_heavy":
+			# "Backline battery"
+			# - 2 supports
+			# - 1 defense
+			# - rest offense
+			push_slot.call(ROLE_SUPPORT, false, null, null)
+			if count >= 2:
+				push_slot.call(ROLE_SUPPORT, false, null, null)
+			if count >= 3:
+				push_slot.call(ROLE_DEFENSE, false, null, null)
+			for i2: int in range(plan.size(), count):
+				push_slot.call(ROLE_OFFENSE, false, null, null)
+
+		&"swarm":
+			# "Harass pack"
+			# - mostly offense, occasional support
+			for i3: int in range(count):
+				var r: float = _rng.randf()
+				if r < 0.80:
+					push_slot.call(ROLE_OFFENSE, false, null, null)
+				else:
+					push_slot.call(ROLE_SUPPORT, false, null, null)
+
+		_:
+			# Unknown tag: no plan
+			pass
+	
+	return plan
 
 func spawn_enemies_for_floor(floor: int, player_tiles: Array[Vector2i]) -> void:
 	print("[BOSS DEBUG] spawn_enemies_for_floor floor=", floor, " boss_floor=", boss_floor, " elite_chance=", elite_chance)
@@ -172,6 +244,9 @@ func spawn_enemies_for_floor(floor: int, player_tiles: Array[Vector2i]) -> void:
 
 
 	var count: int = local_count
+	var plan: Array[Dictionary] = _build_spawn_plan(tag, count)
+	var plan_index: int = 0
+
 	print("EnemySpawnManager: spawning %d enemies (floor %d) tag=%s" % [count, floor, String(tag)])
 
 	
@@ -213,15 +288,39 @@ func spawn_enemies_for_floor(floor: int, player_tiles: Array[Vector2i]) -> void:
 		if min_enemy_spacing > 0 and _too_close_to_existing_enemies(tile, spawned_tiles, min_enemy_spacing):
 			continue
 
-		var role: String = _pick_role(local_weight_offense, local_weight_defense, local_weight_support)
-		var cls = _pick_class_for_role(role)
+		var role: String = ""
+		var force_elite: bool = false
+		var force_profile: AIProfile = null
+		var force_class: Resource = null
+
+		if plan_index < plan.size():
+			var slot: Dictionary = plan[plan_index]
+			plan_index += 1
+
+			role = String(slot.get("role", ROLE_OFFENSE))
+			force_elite = bool(slot.get("force_elite", false))
+			force_profile = slot.get("force_profile") as AIProfile
+			force_class = slot.get("force_class") as Resource
+		else:
+			role = _pick_role(local_weight_offense, local_weight_defense, local_weight_support)
+
+		var cls = null
+		if force_class != null:
+			cls = force_class
+		else:
+			cls = _pick_class_for_role(role)
+
 		if cls == null:
 			push_warning("EnemySpawnManager: No UnitClass available for role '%s' (check your pools)." % role)
 			continue
 
+
 		var mark_boss: bool = false
 
 		var is_elite: bool = _rng.randf() < local_elite_chance
+		if force_elite:
+			is_elite = true
+
 		# Encounter tag: guarantee one elite on elite_guard floors (non-boss).
 		if tag == &"elite_guard" and not boss_floor and not elite_guard_assigned:
 			is_elite = true
@@ -237,7 +336,7 @@ func spawn_enemies_for_floor(floor: int, player_tiles: Array[Vector2i]) -> void:
 		var saved_arcana_chance: float = arcana_chance
 		arcana_chance = local_arcana_chance
 		
-		_spawn_enemy_instance(grid_node, units_node, terrain, cls, role, tile, floor, is_elite, mark_boss)
+		_spawn_enemy_instance(grid_node, units_node, terrain, cls, role, tile, floor, is_elite, mark_boss, force_profile)
 		spawned_tiles.append(tile)
 		
 		arcana_chance = saved_arcana_chance
@@ -259,7 +358,8 @@ func _spawn_enemy_instance(
 	tile: Vector2i,
 	floor: int,
 	is_elite: bool,
-	mark_boss: bool
+	mark_boss: bool,
+	force_profile: AIProfile = null
 ) -> void:
 	print("[EnemySpawnManager] _spawn_enemy_instance called")
 	var enemy = enemy_unit_scene.instantiate()
@@ -270,7 +370,10 @@ func _spawn_enemy_instance(
 	var data: UnitData = UnitData.new()
 
 	if data != null and _has_prop(data, "ai_profile"):
-		var profile: AIProfile = _pick_profile_for_role(role)
+		var profile: AIProfile = force_profile
+		if profile == null:
+			profile = _pick_profile_for_role(role)
+
 		if profile != null:
 			print("[SPAWN] assigned ai_profile:", profile.resource_path, " role=", role)
 			data.set("ai_profile", profile)

@@ -1,8 +1,10 @@
-[gd_resource type="Resource" script_class="Equipment" load_steps=2 format=3 uid="uid://bag4wvyos53ax"]
+[gd_resource type="Resource" script_class="Equipment" load_steps=3 format=3 uid="uid://bag4wvyos53ax"]
 
+[ext_resource type="Texture2D" uid="uid://i5td6yvi3f15" path="res://art/equipment/common/RefinedRing.png" id="1_8ofg8"]
 [ext_resource type="Script" uid="uid://bnsyp2yvudsd2" path="res://scripts/data/equipment.gd" id="1_d7e3q"]
 
 [resource]
 script = ExtResource("1_d7e3q")
 name = "Refined Ring"
+icon_texture = ExtResource("1_8ofg8")
 bonus_max_mana = 5

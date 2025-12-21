@@ -1,5 +1,6 @@
-[gd_resource type="Resource" script_class="Equipment" load_steps=2 format=3 uid="uid://bjww2dxg3jenf"]
+[gd_resource type="Resource" script_class="Equipment" load_steps=3 format=3 uid="uid://bjww2dxg3jenf"]
 
+[ext_resource type="Texture2D" uid="uid://cnvpabl41m24y" path="res://art/equipment/uncommon/CounterCurseBand.png" id="1_at3is"]
 [ext_resource type="Script" uid="uid://bnsyp2yvudsd2" path="res://scripts/data/equipment.gd" id="1_twoqk"]
 
 [resource]
@@ -7,4 +8,5 @@ script = ExtResource("1_twoqk")
 name = "Counter Curse Band"
 description = "Wearer is immune to the first debuff they recieve each floor."
 rarity = "Uncommon"
+icon_texture = ExtResource("1_at3is")
 neg_status_block_per_battle = 1
