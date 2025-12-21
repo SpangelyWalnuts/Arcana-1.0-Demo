@@ -3,6 +3,7 @@ class_name UnitData
 
 @export var unit_class: UnitClass
 
+@export var ai_profile: AIProfile = null
 @export var level: int = 1
 @export var exp: int = 0
 

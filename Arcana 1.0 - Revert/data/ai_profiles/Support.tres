@@ -1,7 +1,0 @@
-[gd_resource type="Resource" script_class="AIProfile" load_steps=2 format=3 uid="uid://uafe6ux8vx3q"]
-
-[ext_resource type="Script" uid="uid://clgccvby50bo6" path="res://scripts/ai/AIProfile.gd" id="1_y4mqu"]
-
-[resource]
-script = ExtResource("1_y4mqu")
-metadata/_custom_type_script = "uid://clgccvby50bo6"

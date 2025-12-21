@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="AIProfile" load_steps=2 format=3 uid="uid://cmx8dj3g4bm11"]
+
+[ext_resource type="Script" uid="uid://clgccvby50bo6" path="res://scripts/ai/AIProfile.gd" id="1_tffxc"]
+
+[resource]
+script = ExtResource("1_tffxc")
+id = &"sentrytank"
+move_cost_weight = 0.95
+defense_weight = 1.2
+threat_bonus = 2.5
+opening_priority = &"attack_first"
+goal = &"sentry"
+sentry_leash_distance = 7
+sentry_hold_margin_bonus = 1.5
+metadata/_custom_type_script = "uid://clgccvby50bo6"

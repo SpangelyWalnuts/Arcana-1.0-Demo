@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="AIProfile" load_steps=2 format=3 uid="uid://btrdvihvtdq5g"]
 
-[ext_resource type="Script" uid="uid://clgccvby50bo6" path="res://scripts/ai/AIProfile.gd" id="1_arpkx"]
+[ext_resource type="Script" uid="uid://clgccvby50bo6" path="res://scripts/ai/AIProfile.gd" id="1_xssr7"]
 
 [resource]
-script = ExtResource("1_arpkx")
+script = ExtResource("1_xssr7")
 id = &"sentry"
 arcana_intent_enabled = false
+goal = &"sentry"
+sentry_leash_distance = 6
 metadata/_custom_type_script = "uid://clgccvby50bo6"

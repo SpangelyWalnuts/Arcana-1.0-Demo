@@ -36,3 +36,21 @@ class_name AIProfile
 # &"move_first"
 # &"wait_first" (attack if in range, otherwise do nothing)
 @export var opening_priority: StringName = &"cast_first"
+
+# -----------------------------
+# Goals
+# -----------------------------
+# Allowed:
+# &"none"
+# &"sentry"
+# &"skirmisher"
+@export var goal: StringName = &"none"
+
+# Sentry: hold ground / limited chase
+@export var sentry_leash_distance: int = 8
+@export var sentry_hold_margin_bonus: float = 1.25
+
+# Skirmisher: kite / reposition / avoid adjacency
+@export var skirmisher_avoid_adjacent_penalty: float = 3.0
+@export var skirmisher_prefer_max_range_bonus: float = 1.5
+@export var skirmisher_hold_margin_reduction: float = 0.75

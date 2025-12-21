@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AIProfile" load_steps=2 format=3 uid="uid://uafe6ux8vx3q"]
+
+[ext_resource type="Script" uid="uid://clgccvby50bo6" path="res://scripts/ai/AIProfile.gd" id="1_boeq8"]
+
+[resource]
+script = ExtResource("1_boeq8")
+id = &"caster"
+move_cost_weight = 0.7
+defense_weight = 0.6
+threat_bonus = 1.5
+buff_cast_min_player_distance = 7
+metadata/_custom_type_script = "uid://clgccvby50bo6"

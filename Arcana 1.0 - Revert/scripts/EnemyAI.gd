@@ -2,10 +2,17 @@ extends Node
 class_name EnemyAI
 
 # -----------------------------
+# AI Debug
+# -----------------------------
+@export var ai_debug_enabled: bool = true
+@export var ai_debug_print: bool = true # if true, prints debug lines each time action is chosen
+
+# -----------------------------
 # Movement / scoring tuning
 # -----------------------------
 @export var move_cost_weight: float = 0.75
 @export var defense_weight: float = 0.75
+
 @export var hazard_weight: float = 0.0 # future: fire/spikes/etc.
 @export var threat_bonus: float = 5.0
 @export var prefer_threat_tiles: bool = true
@@ -45,6 +52,12 @@ class AIContext:
 
 	var arcana_enabled: bool
 	var opening_priority: StringName
+	var goal: StringName
+	var sentry_leash_distance: int
+	var sentry_hold_margin_bonus: float
+	var skirmisher_avoid_adjacent_penalty: float
+	var skirmisher_prefer_max_range_bonus: float
+	var skirmisher_hold_margin_reduction: float
 
 
 func _build_ai_context(main: Node, enemy: Node, players: Array) -> AIContext:
@@ -73,7 +86,16 @@ func _build_ai_context(main: Node, enemy: Node, players: Array) -> AIContext:
 	ctx.effective_weights = _get_effective_weights(main, enemy)
 
 	ctx.arcana_enabled = _effective_arcana_intent_enabled(enemy)
+	var p := _get_ai_profile(enemy)
+	print("[AICTX] profile=", p.resource_path if p != null else "NULL", " enemy=", enemy.name)
 	ctx.opening_priority = _effective_opening_priority(enemy)
+	ctx.goal = _effective_goal(enemy)
+	ctx.sentry_leash_distance = _effective_sentry_leash_distance(enemy)
+	ctx.sentry_hold_margin_bonus = _effective_sentry_hold_margin_bonus(enemy)
+	ctx.skirmisher_avoid_adjacent_penalty = _effective_skirmisher_avoid_adjacent_penalty(enemy)
+	ctx.skirmisher_prefer_max_range_bonus = _effective_skirmisher_prefer_max_range_bonus(enemy)
+	ctx.skirmisher_hold_margin_reduction = _effective_skirmisher_hold_margin_reduction(enemy)
+
 
 
 	return ctx
@@ -129,6 +151,18 @@ func take_turn(main: Node, enemy: Node, players: Array) -> void:
 		return
 
 	_tick_ai_cooldowns(enemy)
+
+	if ai_debug_enabled:
+		_ai_debug_reset(enemy)
+		_ai_debug_set(enemy, &"opening_priority", ctx.opening_priority)
+		_ai_debug_set(enemy, &"goal", ctx.goal)
+		_ai_debug_set(enemy, &"nearest_dist", ctx.nearest_player_dist)
+		_ai_debug_set(enemy, &"attack_range", ctx.attack_range)
+		_ai_debug_set(enemy, &"cannot_move", ctx.cannot_move)
+		_ai_debug_set(enemy, &"cannot_cast", ctx.cannot_cast)
+		_ai_debug_line(enemy, "prio=%s goal=%s dist=%d ar=%d" % [
+			String(ctx.opening_priority), String(ctx.goal), ctx.nearest_player_dist, ctx.attack_range
+		])
 
 	var prio: StringName = ctx.opening_priority
 
@@ -294,39 +328,69 @@ func _intent_move_or_wait(ctx: AIContext) -> String:
 func _attempt_cast(ctx: AIContext) -> bool:
 	if ctx == null:
 		return false
+	var enemy: Node = ctx.enemy
+	if enemy == null or not is_instance_valid(enemy):
+		return false
+
 	if not ctx.arcana_enabled:
+		_ai_debug_line(enemy, "cast? arcana disabled")
 		return false
 	if ctx.cannot_cast:
+		_ai_debug_line(enemy, "cast? cannot_cast=true")
 		return false
 
 	var plan: Dictionary = _choose_cast_plan_ctx(ctx)
 	if plan.is_empty():
+		_ai_debug_line(enemy, "cast? no valid plan")
 		return false
 
-	await _execute_cast_plan(ctx.main, ctx.enemy, plan)
+	var skill = plan.get("skill", null)
+	var skill_name: String = ""
+	if skill != null and _has_prop(skill, "name"):
+		skill_name = String(skill.get("name"))
+
+	var score_val: float = float(plan.get("score", 0.0))
+
+	_ai_debug_action(enemy, &"cast")
+	_ai_debug_set(enemy, &"cast_skill", skill_name)
+	_ai_debug_set(enemy, &"cast_score", score_val)
+	_ai_debug_line(enemy, "cast? picked=%s score=%.2f" % [skill_name, score_val])
+
+	await _execute_cast_plan(ctx.main, enemy, plan)
 	return true
+
 
 
 func _attempt_attack(ctx: AIContext, target: Node) -> bool:
 	if ctx == null:
 		return false
-	if target == null or not is_instance_valid(target):
+	var enemy: Node = ctx.enemy
+	if enemy == null or not is_instance_valid(enemy):
 		return false
-	if not _can_attack_now(ctx):
+	if target == null or not is_instance_valid(target):
+		_ai_debug_line(enemy, "attack? no target")
 		return false
 
-	var enemy: Node = ctx.enemy
+	var can_attack: bool = _can_attack_now(ctx)
+	_ai_debug_line(enemy, "attack? dist=%d range=%d -> %s" % [
+		ctx.nearest_player_dist, ctx.attack_range, "yes" if can_attack else "no"
+	])
+
+	if not can_attack:
+		return false
+
 	var cm: Node = _get_child_or_prop(ctx.main, "combat_manager")
 	if cm != null and cm.has_method("perform_attack"):
+		_ai_debug_action(enemy, &"attack")
+		_ai_debug_set(enemy, &"attack_target", target.name)
+
 		print("[AI] %s BASIC ATTACK start -> %s" % [enemy.name, target.name])
 		cm.perform_attack(enemy, target)
 
 		if cm.has_signal("attack_sequence_finished"):
-			# Timeout safety so we never hard-hang during debugging.
 			var timeout := get_tree().create_timer(1.0)
 			while true:
 				var emitted_attacker = await cm.attack_sequence_finished
-				print("[AI] attack_sequence_finished emitted for:", emitted_attacker)
 				if emitted_attacker == enemy:
 					print("[AI] %s BASIC ATTACK end (signal)" % enemy.name)
 					break
@@ -334,33 +398,55 @@ func _attempt_attack(ctx: AIContext, target: Node) -> bool:
 					print("[AI] %s BASIC ATTACK end (TIMEOUT FALLBACK)" % enemy.name)
 					break
 		else:
-			print("[AI] %s no attack_sequence_finished signal; using timer fallback" % enemy.name)
 			await get_tree().create_timer(0.25).timeout
-			print("[AI] %s BASIC ATTACK end (timer)" % enemy.name)
 
 		return true
 
+	_ai_debug_line(enemy, "attack? combat_manager missing perform_attack")
 	return false
+
 
 
 func _attempt_move(ctx: AIContext, target: Node) -> bool:
 	if ctx == null:
 		return false
+	var enemy: Node = ctx.enemy
+	if enemy == null or not is_instance_valid(enemy):
+		return false
+
 	if ctx.cannot_move:
+		_ai_debug_line(enemy, "move? cannot_move=true")
 		return false
 	if target == null or not is_instance_valid(target):
+		_ai_debug_line(enemy, "move? no target")
 		return false
+
+	# Goal: Sentry leash gate
+	if ctx.goal == &"sentry":
+		if ctx.nearest_player_dist > ctx.sentry_leash_distance:
+			_ai_debug_line(enemy, "move? blocked by sentry leash (dist %d > %d)" % [
+				ctx.nearest_player_dist, ctx.sentry_leash_distance
+			])
+			return false
 
 	var final_tile: Vector2i = _choose_greedy_destination_ctx(ctx, target)
 	if final_tile == ctx.enemy_tile:
+		_ai_debug_line(enemy, "move? dest==current")
 		return false
 
-	# Preserve your existing "should move" guard used by intent (avoid wobble)
-	if not _should_move_ctx(ctx, target, final_tile):
+	# Log should-move decision details (function logs too—this is the high-level gate)
+	var ok: bool = _should_move_ctx(ctx, target, final_tile)
+	_ai_debug_line(enemy, "move? dest=%s -> %s" % [str(final_tile), "yes" if ok else "no"])
+	if not ok:
 		return false
 
-	_move_enemy_to_tile(ctx.main, ctx.enemy, final_tile)
+	_ai_debug_action(enemy, &"move")
+	_ai_debug_set(enemy, &"move_dest", final_tile)
+
+	_move_enemy_to_tile(ctx.main, enemy, final_tile)
 	return true
+
+
 
 
 
@@ -653,6 +739,45 @@ func _effective_hold_margin_offense_role(enemy: Node) -> float:
 		return float(p.hold_margin_offense_role)
 	return hold_margin_offense_role
 
+func _effective_goal(enemy: Node) -> StringName:
+	var p: AIProfile = _get_ai_profile(enemy)
+	if p != null:
+		return p.goal
+	return &"none"
+
+
+func _effective_sentry_leash_distance(enemy: Node) -> int:
+	var p: AIProfile = _get_ai_profile(enemy)
+	if p != null:
+		return int(p.sentry_leash_distance)
+	return 8
+
+
+func _effective_sentry_hold_margin_bonus(enemy: Node) -> float:
+	var p: AIProfile = _get_ai_profile(enemy)
+	if p != null:
+		return float(p.sentry_hold_margin_bonus)
+	return 1.25
+
+func _effective_skirmisher_avoid_adjacent_penalty(enemy: Node) -> float:
+	var p: AIProfile = _get_ai_profile(enemy)
+	if p != null:
+		return float(p.skirmisher_avoid_adjacent_penalty)
+	return 3.0
+
+
+func _effective_skirmisher_prefer_max_range_bonus(enemy: Node) -> float:
+	var p: AIProfile = _get_ai_profile(enemy)
+	if p != null:
+		return float(p.skirmisher_prefer_max_range_bonus)
+	return 1.5
+
+
+func _effective_skirmisher_hold_margin_reduction(enemy: Node) -> float:
+	var p: AIProfile = _get_ai_profile(enemy)
+	if p != null:
+		return float(p.skirmisher_hold_margin_reduction)
+	return 0.75
 
 # -----------------------------
 # Greedy multi-tile movement
@@ -1056,6 +1181,53 @@ func _apply_buff_cooldown_after_cast(enemy: Node, skill) -> void:
 
 	_set_skill_cooldown(enemy, skill, cd)
 
+#DEBUG HELPER FUNCTIONS
+func _ai_debug_reset(enemy: Node) -> void:
+	if not ai_debug_enabled:
+		return
+	if enemy == null or not is_instance_valid(enemy):
+		return
+	enemy.set_meta("ai_debug", {})
+	enemy.set_meta("ai_debug_lines", [])
+
+
+func _ai_debug_set(enemy: Node, key: StringName, value) -> void:
+	if not ai_debug_enabled:
+		return
+	if enemy == null or not is_instance_valid(enemy):
+		return
+	if not enemy.has_meta("ai_debug"):
+		enemy.set_meta("ai_debug", {})
+	var d = enemy.get_meta("ai_debug")
+	if typeof(d) != TYPE_DICTIONARY:
+		d = {}
+	d[key] = value
+	enemy.set_meta("ai_debug", d)
+
+
+func _ai_debug_line(enemy: Node, text: String) -> void:
+	if not ai_debug_enabled:
+		return
+	if enemy == null or not is_instance_valid(enemy):
+		return
+
+	if not enemy.has_meta("ai_debug_lines"):
+		enemy.set_meta("ai_debug_lines", [])
+
+	var arr = enemy.get_meta("ai_debug_lines")
+	if typeof(arr) != TYPE_ARRAY:
+		arr = []
+
+	arr.append(text)
+	enemy.set_meta("ai_debug_lines", arr)
+
+	if ai_debug_print:
+		print("[AIDBG] ", enemy.name, " | ", text)
+
+
+func _ai_debug_action(enemy: Node, action: StringName) -> void:
+	_ai_debug_set(enemy, &"action", action)
+	_ai_debug_line(enemy, "ACTION=" + String(action))
 
 # -----------------------------
 # Safe property helpers (Godot 4)
@@ -1305,7 +1477,7 @@ func _choose_cast_plan_ctx(ctx: AIContext) -> Dictionary:
 	if not best_pick.is_empty():
 		return best_pick
 	return {}
-
+#MOVEMENT CONTEXT HELPER
 func _choose_greedy_destination_ctx(ctx: AIContext, target: Node) -> Vector2i:
 	if ctx == null:
 		return Vector2i.ZERO
@@ -1327,7 +1499,8 @@ func _choose_greedy_destination_ctx(ctx: AIContext, target: Node) -> Vector2i:
 	var ar: int = ctx.attack_range
 
 	var target_tile: Vector2i = _get_v2i(target, "grid_position", Vector2i.ZERO)
-	var best_score: float = _tile_score(ctx.main, current, target_tile, ar, e_move_cost_weight, e_defense_weight, e_threat_bonus)
+	var raw_best: float = _tile_score(ctx.main, current, target_tile, ar, e_move_cost_weight, e_defense_weight, e_threat_bonus)
+	var best_score: float = _goal_adjusted_tile_score(ctx, current, target_tile, raw_best)
 
 	var visited: Dictionary = {}
 	visited[current] = true
@@ -1346,7 +1519,8 @@ func _choose_greedy_destination_ctx(ctx: AIContext, target: Node) -> Vector2i:
 		current = next
 		visited[current] = true
 
-		var s: float = _tile_score(ctx.main, current, target_tile, ar, e_move_cost_weight, e_defense_weight, e_threat_bonus)
+		var raw_s: float = _tile_score(ctx.main, current, target_tile, ar, e_move_cost_weight, e_defense_weight, e_threat_bonus)
+		var s: float = _goal_adjusted_tile_score(ctx, current, target_tile, raw_s)
 		if s < best_score:
 			best_score = s
 			best_reached = current
@@ -1373,14 +1547,23 @@ func _should_move_ctx(ctx: AIContext, target: Node, dest: Vector2i) -> bool:
 	var ar: int = ctx.attack_range
 	var target_tile: Vector2i = _get_v2i(target, "grid_position", Vector2i.ZERO)
 
-	var stay_score: float = _tile_score(ctx.main, ctx.enemy_tile, target_tile, ar, e_move_cost_weight, e_defense_weight, e_threat_bonus)
-	var move_score: float = _tile_score(ctx.main, dest, target_tile, ar, e_move_cost_weight, e_defense_weight, e_threat_bonus)
+	var raw_stay: float = _tile_score(ctx.main, ctx.enemy_tile, target_tile, ar, e_move_cost_weight, e_defense_weight, e_threat_bonus)
+	var raw_move: float = _tile_score(ctx.main, dest, target_tile, ar, e_move_cost_weight, e_defense_weight, e_threat_bonus)
+	var stay_score: float = _goal_adjusted_tile_score(ctx, ctx.enemy_tile, target_tile, raw_stay)
+	var move_score: float = _goal_adjusted_tile_score(ctx, dest, target_tile, raw_move)
 
 	var aggression: float = ctx.aggression
 
 	var margin: float = _effective_hold_margin_base(enemy)
 	if aggression < 1.0:
 		margin += (1.0 - aggression) * 2.0
+# Goal: Sentry holds position more aggressively (harder to convince it to move)
+	if ctx.goal == &"sentry":
+		margin += ctx.sentry_hold_margin_bonus
+
+	# Goal: Skirmisher is more willing to reposition (reduce the "hold" bias)
+	if ctx.goal == &"skirmisher":
+		margin = max(0.0, margin - ctx.skirmisher_hold_margin_reduction)
 
 	match role:
 		"defense":
@@ -1397,5 +1580,39 @@ func _should_move_ctx(ctx: AIContext, target: Node, dest: Vector2i) -> bool:
 	# Chilled units are less eager to reposition (helps readability, matches theme)
 	if _unit_is_chilled(enemy):
 		margin += 0.75
-
+	if ai_debug_enabled:
+		_ai_debug_set(enemy, &"stay_score", stay_score)
+		_ai_debug_set(enemy, &"move_score", move_score)
+		_ai_debug_set(enemy, &"hold_margin", margin)
+		_ai_debug_line(enemy, "should_move? stay=%.2f move=%.2f margin=%.2f -> %s" % [
+			stay_score, move_score, margin, "move" if (move_score < (stay_score - margin)) else "hold"
+		])
 	return move_score < (stay_score - margin)
+
+func _goal_adjusted_tile_score(ctx: AIContext, tile: Vector2i, target_tile: Vector2i, base_score: float) -> float:
+	if ctx == null:
+		return base_score
+
+	if ctx.goal != &"skirmisher":
+		return base_score
+
+	var dist: int = _distance(tile, target_tile)
+
+	# 1) Avoid ending adjacent (dist 1) unless forced.
+	if dist <= 1:
+		base_score += ctx.skirmisher_avoid_adjacent_penalty
+
+	# 2) Prefer ideal fighting distance.
+	# - Ranged units: prefer max attack range
+	# - Melee units: prefer distance 2 (just outside adjacency)
+	var desired: int = 2
+	if ctx.attack_range > 1:
+		desired = ctx.attack_range
+
+	# Bonus when exactly at desired distance; small penalty the farther away we are.
+	if dist == desired:
+		base_score -= ctx.skirmisher_prefer_max_range_bonus
+	else:
+		base_score += float(abs(dist - desired)) * 0.25
+
+	return base_score

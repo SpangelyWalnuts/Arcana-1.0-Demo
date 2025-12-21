@@ -272,6 +272,7 @@ func _spawn_enemy_instance(
 	if data != null and _has_prop(data, "ai_profile"):
 		var profile: AIProfile = _pick_profile_for_role(role)
 		if profile != null:
+			print("[SPAWN] assigned ai_profile:", profile.resource_path, " role=", role)
 			data.set("ai_profile", profile)
 
 	# Scale / setup data if possible

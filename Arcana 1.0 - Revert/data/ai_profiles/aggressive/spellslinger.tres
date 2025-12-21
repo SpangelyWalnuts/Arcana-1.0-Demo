@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="AIProfile" load_steps=2 format=3 uid="uid://dyaiuftxv07ei"]
+
+[ext_resource type="Script" uid="uid://clgccvby50bo6" path="res://scripts/ai/AIProfile.gd" id="1_m1w5g"]
+
+[resource]
+script = ExtResource("1_m1w5g")
+id = &"spellslinger"
+move_cost_weight = 0.5
+defense_weight = 0.25
+threat_bonus = 8.0
+buff_cast_min_player_distance = 8
+opening_priority = &"move_first"
+goal = &"skirmisher"
+skirmisher_prefer_max_range_bonus = 3.0
+metadata/_custom_type_script = "uid://clgccvby50bo6"

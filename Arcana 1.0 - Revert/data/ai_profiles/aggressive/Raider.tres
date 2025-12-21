@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="AIProfile" load_steps=2 format=3 uid="uid://ddap8nou7x7nl"]
+
+[ext_resource type="Script" uid="uid://clgccvby50bo6" path="res://scripts/ai/AIProfile.gd" id="1_hqpoa"]
+
+[resource]
+script = ExtResource("1_hqpoa")
+id = &"raider"
+move_cost_weight = 0.45
+defense_weight = 0.55
+threat_bonus = 6.0
+metadata/_custom_type_script = "uid://clgccvby50bo6"

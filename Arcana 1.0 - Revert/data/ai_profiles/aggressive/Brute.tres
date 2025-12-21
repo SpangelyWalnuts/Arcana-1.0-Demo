@@ -4,4 +4,10 @@
 
 [resource]
 script = ExtResource("1_j7hg4")
+id = &"brute"
+move_cost_weight = 0.6
+hazard_weight = 0.4
+threat_bonus = 7.0
+buff_cast_min_player_distance = 4
+opening_priority = &"attack_first"
 metadata/_custom_type_script = "uid://clgccvby50bo6"

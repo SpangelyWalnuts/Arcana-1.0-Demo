@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="AIProfile" load_steps=2 format=3 uid="uid://bjb5w15px5u2e"]
+
+[ext_resource type="Script" uid="uid://clgccvby50bo6" path="res://scripts/ai/AIProfile.gd" id="1_6858w"]
+
+[resource]
+script = ExtResource("1_6858w")
+id = &"skirmisher"
+opening_priority = &"move_first"
+goal = &"skirmisher"
+skirmisher_prefer_max_range_bonus = 2.0
+metadata/_custom_type_script = "uid://clgccvby50bo6"
