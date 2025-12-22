@@ -1444,8 +1444,15 @@ func _on_minimap_gui_input(event: InputEvent) -> void:
 				_update_minimap_hint_label()
 
 func _try_place_selected_unit_on_cell(cell: Vector2i) -> void:
+	var roster_index: int = _get_selected_deployed_roster_index()
+	if roster_index < 0:
+		hint_label.text = "Select a deployed unit first."
+		return
 	RunManager.ensure_floor_config()
 	_update_minimap_hint_label()
+	_build_static_minimap_from_tilemap(preview_terrain)
+	_select_next_unplaced_deployed_unit(roster_index)
+
 
 
 	# Must be inside minimap bounds
@@ -1460,13 +1467,6 @@ func _try_place_selected_unit_on_cell(cell: Vector2i) -> void:
 	# Must be walkable
 	if not _minimap_is_walkable(preview_terrain, cell):
 		hint_label.text = "That tile isn't walkable."
-		return
-
-	# Must have a selected deployed unit
-	# Must have a selected deployed unit
-	var roster_index: int = _get_selected_deployed_roster_index()
-	if roster_index < 0:
-		hint_label.text = "Select a deployed unit first."
 		return
 
 	# If another deployed unit is already on this tile, swap
@@ -1490,6 +1490,7 @@ func _try_place_selected_unit_on_cell(cell: Vector2i) -> void:
 
 		hint_label.text = "Swapped units."
 		_build_static_minimap_from_tilemap(preview_terrain)
+		_select_next_unplaced_deployed_unit(roster_index)
 		return
 
 	# Otherwise normal place (empty tile, or occupied by non-deployed/invalid)
@@ -1666,12 +1667,26 @@ func _draw_minimap_overlays(img: Image, tilemap: TileMap, view_size: Vector2i) -
 			_minimap_draw_dot(img, cx, cy, r_base, marker_col)
 
 
-	# --- HOVER TILE (FE-style cursor) ---
+# --- HOVER TILE (FE-style cursor) ---
 	if _minimap_hover_cell.x != 999999:
 		var vpos := _minimap_hover_cell - _minimap_view_origin
 		if vpos.x >= 0 and vpos.y >= 0 and vpos.x < view_size.x and vpos.y < view_size.y:
-			var hover_col := Color(1.0, 1.0, 1.0, 0.45) # soft white
+			var valid := _is_hover_cell_valid_for_placement(_minimap_hover_cell)
+
+			# Green if valid, Red if invalid, White if no unit selected
+			var ri := _get_selected_deployed_roster_index()
+			var hover_col: Color
+			if ri < 0:
+				hover_col = Color(1.0, 1.0, 1.0, 0.45)
+			elif valid:
+				hover_col = Color(0.35, 0.95, 0.45, 0.70)
+			else:
+				hover_col = Color(0.95, 0.35, 0.35, 0.70)
+
 			_minimap_draw_tile_outline(img, vpos.x, vpos.y, _minimap_scale, hover_col)
+			var fill_col := Color(hover_col.r, hover_col.g, hover_col.b, 0.15)
+			_minimap_draw_tile_rect(img, vpos.x, vpos.y, _minimap_scale, fill_col)
+
 
 func _minimap_draw_tile_outline(img: Image, x: int, y: int, scale: int, col: Color) -> void:
 	var px0 := x * scale
@@ -1700,9 +1715,20 @@ func _is_roster_index_deployed(roster_index: int) -> bool:
 	return _deployed_indices.has(roster_index)
 
 func _update_minimap_hint_label() -> void:
+	var total: int = _deployed_indices.size()
+	var counter: String = ""
+	if total > 0:
+		var unplaced: int = _get_unplaced_count()
+		counter = "Unplaced: %d / %d" % [unplaced, total]
+
 	var roster_index: int = _get_selected_deployed_roster_index()
+
+	# No unit selected: still show counter + a short instruction
 	if roster_index < 0:
-		return # keep whatever hint you already had
+		if counter != "":
+			hint_label.text = counter + "\nSelect a deployed unit, then click a tile to place."
+		# If nothing is deployed, leave existing hint alone (or set a default if you want)
+		return
 
 	if roster_index >= RunManager.roster.size():
 		return
@@ -1711,10 +1737,10 @@ func _update_minimap_hint_label() -> void:
 	if data == null or data.unit_class == null:
 		return
 
-	var unit_name := data.unit_class.display_name
-	var lvl := data.level
+	var unit_name: String = data.unit_class.display_name
+	var lvl: int = data.level
 
-	var msg := "Placing: %s (Lv %d)" % [unit_name, lvl]
+	var msg: String = "Placing: %s (Lv %d)" % [unit_name, lvl]
 
 	if _placement_by_roster_index.has(roster_index):
 		var placed_cell: Vector2i = _placement_by_roster_index[roster_index]
@@ -1723,7 +1749,11 @@ func _update_minimap_hint_label() -> void:
 	if _minimap_hover_cell.x != 999999:
 		msg += " → (%d,%d)" % [_minimap_hover_cell.x, _minimap_hover_cell.y]
 
-	hint_label.text = msg
+	if counter != "":
+		hint_label.text = counter + "\n" + msg
+	else:
+		hint_label.text = msg
+
 
 func _unplace_selected_deployed_unit() -> void:
 	var roster_index: int = _get_selected_deployed_roster_index()
@@ -1779,3 +1809,56 @@ func _auto_place_deployed_units() -> void:
 	_minimap_center_on_deploy()
 	_build_static_minimap_from_tilemap(preview_terrain)
 	_update_minimap_hint_label()
+
+func _is_hover_cell_valid_for_placement(cell: Vector2i) -> bool:
+	if cell.x == 999999:
+		return false
+
+	# Must have a selected deployed unit
+	var ri: int = _get_selected_deployed_roster_index()
+	if ri < 0:
+		return false
+
+	# Must be inside the map (if you want this check)
+	if _minimap_used_rect.size != Vector2i.ZERO and not _minimap_used_rect.has_point(cell):
+		return false
+
+	# Must be in deploy zone
+	if not RunManager.deploy_tiles.has(cell):
+		return false
+
+	# Must be walkable per your minimap rules
+	if not _minimap_is_walkable(preview_terrain, cell):
+		return false
+
+	return true
+
+func _select_next_unplaced_deployed_unit(current_roster_index: int) -> void:
+	# Build a list of deployed roster indices in displayed order
+	if _deployed_indices.is_empty():
+		return
+
+	# Find current position in deployed list
+	var start_pos: int = _deployed_indices.find(current_roster_index)
+	if start_pos == -1:
+		start_pos = -1
+
+	# Search forward, wrap around
+	var n: int = _deployed_indices.size()
+	for offset in range(1, n + 1):
+		var pos: int = (start_pos + offset) % n
+		var ri: int = _deployed_indices[pos]
+		if not _placement_by_roster_index.has(ri):
+			# Select this entry in deploy_list (which is aligned to _deployed_indices order)
+			deploy_list.select(pos)
+			deploy_list.ensure_current_is_visible()
+			_update_minimap_hint_label()
+			_build_static_minimap_from_tilemap(preview_terrain)
+			return
+
+func _get_unplaced_count() -> int:
+	var unplaced: int = 0
+	for ri in _deployed_indices:
+		if not _placement_by_roster_index.has(ri):
+			unplaced += 1
+	return unplaced

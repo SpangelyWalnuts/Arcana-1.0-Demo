@@ -65,6 +65,7 @@ offset_bottom = 40.0
 
 [node name="FloorLabel" type="Label" parent="Panel/VBoxContainer"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 24
 
 [node name="HintLabel" type="Label" parent="Panel/VBoxContainer"]
 layout_mode = 2
@@ -309,8 +310,10 @@ text = "Buy"
 
 [node name="InfoBar" type="PanelContainer" parent="Panel"]
 layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+offset_left = 16.0
+offset_top = 466.0
+offset_right = 56.0
+offset_bottom = 506.0
 focus_neighbor_left = NodePath("../VBoxContainer/FloorLabel")
 focus_neighbor_right = NodePath("../../EncounterTagLabel")
 
@@ -389,19 +392,19 @@ offset_bottom = 63.0
 
 [node name="EncounterTagLabel" type="Label" parent="."]
 layout_mode = 0
-offset_left = 9.0
-offset_top = 359.0
-offset_right = 49.0
-offset_bottom = 375.0
+offset_left = 14.0
+offset_top = 420.0
+offset_right = 54.0
+offset_bottom = 436.0
 focus_neighbor_left = NodePath("../Panel/VBoxContainer/FloorLabel")
 theme_override_font_sizes/font_size = 24
 
 [node name="WeatherLabel" type="Label" parent="."]
 layout_mode = 0
-offset_left = 9.0
-offset_top = 379.0
-offset_right = 49.0
-offset_bottom = 395.0
+offset_left = 14.0
+offset_top = 440.0
+offset_right = 54.0
+offset_bottom = 456.0
 focus_neighbor_left = NodePath("../Panel/VBoxContainer/FloorLabel")
 theme_override_font_sizes/font_size = 24
 
