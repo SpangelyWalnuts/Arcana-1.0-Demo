@@ -1,6 +1,7 @@
 extends Node
 
 var run_active: bool = false
+var current_map_seed: int = 0
 var current_floor: int = 0
 var gold: int = 0
 
@@ -29,6 +30,14 @@ var current_encounter_tag: StringName = &"none"
 var roster: Array[UnitData] = []
 var deployed_units: Array[UnitData] = []
 
+# Deployment zone (grid coords)
+var deploy_tiles: Array[Vector2i] = []
+var deploy_max_units: int = 3 # optional, if you want it centralized too
+var deployed_positions: Array[Vector2i] = []
+
+# Enemy preview tuning (matches EnemySpawnManager min_spawn_distance)
+var enemy_min_spawn_distance: int = 6
+
 # --- Draft system ---
 var all_unit_classes: Array[UnitClass] = []          # pool of all possible draftable classes
 var draft_round: int = 0
@@ -36,6 +45,7 @@ var max_draft_picks: int = 4                         # pick 1 of 4, 4 times
 var current_draft_options: Array[UnitClass] = []     # options in the current draft round
 
 var artifacts: Array[Resource] = []
+
 
 var last_levelup_events: Array = []
 # Each entry:
@@ -277,6 +287,8 @@ func refresh_floor_config() -> void:
 	current_biome = StringName(cfg.get("biome", &"ruins"))
 	current_weather = StringName(cfg.get("weather", &"clear"))
 	print("[FLOOR CONFIG] floor=", current_floor, " tag=", current_encounter_tag, " weather=", current_weather)
+	deploy_tiles.clear()
+	deployed_positions.clear()
 
 #UI ACCESSOR
 func get_biome() -> StringName:
@@ -307,6 +319,13 @@ var _floor_config_floor: int = -1
 func ensure_floor_config() -> void:
 	if _floor_config_floor != current_floor:
 		refresh_floor_config()
+	# Ensure a deterministic map seed for this floor.
+	# Only regenerate if it's 0 or if you explicitly want it per-floor.
+	if current_map_seed == 0:
+		# Use run_seed + floor to generate a stable seed.
+		# (Any deterministic formula is fine.)
+		current_map_seed = int(abs(hash(str(run_seed) + ":" + str(current_floor))))
+
 
 # -------------------------------------------------------------------
 #  DRAFT SYSTEM

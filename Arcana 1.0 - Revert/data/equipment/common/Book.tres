@@ -6,5 +6,6 @@
 [resource]
 script = ExtResource("1_584gu")
 name = "Basic Magical Practices"
+description = "+2 ATK"
 icon_texture = ExtResource("1_jqo2j")
 bonus_atk = 2

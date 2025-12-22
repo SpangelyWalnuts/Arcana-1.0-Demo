@@ -26,13 +26,20 @@ const DIRS_4: Array[Vector2i] = [
 ]
 
 func _get_player_spawn_tiles() -> Array[Vector2i]:
-	# Keep this in ONE place so validator + spawns always match.
+	# Source of truth: RunManager
+	RunManager.ensure_floor_config()
+	if not RunManager.deploy_tiles.is_empty():
+		return RunManager.deploy_tiles
+
+	# Fallback (should not happen if RunManager sets deploy_tiles)
 	return [
 		Vector2i(2, 2),
 		Vector2i(3, 2),
 		Vector2i(2, 3),
 		Vector2i(3, 3),
 	]
+
+
 
 # --- Run statistics for summary panel ---
 var run_turns: int = 1              # Turn count (starts at player phase 1)
@@ -144,6 +151,8 @@ func _ready() -> void:
 
 # Build + validate procedural map (also applies chunk size first)
 	if use_procedural_map and map_generator != null:
+		if map_generator.has_method("set_seed"):
+			map_generator.set_seed(RunManager.current_map_seed)
 		await _build_and_validate_procedural_map()
 
 		
@@ -1194,7 +1203,16 @@ func spawn_units_from_run() -> void:
 			continue
 
 		var cls: UnitClass = data.unit_class
-		var tile: Vector2i = spawn_tiles[i]
+
+		var tile: Vector2i
+		if i < RunManager.deployed_positions.size():
+			tile = RunManager.deployed_positions[i]
+		else:
+			# Fallback if placements missing for some reason
+			if i >= spawn_tiles.size():
+				break
+			tile = spawn_tiles[i]
+
 
 		var u: Node2D = unit_scene.instantiate()
 
@@ -1214,7 +1232,12 @@ func spawn_units_from_run() -> void:
 
 	# After all player units are spawned, spawn enemies.
 	if enemy_spawner != null:
-		enemy_spawner.spawn_enemies_for_floor(RunManager.current_floor, spawn_tiles)
+		var player_tiles_for_spawns: Array[Vector2i] = spawn_tiles
+		if not RunManager.deployed_positions.is_empty():
+			player_tiles_for_spawns = RunManager.deployed_positions
+
+		enemy_spawner.spawn_enemies_for_floor(RunManager.current_floor, player_tiles_for_spawns)
+
 
 		# ✅ IMPORTANT: EnemySpawnManager awaits a frame before add_child(),
 		# so connect signals *after* that frame.

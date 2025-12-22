@@ -1,6 +1,9 @@
-[gd_scene load_steps=2 format=3 uid="uid://ddhda1ldr7xp6"]
+[gd_scene load_steps=5 format=3 uid="uid://ddhda1ldr7xp6"]
 
 [ext_resource type="Script" uid="uid://cfwnuu4x2bjc0" path="res://scenes/core/preparation_screen.gd" id="1_36mye"]
+[ext_resource type="TileSet" uid="uid://bnxwiy3yga8y" path="res://scenes/core/SnowTileSet.tres" id="2_vs1jl"]
+[ext_resource type="Script" uid="uid://0c3ertpx5ieg" path="res://scenes/core/map_generator.gd" id="3_2x3i2"]
+[ext_resource type="Resource" uid="uid://banuvwiv8hpjc" path="res://scenes/Chunks/Snow/taiga_db.tres" id="4_2x3i2"]
 
 [node name="PreparationScreen" type="Control"]
 layout_mode = 3
@@ -9,10 +12,51 @@ offset_right = 40.0
 offset_bottom = 40.0
 script = ExtResource("1_36mye")
 
+[node name="MapBackground" type="TextureRect" parent="."]
+visible = false
+z_index = -100
+custom_minimum_size = Vector2(1280, 720)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 1240.0
+offset_bottom = 680.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="MapDim" type="ColorRect" parent="."]
+visible = false
+z_index = -90
+custom_minimum_size = Vector2(1280, 720)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 1240.0
+offset_bottom = 680.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.55)
+
 [node name="Panel" type="Panel" parent="."]
+self_modulate = Color(1, 1, 1, 0.9019608)
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
 layout_mode = 0
@@ -31,6 +75,15 @@ layout_mode = 2
 
 [node name="RosterBox" type="VBoxContainer" parent="Panel/VBoxContainer/HBoxContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="header" type="Label" parent="Panel/VBoxContainer/HBoxContainer/RosterBox"]
+layout_mode = 2
+text = "Squad"
+
+[node name="HSeparator" type="HSeparator" parent="Panel/VBoxContainer/HBoxContainer/RosterBox"]
+layout_mode = 2
 
 [node name="Label" type="Label" parent="Panel/VBoxContainer/HBoxContainer/RosterBox"]
 layout_mode = 2
@@ -43,6 +96,15 @@ auto_height = true
 
 [node name="DeployBox" type="VBoxContainer" parent="Panel/VBoxContainer/HBoxContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="header" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DeployBox"]
+layout_mode = 2
+text = "Deployment"
+
+[node name="HSeparator" type="HSeparator" parent="Panel/VBoxContainer/HBoxContainer/DeployBox"]
+layout_mode = 2
 
 [node name="Label" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DeployBox"]
 layout_mode = 2
@@ -53,24 +115,17 @@ layout_mode = 2
 auto_width = true
 auto_height = true
 
-[node name="HBoxContainer" type="HBoxContainer" parent="Panel/VBoxContainer/HBoxContainer"]
-layout_mode = 2
-
-[node name="StartBattleButton" type="Button" parent="Panel/VBoxContainer/HBoxContainer/HBoxContainer"]
-layout_mode = 2
-text = "Start Battle"
-
-[node name="ReturnToTitleButton" type="Button" parent="Panel/VBoxContainer/HBoxContainer/HBoxContainer"]
-layout_mode = 2
-text = "Return to Title"
-
-[node name="ShopButton" type="Button" parent="Panel/VBoxContainer/HBoxContainer/HBoxContainer"]
-layout_mode = 2
-text = "Shop"
-
 [node name="DetailsBox" type="VBoxContainer" parent="Panel/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="header" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
+layout_mode = 2
+text = "Selected Unit"
+
+[node name="HSeparator" type="HSeparator" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
+layout_mode = 2
 
 [node name="UnitNameLabel" type="Label" parent="Panel/VBoxContainer/HBoxContainer/DetailsBox"]
 layout_mode = 2
@@ -111,6 +166,190 @@ layout_mode = 2
 layout_mode = 2
 text = "Manage Items"
 
+[node name="LeftPanel" type="PanelContainer" parent="Panel/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/VBoxContainer/HBoxContainer/LeftPanel"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/VBoxContainer/HBoxContainer/LeftPanel/VBoxContainer"]
+layout_mode = 2
+text = "Map Preview"
+
+[node name="PanelContainer" type="PanelContainer" parent="Panel/VBoxContainer/HBoxContainer/LeftPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="MapPreviewTexture" type="TextureRect" parent="Panel/VBoxContainer/HBoxContainer/LeftPanel/VBoxContainer/PanelContainer"]
+custom_minimum_size = Vector2(420, 260)
+layout_mode = 2
+mouse_filter = 0
+expand_mode = 1
+
+[node name="RightTabs" type="TabContainer" parent="Panel/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+current_tab = 0
+
+[node name="ConvoyTab" type="Control" parent="Panel/VBoxContainer/HBoxContainer/RightTabs"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ConvoyRoot" type="HBoxContainer" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer"]
+layout_mode = 2
+
+[node name="ConvoyLists" type="VBoxContainer" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/ConvoyLists"]
+layout_mode = 2
+text = "Convoy"
+
+[node name="ConvoyTabs" type="TabContainer" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/ConvoyLists"]
+layout_mode = 2
+current_tab = 0
+
+[node name="Equipment" type="Control" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/ConvoyLists/ConvoyTabs"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/ConvoyLists/ConvoyTabs/Equipment"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 1.0
+offset_right = 64.0
+offset_bottom = 218.0
+
+[node name="ConvoyEquipmentList" type="ItemList" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/ConvoyLists/ConvoyTabs/Equipment/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+allow_reselect = true
+
+[node name="Items" type="Control" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/ConvoyLists/ConvoyTabs"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/ConvoyLists/ConvoyTabs/Items"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ConvoyItemList" type="ItemList" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/ConvoyLists/ConvoyTabs/Items/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+allow_reselect = true
+
+[node name="UnitLoadout" type="VBoxContainer" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 2
+
+[node name="SelectedUnitHeader" type="Label" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/UnitLoadout"]
+layout_mode = 2
+text = "Selected Unit"
+
+[node name="EquipSlotsGrid" type="GridContainer" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/UnitLoadout"]
+custom_minimum_size = Vector2(200, 40)
+layout_mode = 2
+columns = 2
+
+[node name="ItemSlotsGrid" type="GridContainer" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/UnitLoadout"]
+custom_minimum_size = Vector2(200, 40)
+layout_mode = 2
+
+[node name="ConvoyDetailsLabel" type="Label" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/UnitLoadout"]
+layout_mode = 2
+
+[node name="ShopTab" type="Control" parent="Panel/VBoxContainer/HBoxContainer/RightTabs"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ShopTab"]
+layout_mode = 0
+offset_right = 300.0
+offset_bottom = 256.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ShopTab/MarginContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ShopTab/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Shop"
+
+[node name="ShopGoldLabel" type="Label" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ShopTab/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ShopTab/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ShopList" type="ItemList" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ShopTab/MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(0, 90)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ShopTab/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="ShopDetailsLabel" type="Label" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ShopTab/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ShopBuyButton" type="Button" parent="Panel/VBoxContainer/HBoxContainer/RightTabs/ShopTab/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+text = "Buy"
+
+[node name="InfoBar" type="PanelContainer" parent="Panel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+focus_neighbor_left = NodePath("../VBoxContainer/FloorLabel")
+focus_neighbor_right = NodePath("../../EncounterTagLabel")
+
+[node name="BottomBar" type="PanelContainer" parent="Panel"]
+custom_minimum_size = Vector2(1280, 0)
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -19.0
+offset_top = 635.0
+offset_right = 1261.0
+offset_bottom = 678.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/BottomBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/BottomBar/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StartBattleButton" type="Button" parent="Panel/BottomBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Start Battle"
+
+[node name="ReturnToTitleButton" type="Button" parent="Panel/BottomBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Return to Title"
+
 [node name="RosterDebugLabel" type="Label" parent="."]
 layout_mode = 0
 offset_right = 40.0
@@ -144,48 +383,13 @@ offset_top = 8.0
 offset_right = 92.0
 offset_bottom = 63.0
 
-[node name="ShopDialog" type="AcceptDialog" parent="."]
-oversampling_override = 1.0
-size = Vector2i(104, 121)
-
-[node name="VBoxContainer" type="VBoxContainer" parent="ShopDialog"]
-offset_left = 8.0
-offset_top = 8.0
-offset_right = 96.0
-offset_bottom = 84.0
-
-[node name="ShopTitleLabel" type="Label" parent="ShopDialog/VBoxContainer"]
-layout_mode = 2
-text = "Scrier's General Goods"
-
-[node name="ShopList" type="ItemList" parent="ShopDialog/VBoxContainer"]
-layout_mode = 2
-auto_width = true
-auto_height = true
-
-[node name="GoldLabel" type="Label" parent="ShopDialog/VBoxContainer"]
-layout_mode = 2
-
-[node name="DetailsLabel" type="Label" parent="ShopDialog/VBoxContainer"]
-layout_mode = 2
-
-[node name="HBoxContainer" type="HBoxContainer" parent="ShopDialog/VBoxContainer"]
-layout_mode = 2
-
-[node name="BuyButton" type="Button" parent="ShopDialog/VBoxContainer/HBoxContainer"]
-layout_mode = 2
-text = "Buy"
-
-[node name="CloseButton" type="Button" parent="ShopDialog/VBoxContainer/HBoxContainer"]
-layout_mode = 2
-text = "Close"
-
 [node name="EncounterTagLabel" type="Label" parent="."]
 layout_mode = 0
 offset_left = 9.0
 offset_top = 359.0
 offset_right = 49.0
 offset_bottom = 375.0
+focus_neighbor_left = NodePath("../Panel/VBoxContainer/FloorLabel")
 theme_override_font_sizes/font_size = 24
 
 [node name="WeatherLabel" type="Label" parent="."]
@@ -194,4 +398,21 @@ offset_left = 9.0
 offset_top = 379.0
 offset_right = 49.0
 offset_bottom = 395.0
+focus_neighbor_left = NodePath("../Panel/VBoxContainer/FloorLabel")
 theme_override_font_sizes/font_size = 24
+
+[node name="PreviewMapRoot" type="Node2D" parent="."]
+visible = false
+
+[node name="PreviewTerrain" type="TileMap" parent="PreviewMapRoot"]
+tile_set = ExtResource("2_vs1jl")
+format = 2
+
+[node name="PreviewMapGenerator" type="Node" parent="PreviewMapRoot" node_paths=PackedStringArray("terrain")]
+script = ExtResource("3_2x3i2")
+terrain = NodePath("../PreviewTerrain")
+ruins_db = ExtResource("4_2x3i2")
+forest_db = ExtResource("4_2x3i2")
+catacombs_db = ExtResource("4_2x3i2")
+taiga_db = ExtResource("4_2x3i2")
+volcano_db = ExtResource("4_2x3i2")

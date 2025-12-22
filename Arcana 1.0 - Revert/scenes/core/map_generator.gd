@@ -28,6 +28,10 @@ extends Node
 @export var chunk_width: int = 14
 @export var chunk_height: int = 8
 
+var _rng := RandomNumberGenerator.new()
+
+func set_seed(seed: int) -> void:
+	_rng.seed = seed
 
 func set_biome(new_biome: StringName) -> void:
 	biome = new_biome
@@ -202,10 +206,9 @@ func _pick_weighted(db: BiomeChunkDB, candidates: Array[PackedScene]) -> PackedS
 			w = max(0.0, e.weight)
 		total += w
 
-	if total <= 0.0001:
-		return candidates.pick_random()
-
-	var r: float = randf() * total
+	if candidates.size() > 0:
+		return candidates[_rng.randi_range(0, candidates.size() - 1)]
+	var r: float = _rng.randf() * total
 	for s in candidates:
 		var e2: ChunkAdjacencyEntry = db.get_entry(s)
 		var w2: float = 1.0

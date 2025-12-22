@@ -4,8 +4,8 @@ extends Control
 @onready var hint_label: Label           = $Panel/VBoxContainer/HintLabel
 @onready var roster_list: ItemList       = $Panel/VBoxContainer/HBoxContainer/RosterBox/RosterList
 @onready var deploy_list: ItemList       = $Panel/VBoxContainer/HBoxContainer/DeployBox/DeployList
-@onready var start_button: Button        = $Panel/VBoxContainer/HBoxContainer/HBoxContainer/StartBattleButton
-@onready var title_button: Button        = $Panel/VBoxContainer/HBoxContainer/HBoxContainer/ReturnToTitleButton
+@onready var start_button: Button        = $Panel/BottomBar/MarginContainer/HBoxContainer/StartBattleButton
+@onready var title_button: Button        = $Panel/BottomBar/MarginContainer/HBoxContainer/ReturnToTitleButton
 @onready var class_name_label: Label = $Panel/VBoxContainer/HBoxContainer/DetailsBox/ClassNameLabel
 @onready var stats_label: Label      = $Panel/VBoxContainer/HBoxContainer/DetailsBox/StatsLabel
 @onready var mana_label: Label       = $Panel/VBoxContainer/HBoxContainer/DetailsBox/ManaLabel
@@ -28,15 +28,26 @@ extends Control
 @onready var items_popup: AcceptDialog     = $ItemsPopup
 @onready var items_list: VBoxContainer     = $ItemsPopup/ItemsList
 
-#SHOP
-@onready var shop_button: Button = $Panel/VBoxContainer/HBoxContainer/HBoxContainer/ShopButton
+#CONVOY + SHOP UI
+@onready var right_tabs: TabContainer = $Panel/VBoxContainer/HBoxContainer/RightTabs
 
-@onready var shop_dialog: AcceptDialog     = $ShopDialog
-@onready var shop_list: ItemList           = $ShopDialog/VBoxContainer/ShopList
-@onready var shop_gold_label: Label        = $ShopDialog/VBoxContainer/GoldLabel
-@onready var shop_details_label: Label     = $ShopDialog/VBoxContainer/DetailsLabel
-@onready var shop_buy_button: Button       = $ShopDialog/VBoxContainer/HBoxContainer/BuyButton
-@onready var shop_close_button: Button     = $ShopDialog/VBoxContainer/HBoxContainer/CloseButton
+@onready var convoy_equip_list: ItemList = $Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/ConvoyLists/ConvoyTabs/Equipment/VBoxContainer/ConvoyEquipmentList
+@onready var convoy_item_list: ItemList = $Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/ConvoyLists/ConvoyTabs/Items/VBoxContainer/ConvoyItemList
+
+@onready var selected_unit_header: Label = $Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/UnitLoadout/SelectedUnitHeader
+@onready var equip_slots_grid: GridContainer = $Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/UnitLoadout/EquipSlotsGrid
+@onready var item_slots_grid: GridContainer = $Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/UnitLoadout/ItemSlotsGrid
+@onready var convoy_details_label: Label = $Panel/VBoxContainer/HBoxContainer/RightTabs/ConvoyTab/MarginContainer/ConvoyRoot/UnitLoadout/ConvoyDetailsLabel
+
+@onready var shop_list_tab: ItemList = $Panel/VBoxContainer/HBoxContainer/RightTabs/ShopTab/MarginContainer/VBoxContainer/HBoxContainer/ShopList
+@onready var shop_gold_label_tab: Label = $Panel/VBoxContainer/HBoxContainer/RightTabs/ShopTab/MarginContainer/VBoxContainer/ShopGoldLabel
+@onready var shop_details_label_tab: Label = $Panel/VBoxContainer/HBoxContainer/RightTabs/ShopTab/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/ShopDetailsLabel
+@onready var shop_buy_button_tab: Button = $Panel/VBoxContainer/HBoxContainer/RightTabs/ShopTab/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/ShopBuyButton
+
+#MAP TETXURE
+@onready var map_preview_texrect: TextureRect = $Panel/VBoxContainer/HBoxContainer/LeftPanel/VBoxContainer/PanelContainer/MapPreviewTexture
+@onready var preview_terrain: TileMap = $PreviewMapRoot/PreviewTerrain
+@onready var preview_map_gen: Node = $PreviewMapRoot/PreviewMapGenerator
 
 #MAP TAGS
 @onready var encounter_tag_label: Label = $EncounterTagLabel
@@ -46,13 +57,29 @@ extends Control
 
 # Track which unit is currently selected in the roster
 var _selected_roster_index: int = -1
-# Temporary: limit on how many units can be deployed this floor.
+
+var _placement_by_roster_index: Dictionary = {} # roster_index -> Vector2i
+
 # Later we’ll hook this to map size / enemy count via some floor config.
 @export var max_deploy_slots: int = 4
 
 # Indices into RunManager.roster that are currently deployed
 var _deployed_indices: Array[int] = []
 
+#DEPLOYMENT PLACEMENT
+var _minimap_used_rect: Rect2i = Rect2i()
+var _minimap_scale: int = 0
+
+# ------------------------------------------------------------
+# Stage 2: Convoy + Shop Tab (MVP click-to-assign)
+# ------------------------------------------------------------
+var _selected_convoy_kind: StringName = &"none" # &"equipment" or &"item"
+var _selected_convoy_res: Resource = null
+
+# These arrays map ItemList index -> Resource key (stable)
+var _convoy_equipment_key_cache: Array[Resource] = []
+var _convoy_item_key_cache: Array[Resource] = []
+var _shop_key_cache: Array[int] = [] # maps visible shop rows -> shop_stock index
 
 func _ready() -> void:
 	if not RunManager.run_active:
@@ -67,7 +94,16 @@ func _ready() -> void:
 
 	if RunManager.has_method("ensure_floor_config"):
 		RunManager.ensure_floor_config()
-
+	
+	_preview_generate_map()
+# Only auto-generate deploy tiles if they aren't already set
+	RunManager.ensure_floor_config()
+	if RunManager.deploy_tiles.is_empty():
+		RunManager.deploy_tiles = _compute_deploy_tiles_from_map(preview_terrain, max_deploy_slots)
+		print("[DEPLOY] computed tiles=", RunManager.deploy_tiles)
+		_placement_by_roster_index.clear()
+	_build_static_minimap_from_tilemap(preview_terrain)
+	print("[MINIMAP] used_rect=", preview_terrain.get_used_rect())
 	_populate_roster_lists()
 	_update_encounter_tag_ui()
 	_update_weather_ui()
@@ -91,13 +127,33 @@ func _ready() -> void:
 	equipment_popup.confirmed.connect(_on_equipment_popup_confirmed)
 	items_popup.confirmed.connect(_on_items_popup_confirmed)
 
-	shop_button.pressed.connect(_on_shop_button_pressed)
+	map_preview_texrect.gui_input.connect(_on_minimap_gui_input)
 
-	shop_list.item_selected.connect(_on_shop_item_selected)
-	shop_buy_button.pressed.connect(_on_shop_buy_pressed)
-	shop_close_button.pressed.connect(func() -> void:
-		shop_dialog.hide()
-	)
+	# Convoy selection
+	convoy_equip_list.item_selected.connect(_on_convoy_equipment_selected)
+	convoy_item_list.item_selected.connect(_on_convoy_item_selected)
+
+	# Unit selection updates slots
+	
+	deploy_list.item_clicked.connect(func(_i, _pos, _btn): call_deferred("_refresh_selected_unit_slots"))
+	right_tabs.tab_changed.connect(func(_idx): call_deferred("_refresh_selected_unit_slots"))
+
+	deploy_list.item_selected.connect(func(i: int) -> void:
+		call_deferred("_refresh_selected_unit_slots")
+		if i >= 0 and i < _deployed_indices.size():
+			_selected_roster_index = _deployed_indices[i]
+			_show_unit_details_from_roster_index(_selected_roster_index)
+)
+
+
+	# Shop tab
+	shop_list_tab.item_selected.connect(_on_shop_selected)
+	shop_buy_button_tab.pressed.connect(_on_shop_buy_pressed)
+
+
+	_refresh_convoy_ui()
+	_refresh_shop_tab_ui()
+	_refresh_selected_unit_slots()
 
 
 	_clear_details_panel()
@@ -223,6 +279,47 @@ func _show_unit_details_from_roster_index(roster_index: int) -> void:
 				item_names.append(it.name)
 		items_label.text = "Items: " + ", ".join(item_names)
 
+#CONVOY HELPERS
+func _resource_sort_key(a: Resource, b: Resource) -> bool:
+	var an: String = ""
+	var bn: String = ""
+	if a != null and ("name" in a):
+		an = str(a.name)
+	if b != null and ("name" in b):
+		bn = str(b.name)
+	return an.naturalcasecmp_to(bn) < 0
+
+func _ensure_unit_slot_arrays(data: UnitData) -> void:
+	if data == null:
+		return
+
+	# 2 slots each by design
+	while data.equipment_slots.size() < 2:
+		data.equipment_slots.append(null)
+	while data.item_slots.size() < 2:
+		data.item_slots.append(null)
+
+func _inv_add_one(inv: Dictionary, res: Resource) -> void:
+	if res == null:
+		return
+	var c: int = int(inv.get(res, 0))
+	inv[res] = c + 1
+
+
+func _inv_take_one(inv: Dictionary, res: Resource) -> bool:
+	if res == null:
+		return false
+	if not inv.has(res):
+		return false
+	var c: int = int(inv[res])
+	if c <= 0:
+		return false
+	if c == 1:
+		inv.erase(res)
+	else:
+		inv[res] = c - 1
+	return true
+
 
 #USAGE HELPERS
 func _count_equipment_usage(eq: Equipment, exclude_roster_index: int) -> int:
@@ -242,6 +339,19 @@ func _count_equipment_usage(eq: Equipment, exclude_roster_index: int) -> int:
 
 	return count
 
+func _get_selected_deployed_roster_index() -> int:
+	var sel := deploy_list.get_selected_items()
+	if sel.is_empty():
+		return -1
+	var deploy_pos: int = sel[0]
+	if deploy_pos < 0 or deploy_pos >= _deployed_indices.size():
+		return -1
+	return _deployed_indices[deploy_pos]
+
+func _refresh_details_for_selected_deploy() -> void:
+	var r_idx := _get_selected_deployed_roster_index()
+	if r_idx >= 0:
+		_show_unit_details_from_roster_index(r_idx)
 
 func _count_item_usage(item: Item, exclude_roster_index: int) -> int:
 	var count := 0
@@ -368,23 +478,38 @@ func _refresh_lists() -> void:
 
 		if cls.portrait_texture != null:
 			deploy_list.set_item_icon(item_index, cls.portrait_texture)
+	call_deferred("_refresh_selected_unit_slots")
 
 
 
 func _on_start_battle_pressed() -> void:
 	if _deployed_indices.is_empty():
-		return  # Maybe later show a warning: "Select at least one unit."
+		return
 
 	var roster = RunManager.roster
+
 	RunManager.deployed_units.clear()
+	RunManager.deployed_positions.clear() # <-- you must add this var in RunManager.gd
+
+	# Optional: require placement for all deployed units (Fire Emblem style)
+	for idx in _deployed_indices:
+		if not _placement_by_roster_index.has(idx):
+			hint_label.text = "Place all deployed units before starting."
+			return
 
 	for idx in _deployed_indices:
 		if idx < 0 or idx >= roster.size():
 			continue
 
 		var data: UnitData = roster[idx]
-		if data != null:
-			RunManager.deployed_units.append(data)
+		if data == null:
+			continue
+
+		RunManager.deployed_units.append(data)
+
+		# Pull the placed cell
+		var cell: Vector2i = _placement_by_roster_index[idx]
+		RunManager.deployed_positions.append(cell)
 
 	# Go to battle scene
 	RunManager.goto_battle_scene()
@@ -768,141 +893,25 @@ func _equipment_effect_text(eq: Equipment) -> String:
 		return ""
 	return "\n".join(lines)
 
-#SHOP UI Logic
-func _on_shop_button_pressed() -> void:
-	_refresh_shop_ui()
-	shop_dialog.popup_centered()
-
-
-func _refresh_shop_ui() -> void:
-	shop_list.clear()
-
-	var stock: Array = RunManager.shop_stock
-
-	for i in range(stock.size()):
-		var entry = stock[i]
-		var res: Resource = entry.get("resource", null)
-		var type_str: String = String(entry.get("type", ""))
-		var price: int = int(entry.get("price", 0))
-		var remaining: int = int(entry.get("stock", 0))
-
-		var name: String = _shop_entry_name(res)
-		var desc: String = _shop_entry_desc(res)
-
-		var rarity_label: String = ""
-		if res is Equipment:
-			rarity_label = _shop_get_rarity_label(res)
-
-		var text: String = ""
-		if rarity_label != "":
-			text = "%s [%s] - %dG (x%d)" % [name, rarity_label, price, remaining]
-		else:
-			text = "%s - %dG (x%d)" % [name, price, remaining]
-
-		if remaining <= 0:
-			text = "✖ " + text + "  SOLD OUT"
-
-		# ADD ITEM FIRST
-		shop_list.add_item(text)
-		var item_index: int = shop_list.get_item_count() - 1
-
-		# Icon support
-		var icon: Texture2D = _shop_get_icon(res)
-		if icon != null:
-			shop_list.set_item_icon(item_index, icon)
-
-		# Tooltip
-		if desc != "":
-			shop_list.set_item_tooltip(item_index, desc)
-
-		# Sold out: disable row + dim it
-		if remaining <= 0:
-			shop_list.set_item_disabled(item_index, true)
-			shop_list.set_item_custom_fg_color(
-				item_index,
-				Color(0.55, 0.55, 0.55)
-			)
-
-	shop_gold_label.text = "Gold: %d" % RunManager.gold
-	shop_details_label.text = "Select an item to see details."
-	shop_buy_button.disabled = true
-
-
-
-
-func _on_shop_item_selected(index: int) -> void:
-	var stock: Array = RunManager.shop_stock
-	if index < 0 or index >= stock.size():
-		shop_buy_button.disabled = true
-		return
-
-	var entry = stock[index]
-	var res: Resource = entry.get("resource", null)
-	var price: int = int(entry.get("price", 0))
-	var remaining: int = int(entry.get("stock", 0))
-
-	var name: String = _shop_entry_name(res)
-	var desc: String = _shop_entry_desc(res)
-
-	var rarity_label: String = ""
-	if res is Equipment:
-		rarity_label = _shop_get_rarity_label(res)
-
-	var header: String = name
-	if rarity_label != "":
-		header += " [%s]" % rarity_label
-
-	var details := "%s\n\n%s\n\nPrice: %dG\nStock: %d" % [
-		header,
-		desc,
-		price,
-		remaining
-	]
-
-		# --- Equipment effects (UI clarity) ---
-	if res is Equipment:
-		var eq: Equipment = res as Equipment
-		var fx: String = _equipment_effect_text(eq)
-		if fx != "":
-			details += "\n\nEffects:\n" + fx
-
-	# --- Not enough gold message ---
-	if RunManager.gold < price:
-		details += "\n\n[color=red]Not enough gold.[/color]"
-
-	shop_details_label.text = details
-
-	# Enable buy only if:
-	# - in stock
-	# - player has enough gold
-	shop_buy_button.disabled = (remaining <= 0) or (RunManager.gold < price)
-
-
 #Buy Handler
 func _on_shop_buy_pressed() -> void:
-	var selected_indices := shop_list.get_selected_items()
-	if selected_indices.is_empty():
-		shop_details_label.text = "No item selected."
-		shop_buy_button.disabled = true
+	var sel := shop_list_tab.get_selected_items()
+	if sel.is_empty():
 		return
 
-	var idx: int = int(selected_indices[0])
+	var visible_index: int = sel[0]
+	if visible_index < 0 or visible_index >= _shop_key_cache.size():
+		return
 
-	var result: Dictionary = RunManager.try_buy_from_shop(idx)
+	var stock_index: int = _shop_key_cache[visible_index]
+	var result: Dictionary = RunManager.try_buy_from_shop(stock_index)
+
 	if not bool(result.get("success", false)):
-		var reason: String = String(result.get("reason", "Cannot buy."))
-		shop_details_label.text = reason
-		_refresh_shop_ui()
+		shop_details_label_tab.text = str(result.get("reason", "Purchase failed."))
 		return
 
-	# Purchase successful
-	shop_details_label.text = "Purchased!"
-	_refresh_shop_ui()
-
-	# Try to reselect the same index and refresh details/buy state
-	if idx >= 0 and idx < shop_list.get_item_count():
-		shop_list.select(idx)
-		_on_shop_item_selected(idx)
+	_refresh_shop_tab_ui()
+	_refresh_convoy_ui()
 
 #ENCOUNTER TAG HELPER
 func _update_encounter_tag_ui() -> void:
@@ -948,3 +957,594 @@ func _update_weather_ui() -> void:
 		_:
 			weather_label.text = "Weather: Clear"
 			weather_label.visible = true
+
+func _refresh_convoy_ui() -> void:
+	# Equipment
+	convoy_equip_list.clear()
+	_convoy_equipment_key_cache.clear()
+
+	var equip_keys: Array = RunManager.inventory_equipment.keys()
+	equip_keys.sort_custom(Callable(self, "_resource_sort_key"))
+
+	for k in equip_keys:
+		var res: Resource = k
+		var count: int = int(RunManager.inventory_equipment.get(res, 0))
+		var label: String = "Equipment"
+		if res != null and ("name" in res):
+			label = str(res.name)
+		convoy_equip_list.add_item("%s  x%d" % [label, count])
+		_convoy_equipment_key_cache.append(res)
+
+	# Items
+	convoy_item_list.clear()
+	_convoy_item_key_cache.clear()
+
+	var item_keys: Array = RunManager.inventory_items.keys()
+	item_keys.sort_custom(Callable(self, "_resource_sort_key"))
+
+	for k2 in item_keys:
+		var res2: Resource = k2
+		var count2: int = int(RunManager.inventory_items.get(res2, 0))
+		var label2: String = "Item"
+		if res2 != null and ("name" in res2):
+			label2 = str(res2.name)
+		convoy_item_list.add_item("%s  x%d" % [label2, count2])
+		_convoy_item_key_cache.append(res2)
+
+
+func _on_convoy_equipment_selected(index: int) -> void:
+	_selected_convoy_kind = &"equipment"
+	_selected_convoy_res = null
+
+	if index < 0 or index >= _convoy_equipment_key_cache.size():
+		convoy_details_label.text = ""
+		return
+
+	_selected_convoy_res = _convoy_equipment_key_cache[index]
+	var e: Resource = _selected_convoy_res
+	var n: String = str(e.name) if e != null and ("name" in e) else "Equipment"
+	var d: String = str(e.description) if e != null and ("description" in e) else ""
+	convoy_details_label.text = "%s\n\n%s" % [n, d]
+
+
+func _on_convoy_item_selected(index: int) -> void:
+	_selected_convoy_kind = &"item"
+	_selected_convoy_res = null
+
+	if index < 0 or index >= _convoy_item_key_cache.size():
+		convoy_details_label.text = ""
+		return
+
+	_selected_convoy_res = _convoy_item_key_cache[index]
+	var it: Resource = _selected_convoy_res
+	var n: String = str(it.name) if it != null and ("name" in it) else "Item"
+	var d: String = str(it.description) if it != null and ("description" in it) else ""
+	convoy_details_label.text = "%s\n\n%s" % [n, d]
+
+func _get_selected_unit_data() -> UnitData:
+	var sel := deploy_list.get_selected_items()
+	if sel.is_empty():
+		return null
+
+	var deploy_pos: int = sel[0]
+	if deploy_pos < 0 or deploy_pos >= _deployed_indices.size():
+		return null
+
+	var roster_index: int = _deployed_indices[deploy_pos]
+	if roster_index < 0 or roster_index >= RunManager.roster.size():
+		return null
+
+	return RunManager.roster[roster_index]
+
+
+func _refresh_selected_unit_slots() -> void:
+	# Clear existing slot buttons
+	for c in equip_slots_grid.get_children():
+		c.queue_free()
+	for c2 in item_slots_grid.get_children():
+		c2.queue_free()
+
+	var data: UnitData = _get_selected_unit_data()
+	if data == null:
+		selected_unit_header.text = "Selected Unit"
+		return
+	
+	_ensure_unit_slot_arrays(data)
+	
+	var title: String = "Selected Unit"
+	if data.unit_class != null and ("display_name" in data.unit_class):
+		title = "Selected: %s" % str(data.unit_class.display_name)
+	selected_unit_header.text = title
+
+	# Equipment slots
+	for i in range(data.equipment_slots.size()):
+		var b := Button.new()
+		var res = data.equipment_slots[i]
+		b.text = (str(res.name) if res != null and ("name" in res) else "Empty Equip")
+		b.pressed.connect(_on_equip_slot_pressed.bind(i))
+		equip_slots_grid.add_child(b)
+
+	# Item slots
+	for j in range(data.item_slots.size()):
+		var b2 := Button.new()
+		var res2 = data.item_slots[j]
+		b2.text = (str(res2.name) if res2 != null and ("name" in res2) else "Empty Item")
+		b2.pressed.connect(_on_item_slot_pressed.bind(j))
+		item_slots_grid.add_child(b2)
+
+func _refresh_shop_tab_ui() -> void:
+	shop_list_tab.clear()
+	_shop_key_cache.clear()
+
+	shop_gold_label_tab.text = "Gold: %d" % RunManager.gold
+
+	for i in range(RunManager.shop_stock.size()):
+		var entry: Dictionary = RunManager.shop_stock[i]
+		var stock: int = int(entry.get("stock", 0))
+		if stock <= 0:
+			continue
+
+		var res: Resource = entry.get("resource", null)
+		var price: int = int(entry.get("price", 0))
+
+		var name: String = "???"
+		if res != null and ("name" in res):
+			name = str(res.name)
+
+		shop_list_tab.add_item("%s  (%dG)  x%d" % [name, price, stock])
+		_shop_key_cache.append(i)
+
+
+func _on_shop_selected(index: int) -> void:
+	if index < 0 or index >= _shop_key_cache.size():
+		shop_details_label_tab.text = ""
+		return
+
+	var stock_index: int = _shop_key_cache[index]
+	var entry: Dictionary = RunManager.shop_stock[stock_index]
+	var res: Resource = entry.get("resource", null)
+	var price: int = int(entry.get("price", 0))
+	var stock: int = int(entry.get("stock", 0))
+
+	if res == null:
+		shop_details_label_tab.text = ""
+		return
+
+	var n: String = str(res.name) if ("name" in res) else "???"
+	var d: String = str(res.description) if ("description" in res) else ""
+	shop_details_label_tab.text = "%s\nPrice: %dG\nStock: %d\n\n%s" % [n, price, stock, d]
+
+func _on_equip_slot_pressed(slot_idx: int) -> void:
+	var data: UnitData = _get_selected_unit_data()
+	if data == null:
+		return
+	_ensure_unit_slot_arrays(data)
+	# If nothing selected in convoy: unequip to convoy
+	if _selected_convoy_kind == &"none" or _selected_convoy_res == null:
+		var current = data.equipment_slots[slot_idx]
+		if current != null:
+			_inv_add_one(RunManager.inventory_equipment, current)
+			data.equipment_slots[slot_idx] = null
+			_refresh_convoy_ui()
+			_refresh_selected_unit_slots()
+			_refresh_details_for_selected_deploy()
+		return
+
+	if _selected_convoy_kind != &"equipment":
+		return
+
+	if _inv_take_one(RunManager.inventory_equipment, _selected_convoy_res):
+		data.equipment_slots[slot_idx] = _selected_convoy_res
+
+	_selected_convoy_kind = &"none"
+	_selected_convoy_res = null
+	_refresh_convoy_ui()
+	_refresh_selected_unit_slots()
+	convoy_equip_list.deselect_all()
+	convoy_item_list.deselect_all()
+	_refresh_details_for_selected_deploy()
+
+func _on_item_slot_pressed(slot_idx: int) -> void:
+	var data: UnitData = _get_selected_unit_data()
+	if data == null:
+		return
+	_ensure_unit_slot_arrays(data)
+	# Unequip to convoy
+	if _selected_convoy_kind == &"none" or _selected_convoy_res == null:
+		var current = data.item_slots[slot_idx]
+		if current != null:
+			_inv_add_one(RunManager.inventory_items, current)
+			data.item_slots[slot_idx] = null
+			_refresh_convoy_ui()
+			_refresh_selected_unit_slots()
+			_refresh_details_for_selected_deploy()
+		return
+
+	if _selected_convoy_kind != &"item":
+		return
+
+	if _inv_take_one(RunManager.inventory_items, _selected_convoy_res):
+		data.item_slots[slot_idx] = _selected_convoy_res
+
+	_selected_convoy_kind = &"none"
+	_selected_convoy_res = null
+	_refresh_convoy_ui()
+	_refresh_selected_unit_slots()
+	_refresh_details_for_selected_deploy()
+
+#MINIMAP TEXTURE BUILD
+func _build_static_minimap_from_tilemap(tilemap: TileMap) -> void:
+	if tilemap == null or map_preview_texrect == null:
+		return
+
+	var used: Rect2i = tilemap.get_used_rect()
+	if used.size == Vector2i.ZERO:
+		map_preview_texrect.texture = null
+		return
+
+	# Target size = the UI preview area (fallback to something reasonable)
+	var target: Vector2 = map_preview_texrect.size
+	if target.x < 8 or target.y < 8:
+		target = Vector2(420, 260)
+
+	# Compute pixels-per-tile so the map fills the preview area.
+	# Clamp so it doesn't get absurd.
+	var px_per_tile_x: int = int(floor(target.x / float(used.size.x)))
+	var px_per_tile_y: int = int(floor(target.y / float(used.size.y)))
+	var scale: int = clamp(min(px_per_tile_x, px_per_tile_y), 2, 32)
+
+	_minimap_used_rect = used
+	_minimap_scale = scale
+	var img_w: int = used.size.x * scale
+	var img_h: int = used.size.y * scale
+
+	var img := Image.create(img_w, img_h, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	for y in range(used.size.y):
+		for x in range(used.size.x):
+			var cell: Vector2i = used.position + Vector2i(x, y)
+			var source_id: int = tilemap.get_cell_source_id(0, cell)
+			if source_id == -1:
+				continue
+			# Simple palette for now
+			var td: TileData = tilemap.get_cell_tile_data(0, cell)
+			var t: String = "ground"
+
+			if td != null:
+				var v = td.get_custom_data("minimap_type")
+				if v != null:
+					t = str(v)
+
+			var c: Color = _minimap_color_for_type(t)
+
+			var px0: int = x * scale
+			var py0: int = y * scale
+			for py in range(py0, py0 + scale):
+				for px in range(px0, px0 + scale):
+					img.set_pixel(px, py, c)
+
+		# --- ZONE OVERLAYS ---
+	var deploy_tiles: Array[Vector2i] = _get_preview_deploy_tiles()
+
+# If deploy tiles aren't set yet, don't draw overlays
+	if not deploy_tiles.is_empty():
+		var deploy_col := Color(0.10, 0.45, 0.70, 0.45) # blue tint
+		var enemy_col := Color(0.95, 0.25, 0.25, 0.18)  # red tint
+
+	# Pull distance rule from RunManager (single source of truth)
+		var enemy_min_dist: int = 6
+		if "enemy_min_spawn_distance" in RunManager:
+			enemy_min_dist = int(RunManager.enemy_min_spawn_distance)
+
+	# Draw deploy zone tiles
+		for t in deploy_tiles:
+			if not used.has_point(t):
+				continue
+			var lx := t.x - used.position.x
+			var ly := t.y - used.position.y
+			_minimap_draw_tile_rect(img, lx, ly, scale, deploy_col)
+
+	# Draw enemy zone = walkable tiles far enough from deploy
+		for y2 in range(used.size.y):
+			for x2 in range(used.size.x):
+				var cell: Vector2i = used.position + Vector2i(x2, y2)
+				if not _minimap_is_walkable(tilemap, cell):
+					continue
+				if _min_distance_to_tiles(cell, deploy_tiles) >= enemy_min_dist:
+					_minimap_draw_tile_rect(img, x2, y2, scale, enemy_col)
+
+	# --- UNIT MARKERS (placements) ---
+	var marker_col := Color(1, 1, 1, 0.95)
+	var outline_col := Color(0, 0, 0, 0.85)
+
+	for k in _placement_by_roster_index.keys():
+		var cell: Vector2i = _placement_by_roster_index[k]
+		if not used.has_point(cell):
+			continue
+
+		var lx := cell.x - used.position.x
+		var ly := cell.y - used.position.y
+
+		var cx := lx * scale + scale / 2
+		var cy := ly * scale + scale / 2
+
+	# black outline then white dot
+		_minimap_draw_dot(img, cx, cy, max(2, scale / 5) + 1, outline_col)
+		_minimap_draw_dot(img, cx, cy, max(2, scale / 5), marker_col)
+
+	map_preview_texrect.texture = ImageTexture.create_from_image(img)
+
+func _preview_generate_map() -> void:
+	if preview_map_gen == null:
+		push_warning("Preview map generator missing.")
+		return
+
+	# Match floor config just like Main does
+	if preview_map_gen.has_method("set_biome"):
+		preview_map_gen.set_biome(RunManager.current_biome)
+	elif "biome" in preview_map_gen:
+		preview_map_gen.biome = RunManager.current_biome
+
+	if "chunks_wide" in preview_map_gen and "chunks_high" in preview_map_gen:
+		preview_map_gen.chunks_wide = RunManager.current_map_chunks.x
+		preview_map_gen.chunks_high = RunManager.current_map_chunks.y
+
+	# Deterministic seed (make sure RunManager.current_map_seed exists)
+	if preview_map_gen.has_method("set_seed"):
+		preview_map_gen.set_seed(RunManager.current_map_seed)
+
+	# Build map into PreviewTerrain (assigned via exported 'terrain' in inspector)
+	if preview_map_gen.has_method("build_random_map"):
+		preview_map_gen.build_random_map()
+	else:
+		push_warning("Preview map generator has no build_random_map().")
+
+func _rebuild_minimap_deferred() -> void:
+	_build_static_minimap_from_tilemap(preview_terrain)
+
+func _minimap_draw_dot(img: Image, px: int, py: int, r: int, col: Color) -> void:
+	for dy in range(-r, r + 1):
+		for dx in range(-r, r + 1):
+			if dx*dx + dy*dy > r*r:
+				continue
+			var x := px + dx
+			var y := py + dy
+			if x < 0 or y < 0 or x >= img.get_width() or y >= img.get_height():
+				continue
+			var base := img.get_pixel(x, y)
+			img.set_pixel(x, y, base.lerp(col, col.a))
+
+#PALETTE HELPER MINIMAP
+func _minimap_color_for_type(t: String) -> Color:
+	match t:
+		"water":
+			return Color(0.20, 0.35, 0.75, 1.0)
+		"ground":
+			return Color(0.75, 0.75, 0.78, 1.0)
+		"road":
+			return Color(0.78, 0.70, 0.50, 1.0)
+		"forest":
+			return Color(0.22, 0.55, 0.28, 1.0)
+		"mountain":
+			return Color(0.45, 0.42, 0.40, 1.0)
+		"wall":
+			return Color(0.25, 0.25, 0.28, 1.0)
+		"building":
+			return Color(0.55, 0.50, 0.48, 1.0)
+		"snow":
+			return Color(0.88, 0.90, 0.95, 1.0)
+		_:
+			# Fallback if untagged
+			return Color(0.72, 0.72, 0.75, 1.0)
+
+func _get_preview_deploy_tiles() -> Array[Vector2i]:
+	RunManager.ensure_floor_config()
+	return RunManager.deploy_tiles
+
+func _minimap_draw_tile_rect(img: Image, local_x: int, local_y: int, scale: int, col: Color) -> void:
+	var px0 := local_x * scale
+	var py0 := local_y * scale
+	for py in range(py0, py0 + scale):
+		for px in range(px0, px0 + scale):
+			var base := img.get_pixel(px, py)
+			img.set_pixel(px, py, base.lerp(col, col.a))
+
+func _minimap_is_walkable(tilemap: TileMap, cell: Vector2i) -> bool:
+	if tilemap.get_cell_source_id(0, cell) == -1:
+		return false
+
+	var td: TileData = tilemap.get_cell_tile_data(0, cell)
+	if td == null:
+		return false
+
+	var v = td.get_custom_data("minimap_type")
+	if v == null:
+		return false
+
+	var t := str(v)
+	return (t == "ground" or t == "road" or t == "forest" or t == "snow" or t == "building")
+
+	
+func _min_distance_to_tiles(cell: Vector2i, tiles: Array[Vector2i]) -> int:
+	var best: int = 999999
+	for d: Vector2i in tiles:
+		var md: int = abs(cell.x - d.x) + abs(cell.y - d.y)
+		if md < best:
+			best = md
+	return best
+
+#CLICK TO DEPLOY HELPER
+func _minimap_local_pos_to_cell(local_pos: Vector2) -> Vector2i:
+	# Returns a grid cell coordinate (TileMap cell coords), or a sentinel if invalid
+	if _minimap_scale <= 0 or _minimap_used_rect.size == Vector2i.ZERO:
+		return Vector2i(999999, 999999)
+
+	# local_pos is within the TextureRect
+	var x: int = int(floor(local_pos.x / float(_minimap_scale)))
+	var y: int = int(floor(local_pos.y / float(_minimap_scale)))
+
+	# Convert from "local in used_rect" to actual TileMap cell coords
+	return _minimap_used_rect.position + Vector2i(x, y)
+
+func _toggle_deploy_tile(cell: Vector2i) -> void:
+	RunManager.ensure_floor_config()
+
+	# Only allow toggling inside the generated map rect
+	if not _minimap_used_rect.has_point(cell):
+		return
+
+	# Only allow walkable tiles
+	if not _minimap_is_walkable(preview_terrain, cell):
+		return
+
+	# Toggle in deploy_tiles
+	var idx: int = RunManager.deploy_tiles.find(cell)
+	if idx == -1:
+		RunManager.deploy_tiles.append(cell)
+	else:
+		RunManager.deploy_tiles.remove_at(idx)
+
+	# Rebuild minimap so overlay updates immediately
+	_build_static_minimap_from_tilemap(preview_terrain)
+
+func _on_minimap_gui_input(event: InputEvent) -> void:
+	if event is not InputEventMouseButton:
+		return
+	var mb := event as InputEventMouseButton
+	if not mb.pressed:
+		return
+
+	if mb.button_index == MOUSE_BUTTON_LEFT:
+		var cell := _minimap_local_pos_to_cell(mb.position)
+		if cell.x == 999999:
+			return
+		_try_place_selected_unit_on_cell(cell)
+
+func _try_place_selected_unit_on_cell(cell: Vector2i) -> void:
+	RunManager.ensure_floor_config()
+
+	# Must be inside minimap bounds
+	if not _minimap_used_rect.has_point(cell):
+		return
+
+	# Must be in deploy zone
+	if RunManager.deploy_tiles.find(cell) == -1:
+		hint_label.text = "Pick a tile in the deploy zone."
+		return
+
+	# Must be walkable
+	if not _minimap_is_walkable(preview_terrain, cell):
+		hint_label.text = "That tile isn't walkable."
+		return
+
+	# Must have a selected deployed unit
+	var roster_index: int = _get_selected_deployed_roster_index()
+	if roster_index < 0:
+		hint_label.text = "Select a deployed unit first."
+		return
+
+	# Enforce unique tile: if another unit is already on this tile, clear them
+	for k in _placement_by_roster_index.keys():
+		if _placement_by_roster_index[k] == cell and int(k) != roster_index:
+			_placement_by_roster_index.erase(k)
+			break
+
+	# Assign
+	_placement_by_roster_index[roster_index] = cell
+	hint_label.text = "Placed unit."
+
+	# Rebuild minimap so unit markers update
+	_build_static_minimap_from_tilemap(preview_terrain)
+
+func _compute_deploy_tiles_from_map(tilemap: TileMap, count: int) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	if tilemap == null or count <= 0:
+		return result
+
+	var used: Rect2i = tilemap.get_used_rect()
+	if used.size == Vector2i.ZERO:
+		return result
+
+	# band thickness in tiles
+	var band_width: int = used.size.x / 6
+	if band_width < 3:
+		band_width = 3
+
+	var band_height: int = used.size.y / 6
+	if band_height < 3:
+		band_height = 3
+
+	# 0=left, 1=right, 2=top, 3=bottom (deterministic)
+	var side: int = 0
+	if "current_map_seed" in RunManager:
+		side = abs(int(RunManager.current_map_seed)) % 4
+
+	var candidates: Array[Vector2i] = []
+
+	match side:
+		0: # left
+			for y in range(used.position.y, used.position.y + used.size.y):
+				for x in range(used.position.x, used.position.x + band_width):
+					var cell: Vector2i = Vector2i(x, y)
+					if _minimap_is_walkable(tilemap, cell):
+						candidates.append(cell)
+
+		1: # right
+			var x0: int = used.position.x + used.size.x - band_width
+			for y in range(used.position.y, used.position.y + used.size.y):
+				for x in range(x0, used.position.x + used.size.x):
+					var cell: Vector2i = Vector2i(x, y)
+					if _minimap_is_walkable(tilemap, cell):
+						candidates.append(cell)
+
+		2: # top
+			for y in range(used.position.y, used.position.y + band_height):
+				for x in range(used.position.x, used.position.x + used.size.x):
+					var cell: Vector2i = Vector2i(x, y)
+					if _minimap_is_walkable(tilemap, cell):
+						candidates.append(cell)
+
+		3: # bottom
+			var y0: int = used.position.y + used.size.y - band_height
+			for y in range(y0, used.position.y + used.size.y):
+				for x in range(used.position.x, used.position.x + used.size.x):
+					var cell: Vector2i = Vector2i(x, y)
+					if _minimap_is_walkable(tilemap, cell):
+						candidates.append(cell)
+
+	if candidates.is_empty():
+		return result
+
+	# Deterministic start tile (seeded), not always the middle
+	candidates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		return a.y < b.y if a.y != b.y else a.x < b.x
+	)
+
+	var start_index: int = 0
+	if "current_map_seed" in RunManager:
+		start_index = abs(int(RunManager.current_map_seed)) % candidates.size()
+
+	var start: Vector2i = candidates[start_index]
+	result.append(start)
+
+	while result.size() < count:
+		var best_cell: Vector2i = Vector2i.ZERO
+		var best_dist: int = 999999
+		var found: bool = false
+
+		for c: Vector2i in candidates:
+			if result.has(c):
+				continue
+
+			var d: int = _min_distance_to_tiles(c, result)
+			if d < best_dist:
+				best_dist = d
+				best_cell = c
+				found = true
+
+		if not found:
+			break
+		result.append(best_cell)
+
+	return result

@@ -310,3 +310,14 @@ func clear_tile_overlays_if_key_diff(tile: Vector2i, new_key: StringName) -> voi
 
 func has_overlay_key(tile: Vector2i, key: StringName) -> bool:
 	return tile_overlay_key.has(tile) and tile_overlay_key[tile] == key
+
+func get_tile_info(tile: Vector2i) -> Dictionary:
+	var source_id: int = terrain.get_cell_source_id(0, tile)
+	if source_id == -1:
+		return {}
+
+	var atlas: Vector2i = terrain.get_cell_atlas_coords(0, tile)
+	var key := Vector3i(source_id, atlas.x, atlas.y)
+	if TERRAIN_TABLE.has(key):
+		return TERRAIN_TABLE[key]
+	return {}
