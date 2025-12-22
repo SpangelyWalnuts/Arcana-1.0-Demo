@@ -6,6 +6,7 @@ extends Control
 @onready var deploy_list: ItemList       = $Panel/VBoxContainer/HBoxContainer/DeployBox/DeployList
 @onready var start_button: Button        = $Panel/BottomBar/MarginContainer/HBoxContainer/StartBattleButton
 @onready var title_button: Button        = $Panel/BottomBar/MarginContainer/HBoxContainer/ReturnToTitleButton
+@onready var auto_place_button: Button = $Panel/BottomBar/MarginContainer/HBoxContainer/AutoPlaceButton
 @onready var class_name_label: Label = $Panel/VBoxContainer/HBoxContainer/DetailsBox/ClassNameLabel
 @onready var stats_label: Label      = $Panel/VBoxContainer/HBoxContainer/DetailsBox/StatsLabel
 @onready var mana_label: Label       = $Panel/VBoxContainer/HBoxContainer/DetailsBox/ManaLabel
@@ -58,7 +59,11 @@ extends Control
 # Track which unit is currently selected in the roster
 var _selected_roster_index: int = -1
 
+#MINIMAP VARS
 var _placement_by_roster_index: Dictionary = {} # roster_index -> Vector2i
+var _minimap_hover_cell: Vector2i = Vector2i(999999, 999999)
+var _rmb_down_pos: Vector2 = Vector2.ZERO
+var _rmb_dragged: bool = false
 
 # Later we’ll hook this to map size / enemy count via some floor config.
 @export var max_deploy_slots: int = 4
@@ -68,7 +73,13 @@ var _deployed_indices: Array[int] = []
 
 #DEPLOYMENT PLACEMENT
 var _minimap_used_rect: Rect2i = Rect2i()
-var _minimap_scale: int = 0
+var _minimap_scale: int = 16
+
+var _minimap_view_origin: Vector2i = Vector2i.ZERO # top-left cell of the view window
+var _minimap_view_size: Vector2i = Vector2i(32, 18) # how many tiles we show at once (tweak)
+
+var _minimap_dragging: bool = false
+var _minimap_drag_last_pos: Vector2 = Vector2.ZERO
 
 # ------------------------------------------------------------
 # Stage 2: Convoy + Shop Tab (MVP click-to-assign)
@@ -102,7 +113,12 @@ func _ready() -> void:
 		RunManager.deploy_tiles = _compute_deploy_tiles_from_map(preview_terrain, max_deploy_slots)
 		print("[DEPLOY] computed tiles=", RunManager.deploy_tiles)
 		_placement_by_roster_index.clear()
+	_minimap_center_on_deploy()
 	_build_static_minimap_from_tilemap(preview_terrain)
+	deploy_list.item_selected.connect(func(_i):
+		_update_minimap_hint_label()
+		_build_static_minimap_from_tilemap(preview_terrain)
+)
 	print("[MINIMAP] used_rect=", preview_terrain.get_used_rect())
 	_populate_roster_lists()
 	_update_encounter_tag_ui()
@@ -117,10 +133,10 @@ func _ready() -> void:
 
 	start_button.pressed.connect(_on_start_battle_pressed)
 	title_button.pressed.connect(_on_return_to_title_pressed)
-
 	manage_arcana_button.pressed.connect(_on_manage_arcana_pressed)
 	arcana_popup.confirmed.connect(_on_arcana_popup_confirmed)
-	
+	auto_place_button.pressed.connect(_auto_place_deployed_units)
+
 	manage_equipment_button.pressed.connect(_on_manage_equipment_pressed)
 	manage_items_button.pressed.connect(_on_manage_items_pressed)
 
@@ -432,7 +448,8 @@ func _on_deploy_item_activated(index: int) -> void:
 	# index here is position in deploy_list, not roster index
 	if index < 0 or index >= _deployed_indices.size():
 		return
-
+	var roster_index := _deployed_indices[index]
+	_placement_by_roster_index.erase(roster_index)
 	_deployed_indices.remove_at(index)
 	_refresh_lists()
 
@@ -1182,96 +1199,48 @@ func _build_static_minimap_from_tilemap(tilemap: TileMap) -> void:
 		map_preview_texrect.texture = null
 		return
 
-	# Target size = the UI preview area (fallback to something reasonable)
-	var target: Vector2 = map_preview_texrect.size
-	if target.x < 8 or target.y < 8:
-		target = Vector2(420, 260)
-
-	# Compute pixels-per-tile so the map fills the preview area.
-	# Clamp so it doesn't get absurd.
-	var px_per_tile_x: int = int(floor(target.x / float(used.size.x)))
-	var px_per_tile_y: int = int(floor(target.y / float(used.size.y)))
-	var scale: int = clamp(min(px_per_tile_x, px_per_tile_y), 2, 32)
-
 	_minimap_used_rect = used
-	_minimap_scale = scale
-	var img_w: int = used.size.x * scale
-	var img_h: int = used.size.y * scale
+
+	# Clamp view size (can't be bigger than map)
+	var view_w: int = min(_minimap_view_size.x, used.size.x)
+	var view_h: int = min(_minimap_view_size.y, used.size.y)
+	var view_size := Vector2i(view_w, view_h)
+
+	# Clamp view origin so window stays within used rect
+	var max_origin: Vector2i = used.position + used.size - view_size
+	_minimap_view_origin.x = clamp(_minimap_view_origin.x, used.position.x, max_origin.x)
+	_minimap_view_origin.y = clamp(_minimap_view_origin.y, used.position.y, max_origin.y)
+
+	# Fixed-size image: view window * px-per-tile
+	var img_w: int = view_size.x * _minimap_scale
+	var img_h: int = view_size.y * _minimap_scale
 
 	var img := Image.create(img_w, img_h, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 
-	for y in range(used.size.y):
-		for x in range(used.size.x):
-			var cell: Vector2i = used.position + Vector2i(x, y)
+	# --- BASE MAP ---
+	for vy in range(view_size.y):
+		for vx in range(view_size.x):
+			var cell: Vector2i = _minimap_view_origin + Vector2i(vx, vy)
 			var source_id: int = tilemap.get_cell_source_id(0, cell)
 			if source_id == -1:
 				continue
-			# Simple palette for now
+
 			var td: TileData = tilemap.get_cell_tile_data(0, cell)
-			var t: String = "ground"
+			if td == null:
+				continue
 
-			if td != null:
-				var v = td.get_custom_data("minimap_type")
-				if v != null:
-					t = str(v)
+			var v = td.get_custom_data("minimap_type")
+			if v == null:
+				continue # hide untagged tiles (reduces noise)
 
+			var t: String = str(v)
 			var c: Color = _minimap_color_for_type(t)
 
-			var px0: int = x * scale
-			var py0: int = y * scale
-			for py in range(py0, py0 + scale):
-				for px in range(px0, px0 + scale):
-					img.set_pixel(px, py, c)
+			_minimap_draw_tile_rect(img, vx, vy, _minimap_scale, c)
 
-		# --- ZONE OVERLAYS ---
-	var deploy_tiles: Array[Vector2i] = _get_preview_deploy_tiles()
-
-# If deploy tiles aren't set yet, don't draw overlays
-	if not deploy_tiles.is_empty():
-		var deploy_col := Color(0.10, 0.45, 0.70, 0.45) # blue tint
-		var enemy_col := Color(0.95, 0.25, 0.25, 0.18)  # red tint
-
-	# Pull distance rule from RunManager (single source of truth)
-		var enemy_min_dist: int = 6
-		if "enemy_min_spawn_distance" in RunManager:
-			enemy_min_dist = int(RunManager.enemy_min_spawn_distance)
-
-	# Draw deploy zone tiles
-		for t in deploy_tiles:
-			if not used.has_point(t):
-				continue
-			var lx := t.x - used.position.x
-			var ly := t.y - used.position.y
-			_minimap_draw_tile_rect(img, lx, ly, scale, deploy_col)
-
-	# Draw enemy zone = walkable tiles far enough from deploy
-		for y2 in range(used.size.y):
-			for x2 in range(used.size.x):
-				var cell: Vector2i = used.position + Vector2i(x2, y2)
-				if not _minimap_is_walkable(tilemap, cell):
-					continue
-				if _min_distance_to_tiles(cell, deploy_tiles) >= enemy_min_dist:
-					_minimap_draw_tile_rect(img, x2, y2, scale, enemy_col)
-
-	# --- UNIT MARKERS (placements) ---
-	var marker_col := Color(1, 1, 1, 0.95)
-	var outline_col := Color(0, 0, 0, 0.85)
-
-	for k in _placement_by_roster_index.keys():
-		var cell: Vector2i = _placement_by_roster_index[k]
-		if not used.has_point(cell):
-			continue
-
-		var lx := cell.x - used.position.x
-		var ly := cell.y - used.position.y
-
-		var cx := lx * scale + scale / 2
-		var cy := ly * scale + scale / 2
-
-	# black outline then white dot
-		_minimap_draw_dot(img, cx, cy, max(2, scale / 5) + 1, outline_col)
-		_minimap_draw_dot(img, cx, cy, max(2, scale / 5), marker_col)
+	# --- OVERLAYS ---
+	_draw_minimap_overlays(img, tilemap, view_size)
 
 	map_preview_texrect.texture = ImageTexture.create_from_image(img)
 
@@ -1376,16 +1345,33 @@ func _min_distance_to_tiles(cell: Vector2i, tiles: Array[Vector2i]) -> int:
 
 #CLICK TO DEPLOY HELPER
 func _minimap_local_pos_to_cell(local_pos: Vector2) -> Vector2i:
-	# Returns a grid cell coordinate (TileMap cell coords), or a sentinel if invalid
 	if _minimap_scale <= 0 or _minimap_used_rect.size == Vector2i.ZERO:
 		return Vector2i(999999, 999999)
 
-	# local_pos is within the TextureRect
-	var x: int = int(floor(local_pos.x / float(_minimap_scale)))
-	var y: int = int(floor(local_pos.y / float(_minimap_scale)))
+	var tex := map_preview_texrect.texture
+	if tex == null:
+		return Vector2i(999999, 999999)
 
-	# Convert from "local in used_rect" to actual TileMap cell coords
-	return _minimap_used_rect.position + Vector2i(x, y)
+	var tex_size: Vector2 = tex.get_size()
+	var rect_size: Vector2 = map_preview_texrect.size
+	if rect_size.x <= 0.0 or rect_size.y <= 0.0:
+		return Vector2i(999999, 999999)
+
+	# Map click from control pixels -> texture pixels
+	var u: float = local_pos.x / rect_size.x
+	var v: float = local_pos.y / rect_size.y
+	if u < 0.0 or v < 0.0 or u > 1.0 or v > 1.0:
+		return Vector2i(999999, 999999)
+
+	var tex_x: float = u * tex_size.x
+	var tex_y: float = v * tex_size.y
+
+	var vx: int = int(floor(tex_x / float(_minimap_scale)))
+	var vy: int = int(floor(tex_y / float(_minimap_scale)))
+
+	return _minimap_view_origin + Vector2i(vx, vy)
+
+
 
 func _toggle_deploy_tile(cell: Vector2i) -> void:
 	RunManager.ensure_floor_config()
@@ -1409,20 +1395,58 @@ func _toggle_deploy_tile(cell: Vector2i) -> void:
 	_build_static_minimap_from_tilemap(preview_terrain)
 
 func _on_minimap_gui_input(event: InputEvent) -> void:
-	if event is not InputEventMouseButton:
-		return
-	var mb := event as InputEventMouseButton
-	if not mb.pressed:
-		return
+	if event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+	
+		# LEFT = place (requires selected unit)
+		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
+			var cell := _minimap_local_pos_to_cell(mb.position)
+			if cell.x != 999999:
+				_try_place_selected_unit_on_cell(cell)
 
-	if mb.button_index == MOUSE_BUTTON_LEFT:
-		var cell := _minimap_local_pos_to_cell(mb.position)
-		if cell.x == 999999:
-			return
-		_try_place_selected_unit_on_cell(cell)
+		# RIGHT = drag pan
+		elif mb.button_index == MOUSE_BUTTON_RIGHT:
+			if mb.pressed:
+				_minimap_dragging = true
+				_minimap_drag_last_pos = mb.position
+				_rmb_down_pos = mb.position
+				_rmb_dragged = false
+			else:
+				_minimap_dragging = false
+				# If we released without dragging much, treat it as "unplace"
+				if not _rmb_dragged:
+					_unplace_selected_deployed_unit()
+					_build_static_minimap_from_tilemap(preview_terrain)
+					_update_minimap_hint_label()
+
+
+	elif event is InputEventMouseMotion:
+		var mm := event as InputEventMouseMotion
+
+		if _minimap_dragging:
+			var delta: Vector2 = mm.position - _minimap_drag_last_pos
+			# Mark as dragged if we moved more than a tiny threshold
+			if (_minimap_drag_last_pos - _rmb_down_pos).length() > 6.0:
+				_rmb_dragged = true
+			_minimap_drag_last_pos = mm.position
+
+			var dx: int = int(round(delta.x / float(_minimap_scale)))
+			var dy: int = int(round(delta.y / float(_minimap_scale)))
+
+			_minimap_view_origin -= Vector2i(dx, dy)
+			_build_static_minimap_from_tilemap(preview_terrain)
+		else:
+			# --- HOVER PREVIEW ---
+			var cell := _minimap_local_pos_to_cell(mm.position)
+			if cell != _minimap_hover_cell:
+				_minimap_hover_cell = cell
+				_build_static_minimap_from_tilemap(preview_terrain)
+				_update_minimap_hint_label()
 
 func _try_place_selected_unit_on_cell(cell: Vector2i) -> void:
 	RunManager.ensure_floor_config()
+	_update_minimap_hint_label()
+
 
 	# Must be inside minimap bounds
 	if not _minimap_used_rect.has_point(cell):
@@ -1439,23 +1463,40 @@ func _try_place_selected_unit_on_cell(cell: Vector2i) -> void:
 		return
 
 	# Must have a selected deployed unit
+	# Must have a selected deployed unit
 	var roster_index: int = _get_selected_deployed_roster_index()
 	if roster_index < 0:
 		hint_label.text = "Select a deployed unit first."
 		return
 
-	# Enforce unique tile: if another unit is already on this tile, clear them
-	for k in _placement_by_roster_index.keys():
-		if _placement_by_roster_index[k] == cell and int(k) != roster_index:
-			_placement_by_roster_index.erase(k)
-			break
+	# If another deployed unit is already on this tile, swap
+	var other_roster_index: int = _find_roster_index_placed_on_cell(cell)
 
-	# Assign
+	if other_roster_index != -1 and other_roster_index != roster_index and _is_roster_index_deployed(other_roster_index):
+		# swap positions between roster_index and other_roster_index
+		var my_old: Vector2i = Vector2i(999999, 999999)
+		if _placement_by_roster_index.has(roster_index):
+			my_old = _placement_by_roster_index[roster_index]
+
+		# Put selected unit onto clicked cell
+		_placement_by_roster_index[roster_index] = cell
+
+		# Put the other unit onto selected unit's old cell, if it had one.
+		if my_old.x != 999999:
+			_placement_by_roster_index[other_roster_index] = my_old
+		else:
+			# If selected unit wasn't placed yet, just unplace the other one.
+			_placement_by_roster_index.erase(other_roster_index)
+
+		hint_label.text = "Swapped units."
+		_build_static_minimap_from_tilemap(preview_terrain)
+		return
+
+	# Otherwise normal place (empty tile, or occupied by non-deployed/invalid)
 	_placement_by_roster_index[roster_index] = cell
 	hint_label.text = "Placed unit."
-
-	# Rebuild minimap so unit markers update
 	_build_static_minimap_from_tilemap(preview_terrain)
+
 
 func _compute_deploy_tiles_from_map(tilemap: TileMap, count: int) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
@@ -1548,3 +1589,193 @@ func _compute_deploy_tiles_from_map(tilemap: TileMap, count: int) -> Array[Vecto
 		result.append(best_cell)
 
 	return result
+
+func _minimap_center_on_deploy() -> void:
+	RunManager.ensure_floor_config()
+	if RunManager.deploy_tiles.is_empty():
+		return
+
+	var sum: Vector2i = Vector2i.ZERO
+	for t: Vector2i in RunManager.deploy_tiles:
+		sum += t
+
+	var center: Vector2i = sum / RunManager.deploy_tiles.size()
+	_minimap_view_origin = center - (_minimap_view_size / 2)
+
+func _draw_minimap_overlays(img: Image, tilemap: TileMap, view_size: Vector2i) -> void:
+	var used: Rect2i = _minimap_used_rect
+	var deploy_tiles: Array[Vector2i] = _get_preview_deploy_tiles()
+
+	# --- ZONE OVERLAYS ---
+	if not deploy_tiles.is_empty():
+		var deploy_col := Color(0.05, 0.25, 0.55, 0.65) # darker blue, more alpha
+		var enemy_col := Color(0.95, 0.25, 0.25, 0.18)
+
+		var enemy_min_dist: int = 6
+		if "enemy_min_spawn_distance" in RunManager:
+			enemy_min_dist = int(RunManager.enemy_min_spawn_distance)
+
+		# Deploy tiles
+		for t: Vector2i in deploy_tiles:
+			var vpos: Vector2i = t - _minimap_view_origin
+			if vpos.x < 0 or vpos.y < 0 or vpos.x >= view_size.x or vpos.y >= view_size.y:
+				continue
+			_minimap_draw_tile_rect(img, vpos.x, vpos.y, _minimap_scale, deploy_col)
+
+		# Enemy zone (only for visible window)
+		for vy in range(view_size.y):
+			for vx in range(view_size.x):
+				var cell: Vector2i = _minimap_view_origin + Vector2i(vx, vy)
+				if not used.has_point(cell):
+					continue
+				if not _minimap_is_walkable(tilemap, cell):
+					continue
+				if _min_distance_to_tiles(cell, deploy_tiles) >= enemy_min_dist:
+					_minimap_draw_tile_rect(img, vx, vy, _minimap_scale, enemy_col)
+
+	# --- UNIT MARKERS ---
+# --- UNIT MARKERS ---
+	var selected_roster_index: int = _get_selected_deployed_roster_index()
+
+	var marker_col := Color(1, 1, 1, 0.95)
+	var outline_col := Color(0, 0, 0, 0.85)
+
+	var selected_marker_col := Color(0.95, 0.90, 0.35, 0.98) # gold-ish
+	var selected_ring_col := Color(0.95, 0.90, 0.35, 0.55)   # softer ring
+
+	for k in _placement_by_roster_index.keys():
+		var roster_index: int = int(k)
+		var cell: Vector2i = _placement_by_roster_index[k]
+		var vpos2: Vector2i = cell - _minimap_view_origin
+		if vpos2.x < 0 or vpos2.y < 0 or vpos2.x >= view_size.x or vpos2.y >= view_size.y:
+			continue
+
+		var cx := vpos2.x * _minimap_scale + _minimap_scale / 2
+		var cy := vpos2.y * _minimap_scale + _minimap_scale / 2
+
+		var r_base: int = max(2, _minimap_scale / 5)
+
+	# black outline then marker
+		_minimap_draw_dot(img, cx, cy, r_base + 1, outline_col)
+
+		if roster_index == selected_roster_index:
+			# extra ring for the selected unit
+			_minimap_draw_dot(img, cx, cy, r_base + 4, selected_ring_col)
+			_minimap_draw_dot(img, cx, cy, r_base, selected_marker_col)
+		else:
+			_minimap_draw_dot(img, cx, cy, r_base, marker_col)
+
+
+	# --- HOVER TILE (FE-style cursor) ---
+	if _minimap_hover_cell.x != 999999:
+		var vpos := _minimap_hover_cell - _minimap_view_origin
+		if vpos.x >= 0 and vpos.y >= 0 and vpos.x < view_size.x and vpos.y < view_size.y:
+			var hover_col := Color(1.0, 1.0, 1.0, 0.45) # soft white
+			_minimap_draw_tile_outline(img, vpos.x, vpos.y, _minimap_scale, hover_col)
+
+func _minimap_draw_tile_outline(img: Image, x: int, y: int, scale: int, col: Color) -> void:
+	var px0 := x * scale
+	var py0 := y * scale
+	var px1 := px0 + scale - 1
+	var py1 := py0 + scale - 1
+
+	for px in range(px0, px1 + 1):
+		img.set_pixel(px, py0, col)
+		img.set_pixel(px, py1, col)
+	for py in range(py0, py1 + 1):
+		img.set_pixel(px0, py, col)
+		img.set_pixel(px1, py, col)
+
+func _on_MapPreviewTexture_mouse_exited() -> void:
+	_minimap_hover_cell = Vector2i(999999, 999999)
+	_build_static_minimap_from_tilemap(preview_terrain)
+
+func _find_roster_index_placed_on_cell(cell: Vector2i) -> int:
+	for k in _placement_by_roster_index.keys():
+		if _placement_by_roster_index[k] == cell:
+			return int(k)
+	return -1
+
+func _is_roster_index_deployed(roster_index: int) -> bool:
+	return _deployed_indices.has(roster_index)
+
+func _update_minimap_hint_label() -> void:
+	var roster_index: int = _get_selected_deployed_roster_index()
+	if roster_index < 0:
+		return # keep whatever hint you already had
+
+	if roster_index >= RunManager.roster.size():
+		return
+
+	var data: UnitData = RunManager.roster[roster_index]
+	if data == null or data.unit_class == null:
+		return
+
+	var unit_name := data.unit_class.display_name
+	var lvl := data.level
+
+	var msg := "Placing: %s (Lv %d)" % [unit_name, lvl]
+
+	if _placement_by_roster_index.has(roster_index):
+		var placed_cell: Vector2i = _placement_by_roster_index[roster_index]
+		msg += " @ (%d,%d)" % [placed_cell.x, placed_cell.y]
+
+	if _minimap_hover_cell.x != 999999:
+		msg += " → (%d,%d)" % [_minimap_hover_cell.x, _minimap_hover_cell.y]
+
+	hint_label.text = msg
+
+func _unplace_selected_deployed_unit() -> void:
+	var roster_index: int = _get_selected_deployed_roster_index()
+	if roster_index < 0:
+		hint_label.text = "Select a deployed unit to unplace."
+		return
+
+	if _placement_by_roster_index.has(roster_index):
+		_placement_by_roster_index.erase(roster_index)
+		hint_label.text = "Unplaced unit."
+	else:
+		hint_label.text = "Unit is not placed."
+
+func _auto_place_deployed_units() -> void:
+	RunManager.ensure_floor_config()
+
+	# Remove placements for units no longer deployed
+	for k in _placement_by_roster_index.keys():
+		var ri: int = int(k)
+		if not _deployed_indices.has(ri):
+			_placement_by_roster_index.erase(ri)
+
+	# Build occupied set from remaining placements
+	var occupied: Dictionary = {} # Vector2i -> true
+	for k in _placement_by_roster_index.keys():
+		var cell: Vector2i = _placement_by_roster_index[k]
+		occupied[cell] = true
+
+	# Keep existing placements if still valid; otherwise clear them
+	for ri in _deployed_indices:
+		if _placement_by_roster_index.has(ri):
+			var keep_cell: Vector2i = _placement_by_roster_index[ri]
+			if RunManager.deploy_tiles.has(keep_cell) and _minimap_is_walkable(preview_terrain, keep_cell):
+				continue
+			_placement_by_roster_index.erase(ri)
+
+	# Place any unplaced deployed units into the first free deploy tiles
+	for ri in _deployed_indices:
+		if _placement_by_roster_index.has(ri):
+			continue
+
+		for cell in RunManager.deploy_tiles:
+			if occupied.has(cell):
+				continue
+			if not _minimap_is_walkable(preview_terrain, cell):
+				continue
+
+			_placement_by_roster_index[ri] = cell
+			occupied[cell] = true
+			break
+
+	hint_label.text = "Auto-placed deployed units."
+	_minimap_center_on_deploy()
+	_build_static_minimap_from_tilemap(preview_terrain)
+	_update_minimap_hint_label()

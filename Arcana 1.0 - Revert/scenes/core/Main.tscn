@@ -681,6 +681,7 @@ support_classes = [ExtResource("51_oh68v"), ExtResource("52_bwyab"), ExtResource
 offense_profiles = Array[ExtResource("47_do1pq")]([ExtResource("48_leefl"), ExtResource("50_0l231"), ExtResource("51_j8vbb")])
 defense_profiles = Array[ExtResource("47_do1pq")]([ExtResource("49_8kqbm"), ExtResource("50_kylyq"), ExtResource("51_0l231"), ExtResource("54_0l231")])
 support_profiles = Array[ExtResource("47_do1pq")]([ExtResource("48_gm45u"), ExtResource("51_0l231"), ExtResource("51_j8vbb")])
+min_spawn_distance = 5
 arcana_chance = 0.25
 
 [node name="SkillSystem" type="Node" parent="."]

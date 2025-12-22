@@ -5,6 +5,7 @@ var current_map_seed: int = 0
 var current_floor: int = 0
 var gold: int = 0
 
+var _map_seed_floor: int = -1
 # --- Floor scaling (Option B) ---
 var current_enemy_count: int = 4
 var current_elite_chance: float = 0.08
@@ -165,6 +166,8 @@ func _shop_rng_for_floor(floor: int, salt: int) -> RandomNumberGenerator:
 func start_new_run() -> void:
 	run_active = true
 	_new_run_seed()
+	current_map_seed = 0
+	_map_seed_floor = -1
 	current_floor = 1
 	refresh_floor_config()
 	gold = 100
@@ -321,10 +324,12 @@ func ensure_floor_config() -> void:
 		refresh_floor_config()
 	# Ensure a deterministic map seed for this floor.
 	# Only regenerate if it's 0 or if you explicitly want it per-floor.
-	if current_map_seed == 0:
-		# Use run_seed + floor to generate a stable seed.
-		# (Any deterministic formula is fine.)
+# Ensure a deterministic map seed for THIS floor.
+	if _map_seed_floor != current_floor or current_map_seed == 0:
+		_map_seed_floor = current_floor
 		current_map_seed = int(abs(hash(str(run_seed) + ":" + str(current_floor))))
+		print("[MAP SEED] floor=", current_floor, " seed=", current_map_seed)
+
 
 
 # -------------------------------------------------------------------
