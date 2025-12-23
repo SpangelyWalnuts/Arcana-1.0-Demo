@@ -79,3 +79,7 @@ enum TerrainAction {
 @export var terrain_object_move_cost_bonus: int = 0
 
 @export var icon_texture: Texture2D  # optional UI icon
+
+# --- Cast timing polish ---
+@export_range(0.0, 2.0, 0.01) var cast_windup: float = 0.10  # delay before impact
+@export_range(0.0, 2.0, 0.01) var impact_pause: float = 0.00 # optional extra pause after impact

@@ -1,4 +1,4 @@
-[gd_scene load_steps=71 format=3 uid="uid://n3fdkibgiero"]
+[gd_scene load_steps=72 format=3 uid="uid://n3fdkibgiero"]
 
 [ext_resource type="Script" uid="uid://h2yfgpr5nkon" path="res://scripts/core/Main.gd" id="1_v0fxp"]
 [ext_resource type="PackedScene" uid="uid://dtcrbthviju4m" path="res://scenes/ui/SelectionRing.tscn" id="2_8kqbm"]
@@ -28,6 +28,7 @@
 [ext_resource type="Texture2D" uid="uid://cr8gltjdvnhnn" path="res://art/animations/highlight/Yellow Highlight/Yellow Highlight6.png" id="18_gnjag"]
 [ext_resource type="Texture2D" uid="uid://b1ff2vn56sd5f" path="res://art/animations/highlight/Yellow Highlight/Yellow Highlight7.png" id="19_leefl"]
 [ext_resource type="Texture2D" uid="uid://d1mwiv5y4wvhh" path="res://art/animations/highlight/Yellow Highlight/Yellow Highlight8.png" id="20_8kqbm"]
+[ext_resource type="PackedScene" uid="uid://bcbv3m3l22drh" path="res://scenes/arcana/LightningBolt.tscn" id="24_oh68v"]
 [ext_resource type="Texture2D" uid="uid://rax4vkjh37l5" path="res://art/ui/text backgrounds/Banner 96 x 32.png" id="30_grs5f"]
 [ext_resource type="PackedScene" uid="uid://nlciohyc66th" path="res://scenes/arcana/HealingCircle.tscn" id="31_kylyq"]
 [ext_resource type="Texture2D" uid="uid://rp2hu8jppu4k" path="res://art/ui/Big Square Background 96 by 64.png" id="32_leefl"]
@@ -202,6 +203,8 @@ script = ExtResource("10_d7485")
 [node name="CombatManager" type="Node" parent="."]
 script = ExtResource("11_dau2k")
 heal_circle_vfx_scene = ExtResource("31_kylyq")
+lightning_strike_vfx_scene = ExtResource("24_oh68v")
+floating_text_root_path = NodePath("../FloatingTextRoot")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
@@ -653,7 +656,7 @@ layout_mode = 2
 size_flags_vertical = 3
 bbcode_enabled = true
 
-[node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("terrain")]
+[node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("terrain") groups=["camera_controller"]]
 zoom = Vector2(2.5, 2.5)
 script = ExtResource("16_tupnw")
 terrain = NodePath("../Grid/Terrain")
@@ -690,3 +693,6 @@ script = ExtResource("53_gnjag")
 
 [node name="EnemyAI" type="Node" parent="."]
 script = ExtResource("56_kylyq")
+
+[node name="FloatingTextRoot" type="Node2D" parent="."]
+z_index = 50

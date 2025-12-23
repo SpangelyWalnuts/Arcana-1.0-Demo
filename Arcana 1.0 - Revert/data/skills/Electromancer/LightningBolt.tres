@@ -11,6 +11,6 @@ mana_cost = 3
 cast_range = 6
 flat_power = 1
 target_type = 1
-tags = Array[StringName]([&"lightning"])
+tags = Array[StringName]([&"lightning", &"vfx_lightning_bolt"])
 duration_turns = 2
 icon_texture = ExtResource("1_n4eae")

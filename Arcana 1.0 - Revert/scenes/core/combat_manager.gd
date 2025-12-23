@@ -9,6 +9,22 @@ extends Node
 
 @export var heal_circle_vfx_scene: PackedScene
 
+# --- COMBAT FEEL / FX ---
+@export var enable_hitstop: bool = true
+@export var hitstop_time_scale: float = 0.15
+@export var hitstop_duration: float = 0.06
+
+@export var enable_screen_shake: bool = true
+@export var shake_distance: float = 6.0
+@export var shake_duration: float = 0.10
+
+# Optional VFX scenes (drop your lightning bolt here later)
+@export var hit_spark_vfx_scene: PackedScene
+@export var lightning_strike_vfx_scene: PackedScene
+
+# Where to put floating text (if null, we fall back to Main/UI)
+@export var floating_text_root_path: NodePath
+
 signal unit_died(unit)
 signal unit_attacked(attacker, defender, damage, is_counter)
 signal attack_sequence_finished(attacker)
@@ -62,6 +78,14 @@ func perform_attack(attacker, defender, is_counter: bool = false) -> void:
 # ✅ Hit react on defender (only if damage > 0)
 	if damage > 0 and defender != null and defender.has_method("play_hit_react"):
 		defender.play_hit_react()
+		
+	# ✅ FEEL FX (hit-stop, shake, numbers, sparks)
+	if damage > 0:
+		_do_hitstop()
+		_do_screen_shake()
+		_spawn_floating_text(_fx_world_pos_for_unit(defender), "-%d" % damage, false)
+		if hit_spark_vfx_scene != null:
+			_spawn_vfx_at_world(hit_spark_vfx_scene, _fx_world_pos_for_unit(defender))
 
 	var defender_survived: bool = defender.take_damage(damage)
 	if not defender_survived:
@@ -147,6 +171,9 @@ func use_skill(caster, skill: Skill, center_tile: Vector2i) -> void:
 		
 	if caster != null and caster.has_method("play_cast_anim"):
 		caster.play_cast_anim()
+	# Wind-up delay (JRPG beat) — once per cast (AoE)
+	if skill.cast_windup > 0.0:
+		await get_tree().create_timer(skill.cast_windup).timeout
 
 	if CombatLog != null:
 		CombatLog.add("%s casts %s at %s" % [caster.name, skill.name, str(center_tile)],
@@ -180,9 +207,8 @@ func use_skill(caster, skill: Skill, center_tile: Vector2i) -> void:
 		if CombatLog != null:
 			CombatLog.add("  -> affects %s" % target.name, {"type":"cast_hit", "skill": skill.name})
 
-		execute_skill_on_target(caster, target, skill)
-		if target != null and target.has_method("play_hit_react"):
-			target.play_hit_react()
+		await execute_skill_on_target(caster, target, skill, false)
+
 
 
 	# Using a skill consumes the action (for now)
@@ -223,10 +249,15 @@ func _skill_has_tag(skill: Skill, tag: StringName) -> bool:
 # ------------------------------------------------------------
 # UNIT-TARGET SKILLS (single pipeline)
 # ------------------------------------------------------------
-func execute_skill_on_target(user, target, skill: Skill) -> void:
+func execute_skill_on_target(user, target, skill: Skill, play_cast: bool = true) -> void:
 	if user == null or target == null or skill == null:
 		return
 
+	if play_cast and user != null and user.has_method("play_cast_anim"):
+		user.play_cast_anim()
+	if play_cast and skill.cast_windup > 0.0:
+		await get_tree().create_timer(skill.cast_windup).timeout
+	
 	# Combat log headline (one line per resolved target)
 	if CombatLog != null:
 		var kind: String = str(skill.effect_type)
@@ -253,8 +284,8 @@ func execute_skill_on_target(user, target, skill: Skill) -> void:
 				CombatLog.add("  -> terrain skill ignored (unit-target)", {"type":"terrain_ignored", "skill": skill.name})
 		_:
 			_apply_skill_damage(user, target, skill)
-	# tell AI / turn sequencer this skill resolution is complete
-	skill_sequence_finished.emit(user)
+
+
 
 
 
@@ -280,6 +311,7 @@ func _apply_skill_heal(user, target, skill: Skill) -> void:
 	target.hp = new_hp
 	if target.has_method("update_hp_bar"):
 		target.update_hp_bar()
+		_spawn_floating_text(_fx_world_pos_for_unit(target), "+%d" % actual_heal, true)
 
 	if CombatLog != null:
 		CombatLog.add("  -> heals %s for %d (HP %d/%d → %d/%d)" % [
@@ -322,6 +354,15 @@ func _apply_skill_damage(user, target, skill: Skill) -> void:
 
 	var before_hp: int = int(target.hp)
 	var survived: bool = target.take_damage(amount)
+
+# (optional) tiny anticipation so the bolt lands on a beat
+	if _skill_has_tag(skill, &"vfx_lightning_bolt") and lightning_strike_vfx_scene != null:
+		await get_tree().create_timer(0.06).timeout
+		_spawn_vfx_at_world(lightning_strike_vfx_scene, _fx_world_pos_for_unit(target))
+
+	_do_hitstop()
+	_do_screen_shake()
+	_spawn_floating_text(_fx_world_pos_for_unit(target), "-%d" % amount, false)
 
 	if not survived:
 		_apply_on_kill_rewards(user, target)
@@ -391,6 +432,11 @@ func execute_skill_on_tile(caster, skill: Skill, center_tile: Vector2i) -> void:
 	# Spend mana
 	caster.mana -= skill.mana_cost
 	
+	if caster != null and caster.has_method("play_cast_anim"):
+		caster.play_cast_anim()
+	if skill.cast_windup > 0.0:
+		await get_tree().create_timer(skill.cast_windup).timeout
+
 	if CombatLog != null:
 		CombatLog.add("%s casts %s at %s" % [caster.name, skill.name, str(center_tile)],
 		{"type":"cast_tile", "skill": skill.name, "tile": center_tile})
@@ -636,3 +682,105 @@ func _apply_on_kill_rewards(killer, victim) -> void:
 		if CombatLog != null:
 			CombatLog.add("%s restores %d mana (kill reward)." % [killer.name, mana_gain],
 				{"type":"mana", "source": killer.name})
+
+func _get_camera_controller() -> Node:
+	# Best: mark your Camera2D node with group "camera_controller"
+	var cam := get_tree().get_first_node_in_group("camera_controller")
+	if cam != null:
+		return cam
+
+	# Fallback: try to find a Camera2D under Main (parent)
+	var p := get_parent()
+	if p != null:
+		# If your camera is literally named "Camera2D"
+		var c := p.get_node_or_null("Camera2D")
+		if c != null:
+			return c
+	return null
+
+func _fx_world_pos_for_unit(u) -> Vector2:
+	if u is Node2D:
+		return (u as Node2D).global_position
+	return Vector2.ZERO
+
+func _spawn_vfx_at_world(scene: PackedScene, world_pos: Vector2) -> void:
+	if scene == null:
+		return
+	var v := scene.instantiate()
+	if v == null:
+		return
+	if v is Node2D:
+		(v as Node2D).global_position = world_pos
+
+	# Prefer TerrainEffects root if it exists (you already use it for heal circle)
+	if terrain_effects_root != null:
+		terrain_effects_root.add_child(v)
+	else:
+		add_child(v)
+
+func _do_hitstop() -> void:
+	if not enable_hitstop:
+		return
+	# Avoid stacking hitstop calls in the same moment
+	if Engine.time_scale < 1.0:
+		return
+	Engine.time_scale = hitstop_time_scale
+	call_deferred("_end_hitstop_deferred")
+
+func _end_hitstop_deferred() -> void:
+	await get_tree().create_timer(hitstop_duration, true).timeout
+	Engine.time_scale = 1.0
+
+func _find_camera_2d() -> Node:
+	# Try common patterns. Add your camera to a group "camera" if you want it deterministic.
+	var cam := get_tree().get_first_node_in_group("camera")
+	if cam != null:
+		return cam
+	var main := get_parent()
+	if main != null:
+		var c := main.get_node_or_null("Camera2D")
+		if c != null:
+			return c
+	return null
+
+func _do_screen_shake() -> void:
+	if not enable_screen_shake:
+		return
+	var cam := _get_camera_controller()
+	if cam != null and cam.has_method("shake"):
+		cam.call("shake", shake_distance, shake_duration)
+
+
+func _get_floating_text_root() -> Node:
+	if floating_text_root_path != NodePath():
+		var n := get_node_or_null(floating_text_root_path)
+		if n != null:
+			return n
+	# Fallback: try parent (Main) then self
+	var p := get_parent()
+	return p if p != null else self
+
+func _spawn_floating_text(world_pos: Vector2, text: String, is_heal: bool) -> void:
+	var root := _get_floating_text_root()
+	if root == null:
+		return
+
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.z_index = 999
+	lbl.modulate = Color(0.6, 1.0, 0.6, 1.0) if is_heal else Color(1.0, 0.8, 0.8, 1.0)
+
+	# Put it in world space if root is Node2D, otherwise screen-ish
+	if root is Node2D:
+		(root as Node2D).add_child(lbl)
+		lbl.global_position = world_pos
+	else:
+		root.add_child(lbl)
+		lbl.position = world_pos
+
+	var up := Vector2(0, -20)
+	var t := create_tween()
+	t.set_parallel(true)
+	t.tween_property(lbl, "position", lbl.position + up, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	t.tween_property(lbl, "modulate:a", 0.0, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	t.finished.connect(func(): if is_instance_valid(lbl): lbl.queue_free(), CONNECT_ONE_SHOT)

@@ -37,7 +37,7 @@ animations = [{
 "duration": 1.0,
 "texture": ExtResource("9_w1s6p")
 }],
-"loop": true,
+"loop": false,
 "name": &"lightningbolt",
 "speed": 8.0
 }]
@@ -51,4 +51,4 @@ texture_repeat = 1
 position = Vector2(16, 16)
 sprite_frames = SubResource("SpriteFrames_8fnjt")
 animation = &"lightningbolt"
-speed_scale = 0.5
+offset = Vector2(0, -32)
