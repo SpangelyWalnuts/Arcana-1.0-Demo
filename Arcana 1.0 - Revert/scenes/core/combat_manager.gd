@@ -17,13 +17,26 @@ extends Node
 @export var enable_screen_shake: bool = true
 @export var shake_distance: float = 6.0
 @export var shake_duration: float = 0.10
+@export var cast_dim_min_visible: float = 0.08 # seconds (tweak 0.06–0.12)
+var _cast_dim_on_time_sec: float = -1.0
+@export var impact_flash_alpha: float = 0.12
+@export var impact_flash_time: float = 0.08
+@export var cast_dim_post_impact_hold: float = 0.10
+@export var target_overlay_fade_out: float = 0.5
+var _cast_flash_done: bool = false
 
 # Optional VFX scenes (drop your lightning bolt here later)
+@export var top_fx_root_path: NodePath
 @export var hit_spark_vfx_scene: PackedScene
 @export var lightning_strike_vfx_scene: PackedScene
-
+@export var target_pulse_light_scene: PackedScene
+@export var target_outline_shader: ShaderMaterial # assign outline_flow.tres here
 # Where to put floating text (if null, we fall back to Main/UI)
 @export var floating_text_root_path: NodePath
+
+@export var screen_fx_path: NodePath
+
+var _target_outline_overlays: Array[Node2D] = []
 
 signal unit_died(unit)
 signal unit_attacked(attacker, defender, damage, is_counter)
@@ -148,70 +161,95 @@ func use_skill(caster, skill: Skill, center_tile: Vector2i) -> void:
 		print(caster.name, "does not have enough mana for", skill.name)
 		return
 
-	# Range check: can we target this center tile?
+	# Range check
 	var dist_to_center: int = abs(caster.grid_position.x - center_tile.x) + abs(caster.grid_position.y - center_tile.y)
 	if dist_to_center > skill.cast_range:
 		print("Target tile out of cast range for", skill.name)
 		return
 
-	# Compute AoE tiles
+	# Compute AoE tiles + units
 	var affected_tiles: Array[Vector2i] = _get_aoe_tiles(center_tile, skill.aoe_radius)
-
-	# Find units on those tiles
 	var units_in_area: Array = _get_units_on_tiles(affected_tiles)
 
 	if units_in_area.is_empty():
 		print("No targets in skill area for", skill.name)
 		return
 
+	# ✅ INSERT A: Build final target list + apply outline NOW (before windup)
+	var valid_targets: Array = []
+	_clear_target_outline_overlays()
+	for t in units_in_area:
+		if t == null:
+			continue
+		if not _skill_can_affect_target(caster, t, skill):
+			continue
+		if skill.effect_type == Skill.EffectType.TERRAIN:
+			continue
+		valid_targets.append(t)
+
+	if valid_targets.is_empty():
+		print("No valid targets in skill area for", skill.name)
+		return
+
+	_clear_target_outline_overlays()
+	for t in valid_targets:
+		var ov := _spawn_target_outline_overlay(t)
+		if ov != null:
+			_target_outline_overlays.append(ov)
+
+	# Turn outlines on (flow outline)
+	var outlined: Array = []
+	for t in valid_targets:
+		if t.has_method("set_outline_enabled"):
+			t.call("set_outline_enabled", true, Color(0.2, 0.8, 1.0, 1.0))
+			outlined.append(t)
+
 	# Pay mana
 	caster.mana -= skill.mana_cost
 	print(caster.name, "casts", skill.name, "on", center_tile,
 		" (mana:", caster.mana, "/", caster.max_mana, ")")
-		
-	if caster != null and caster.has_method("play_cast_anim"):
+
+	if caster.has_method("play_cast_anim"):
 		caster.play_cast_anim()
-	# Wind-up delay (JRPG beat) — once per cast (AoE)
+
+	await _screen_fx_begin_cast()
+
+	# Wind-up delay (JRPG beat) — once per cast
 	if skill.cast_windup > 0.0:
 		await get_tree().create_timer(skill.cast_windup).timeout
+
+	await _screen_fx_impact_flash_once()
 
 	if CombatLog != null:
 		CombatLog.add("%s casts %s at %s" % [caster.name, skill.name, str(center_tile)],
 			{"type":"cast", "skill": skill.name, "tile": center_tile, "aoe": int(skill.aoe_radius)})
-# VFX: healing circle at AoE center (plays once)
+
+	# VFX: healing circle at AoE center (plays once)
 	if skill.effect_type == Skill.EffectType.HEAL and heal_circle_vfx_scene != null:
 		var vfx := heal_circle_vfx_scene.instantiate()
-
 		var world_pos: Vector2 = Vector2.ZERO
 		if grid != null and grid.has_method("tile_to_world"):
 			world_pos = grid.tile_to_world(center_tile)
-
 		if vfx is Node2D:
 			(vfx as Node2D).global_position = world_pos
-
-	# ✅ IMPORTANT: add it to the scene tree so it renders
 		if terrain_effects_root != null:
 			terrain_effects_root.add_child(vfx)
 		else:
 			add_child(vfx)
 
-	# Apply effect per unit using the SAME pipeline as unit-target skills.
-	for target in units_in_area:
-		if not _skill_can_affect_target(caster, target, skill):
-			continue
-
-		# Terrain skills shouldn't resolve "on units" here (tile-terrain handled elsewhere)
-		if skill.effect_type == Skill.EffectType.TERRAIN:
-			continue
-
+	# ✅ INSERT B: Loop ONLY valid targets (no extra filtering needed)
+	for target in valid_targets:
 		if CombatLog != null:
 			CombatLog.add("  -> affects %s" % target.name, {"type":"cast_hit", "skill": skill.name})
 
 		await execute_skill_on_target(caster, target, skill, false)
 
+	# ✅ INSERT C: Clear outlines BEFORE undim
+	for t in outlined:
+		if t != null and is_instance_valid(t) and t.has_method("set_outline_enabled"):
+			t.call("set_outline_enabled", false)
 
-
-	# Using a skill consumes the action (for now)
+	# Using a skill consumes the action
 	caster.has_acted = true
 	if caster.has_node("Sprite2D"):
 		caster.get_node("Sprite2D").modulate = Color.WHITE
@@ -219,6 +257,8 @@ func use_skill(caster, skill: Skill, center_tile: Vector2i) -> void:
 	if _all_player_units_have_acted():
 		turn_manager.end_turn()
 
+	_clear_target_outline_overlays()
+	await _screen_fx_end_cast()
 	skill_sequence_finished.emit(caster)
 
 
@@ -253,11 +293,29 @@ func execute_skill_on_target(user, target, skill: Skill, play_cast: bool = true)
 	if user == null or target == null or skill == null:
 		return
 
-	if play_cast and user != null and user.has_method("play_cast_anim"):
-		user.play_cast_anim()
-	if play_cast and skill.cast_windup > 0.0:
-		await get_tree().create_timer(skill.cast_windup).timeout
-	
+	if play_cast:
+		if user.has_method("play_cast_anim"):
+			user.play_cast_anim()
+
+		await _screen_fx_begin_cast()
+		
+		_clear_target_outline_overlays()
+		var ov := _spawn_target_outline_overlay(target)
+		if ov != null:
+			_target_outline_overlays.append(ov)
+
+		if target != null and target.has_method("set_outline_enabled"):
+			target.call("set_outline_enabled", true, Color(0.2, 0.8, 1.0, 1.0))
+
+		if target_pulse_light_scene != null:
+			_spawn_vfx_at_world(target_pulse_light_scene, _fx_world_pos_for_unit(target), false)
+
+		if skill.cast_windup > 0.0:
+			await get_tree().create_timer(skill.cast_windup).timeout
+
+		# flash once at impact moment
+		await _screen_fx_impact_flash_once()
+
 	# Combat log headline (one line per resolved target)
 	if CombatLog != null:
 		var kind: String = str(skill.effect_type)
@@ -285,8 +343,13 @@ func execute_skill_on_target(user, target, skill: Skill, play_cast: bool = true)
 		_:
 			_apply_skill_damage(user, target, skill)
 
+	if play_cast:
+		# Turn off outline first so it doesn't linger during undim
+		if target != null and target.has_method("set_outline_enabled"):
+			target.call("set_outline_enabled", false)
 
-
+		_clear_target_outline_overlays()
+		await _screen_fx_end_cast()
 
 
 func _apply_skill_heal(user, target, skill: Skill) -> void:
@@ -358,7 +421,7 @@ func _apply_skill_damage(user, target, skill: Skill) -> void:
 # (optional) tiny anticipation so the bolt lands on a beat
 	if _skill_has_tag(skill, &"vfx_lightning_bolt") and lightning_strike_vfx_scene != null:
 		await get_tree().create_timer(0.06).timeout
-		_spawn_vfx_at_world(lightning_strike_vfx_scene, _fx_world_pos_for_unit(target))
+		_spawn_vfx_at_world(lightning_strike_vfx_scene, _fx_world_pos_for_unit(target), true)
 
 	_do_hitstop()
 	_do_screen_shake()
@@ -434,6 +497,9 @@ func execute_skill_on_tile(caster, skill: Skill, center_tile: Vector2i) -> void:
 	
 	if caster != null and caster.has_method("play_cast_anim"):
 		caster.play_cast_anim()
+
+	_screen_fx_set_cast_dim(true)
+	await get_tree().process_frame
 	if skill.cast_windup > 0.0:
 		await get_tree().create_timer(skill.cast_windup).timeout
 
@@ -460,6 +526,7 @@ func execute_skill_on_tile(caster, skill: Skill, center_tile: Vector2i) -> void:
 
 		caster.has_acted = true
 		skill_sequence_finished.emit(caster)
+		_screen_fx_set_cast_dim(false)
 		return
 
 	if CombatLog != null:
@@ -469,6 +536,7 @@ func execute_skill_on_tile(caster, skill: Skill, center_tile: Vector2i) -> void:
 	# Otherwise: tile modifier (vines now; later fire, ice, poison, etc.)
 	_apply_tile_modifier_on_tiles(skill, tiles, caster)
 
+	_screen_fx_set_cast_dim(false)
 	caster.has_acted = true
 
 
@@ -703,16 +771,24 @@ func _fx_world_pos_for_unit(u) -> Vector2:
 		return (u as Node2D).global_position
 	return Vector2.ZERO
 
-func _spawn_vfx_at_world(scene: PackedScene, world_pos: Vector2) -> void:
+func _spawn_vfx_at_world(scene: PackedScene, world_pos: Vector2, undimmed: bool = false) -> void:
 	if scene == null:
 		return
+
 	var v := scene.instantiate()
 	if v == null:
 		return
+
 	if v is Node2D:
 		(v as Node2D).global_position = world_pos
 
-	# Prefer TerrainEffects root if it exists (you already use it for heal circle)
+	if undimmed:
+		var top := _get_top_fx_root()
+		if top != null:
+			top.add_child(v)
+			return
+
+	# default: regular world VFX root
 	if terrain_effects_root != null:
 		terrain_effects_root.add_child(v)
 	else:
@@ -784,3 +860,146 @@ func _spawn_floating_text(world_pos: Vector2, text: String, is_heal: bool) -> vo
 	t.tween_property(lbl, "position", lbl.position + up, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	t.tween_property(lbl, "modulate:a", 0.0, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	t.finished.connect(func(): if is_instance_valid(lbl): lbl.queue_free(), CONNECT_ONE_SHOT)
+
+func _screen_fx_set_cast_dim(on: bool) -> void:
+	if screen_fx_path == NodePath():
+		return
+
+	var fx := get_node_or_null(screen_fx_path)
+	if fx == null or not fx.has_method("set_cast_dim"):
+		return
+
+	if on:
+		_cast_dim_on_time_sec = Time.get_ticks_msec() / 1000.0
+		fx.call("set_cast_dim", true)
+	else:
+		# Ensure dim stays visible for at least cast_dim_min_visible
+		if _cast_dim_on_time_sec >= 0.0 and cast_dim_min_visible > 0.0:
+			var now := Time.get_ticks_msec() / 1000.0
+			var elapsed := now - _cast_dim_on_time_sec
+			var remaining := cast_dim_min_visible - elapsed
+			if remaining > 0.0:
+				await get_tree().create_timer(remaining).timeout
+
+		fx.call("set_cast_dim", false)
+		_cast_dim_on_time_sec = -1.0
+
+func _screen_fx_begin_cast() -> void:
+	_cast_flash_done = false
+	_screen_fx_set_cast_dim(true)
+	# ensure at least one frame so dim becomes visible even on instant casts
+	await get_tree().process_frame
+
+func _screen_fx_impact_flash_once() -> void:
+	if _cast_flash_done:
+		return
+	_cast_flash_done = true
+
+	if screen_fx_path == NodePath():
+		return
+	var fx := get_node_or_null(screen_fx_path)
+	if fx != null and fx.has_method("impact_flash"):
+		fx.call("impact_flash", impact_flash_alpha, impact_flash_time)
+		# let the flash play (small, but helps the beat)
+		await get_tree().create_timer(impact_flash_time).timeout
+
+func _screen_fx_end_cast() -> void:
+	# hold dim briefly so the impact is readable (snow maps!)
+	if cast_dim_post_impact_hold > 0.0:
+		await get_tree().create_timer(cast_dim_post_impact_hold).timeout
+	await _screen_fx_set_cast_dim(false) # your min-visible-aware off
+
+func _screen_fx_impact_flash() -> void:
+	if screen_fx_path == NodePath():
+		return
+	var fx := get_node_or_null(screen_fx_path)
+	if fx == null:
+		return
+	if fx.has_method("impact_flash"):
+		fx.call("impact_flash", impact_flash_alpha, impact_flash_time)
+		# wait for the flash to complete so sequencing feels right
+		await get_tree().create_timer(impact_flash_time).timeout
+
+func _screen_fx_set_cast_dim_off_after_min() -> void:
+	# ensure at least one frame so the impact is seen under dim
+	await get_tree().process_frame
+	if cast_dim_post_impact_hold > 0.0:
+		await get_tree().create_timer(cast_dim_post_impact_hold).timeout
+	await _screen_fx_set_cast_dim(false) # your min-visible dim-aware version
+
+func _get_top_fx_root() -> Node:
+	if top_fx_root_path == NodePath():
+		return null
+	return get_node_or_null(top_fx_root_path)
+
+func _spawn_target_outline_overlay(target) -> Node2D:
+	if target == null:
+		return null
+
+	var top: Node = _get_top_fx_root()
+	if top == null:
+		return null
+
+	# Grab the target's AnimatedSprite2D
+	var src_node: Node = target.get_node_or_null("AnimatedSprite2D")
+	if src_node == null or not (src_node is AnimatedSprite2D):
+		return null
+	var src_anim: AnimatedSprite2D = src_node as AnimatedSprite2D
+
+	# Create overlay sprite
+	var overlay := AnimatedSprite2D.new()
+	overlay.modulate.a = 1.0
+	overlay.sprite_frames = src_anim.sprite_frames
+	overlay.animation = src_anim.animation
+	overlay.frame = src_anim.frame
+	overlay.frame_progress = src_anim.frame_progress
+	overlay.flip_h = src_anim.flip_h
+	overlay.flip_v = src_anim.flip_v
+	overlay.scale = src_anim.scale  # use LOCAL scale (not global)
+
+# Pixel-art filtering
+	overlay.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	overlay.texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
+
+# Snap to pixels to avoid blur
+	overlay.global_position = src_anim.global_position.round()
+	overlay.global_rotation = src_anim.global_rotation
+	overlay.z_index = 999
+
+# Animate
+	overlay.play(overlay.animation)
+	overlay.speed_scale = src_anim.speed_scale
+
+
+	# Apply outline shader (duplicate so params are per-instance)
+	if target_outline_shader != null:
+		var mat := target_outline_shader.duplicate() as ShaderMaterial
+		overlay.material = mat
+		mat.set_shader_parameter("enabled", true)
+		# You can tweak this per spell type later
+		mat.set_shader_parameter("outline_color", Color(0.2, 0.8, 1.0, 1.0))
+
+	top.add_child(overlay)
+	return overlay
+
+func _clear_target_outline_overlays() -> void:
+	for o in _target_outline_overlays:
+		if o == null or not is_instance_valid(o):
+			continue
+
+		# If fade is 0, just remove immediately
+		if target_overlay_fade_out <= 0.0:
+			o.queue_free()
+			continue
+
+		# Prevent double-fading
+		if o.has_meta(&"fading_out"):
+			continue
+		o.set_meta(&"fading_out", true)
+
+		var t := o.create_tween()
+		t.tween_property(o, "modulate:a", 0.0, target_overlay_fade_out)\
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		t.tween_callback(o.queue_free)
+
+	_target_outline_overlays.clear()

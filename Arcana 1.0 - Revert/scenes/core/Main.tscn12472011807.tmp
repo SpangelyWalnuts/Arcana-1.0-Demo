@@ -1,4 +1,4 @@
-[gd_scene load_steps=75 format=3 uid="uid://n3fdkibgiero"]
+[gd_scene load_steps=73 format=3 uid="uid://n3fdkibgiero"]
 
 [ext_resource type="Script" uid="uid://h2yfgpr5nkon" path="res://scripts/core/Main.gd" id="1_v0fxp"]
 [ext_resource type="PackedScene" uid="uid://dtcrbthviju4m" path="res://scenes/ui/SelectionRing.tscn" id="2_8kqbm"]
@@ -29,8 +29,6 @@
 [ext_resource type="Texture2D" uid="uid://b1ff2vn56sd5f" path="res://art/animations/highlight/Yellow Highlight/Yellow Highlight7.png" id="19_leefl"]
 [ext_resource type="Texture2D" uid="uid://d1mwiv5y4wvhh" path="res://art/animations/highlight/Yellow Highlight/Yellow Highlight8.png" id="20_8kqbm"]
 [ext_resource type="PackedScene" uid="uid://bcbv3m3l22drh" path="res://scenes/arcana/LightningBolt.tscn" id="24_oh68v"]
-[ext_resource type="PackedScene" uid="uid://cvl280pjarm5v" path="res://vfx/TargetPulseLight.tscn" id="26_wldt1"]
-[ext_resource type="Material" uid="uid://dcacfaxebymha" path="res://shaders/outline_flow.tres" id="27_7r7ay"]
 [ext_resource type="Texture2D" uid="uid://rax4vkjh37l5" path="res://art/ui/text backgrounds/Banner 96 x 32.png" id="30_grs5f"]
 [ext_resource type="PackedScene" uid="uid://nlciohyc66th" path="res://scenes/arcana/HealingCircle.tscn" id="31_kylyq"]
 [ext_resource type="Texture2D" uid="uid://rp2hu8jppu4k" path="res://art/ui/Big Square Background 96 by 64.png" id="32_leefl"]
@@ -157,11 +155,8 @@ range_tile_scene = ExtResource("3_ld2r7")
 attack_tile_scene = ExtResource("4_nxm05")
 
 [node name="ScreenFX" type="CanvasLayer" parent="."]
-layer = 10
 script = ExtResource("60_bwyab")
-cast_dim_alpha = 0.75
-cast_dim_in_time = 0.4
-cast_dim_out_time = 0.4
+cast_dim_in_time = 0.1
 
 [node name="CastDimmer" type="ColorRect" parent="ScreenFX"]
 custom_minimum_size = Vector2(1280, 720)
@@ -172,12 +167,6 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 0)
-
-[node name="TopFXLayer" type="CanvasLayer" parent="."]
-layer = 11
-follow_viewport_enabled = true
-
-[node name="TopFX" type="Node2D" parent="TopFXLayer"]
 
 [node name="MapGenerator" type="Node" parent="." node_paths=PackedStringArray("terrain")]
 script = ExtResource("6_57s6d")
@@ -229,19 +218,9 @@ script = ExtResource("10_d7485")
 [node name="CombatManager" type="Node" parent="."]
 script = ExtResource("11_dau2k")
 heal_circle_vfx_scene = ExtResource("31_kylyq")
-cast_dim_min_visible = 0.12
-cast_dim_post_impact_hold = 0.4
-top_fx_root_path = NodePath("../TopFXLayer/TopFX")
 lightning_strike_vfx_scene = ExtResource("24_oh68v")
-target_pulse_light_scene = ExtResource("26_wldt1")
-target_outline_shader = ExtResource("27_7r7ay")
 floating_text_root_path = NodePath("../FloatingTextRoot")
 screen_fx_path = NodePath("../ScreenFX")
-
-[node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("terrain") groups=["camera_controller"]]
-zoom = Vector2(2.5, 2.5)
-script = ExtResource("16_tupnw")
-terrain = NodePath("../Grid/Terrain")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
@@ -692,6 +671,11 @@ custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 size_flags_vertical = 3
 bbcode_enabled = true
+
+[node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("terrain") groups=["camera_controller"]]
+zoom = Vector2(2.5, 2.5)
+script = ExtResource("16_tupnw")
+terrain = NodePath("../Grid/Terrain")
 
 [node name="SFX" type="Node2D" parent="."]
 

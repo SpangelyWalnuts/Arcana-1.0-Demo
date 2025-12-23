@@ -1,0 +1,12 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://dcacfaxebymha"]
+
+[ext_resource type="Shader" uid="uid://cg84seky7fqij" path="res://shaders/outline_flow.gdshader" id="1_sqo2n"]
+
+[resource]
+shader = ExtResource("1_sqo2n")
+shader_parameter/enabled = true
+shader_parameter/outline_color = Color(0.9247396, 0.0011135531, 0.98303086, 1)
+shader_parameter/outline_size = 1.0
+shader_parameter/pulse_speed = 4.0
+shader_parameter/pulse_amount = 0.35
+shader_parameter/base_strength = 1.0

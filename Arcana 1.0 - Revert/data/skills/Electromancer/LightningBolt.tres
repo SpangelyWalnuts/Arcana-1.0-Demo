@@ -14,3 +14,5 @@ target_type = 1
 tags = Array[StringName]([&"lightning", &"vfx_lightning_bolt"])
 duration_turns = 2
 icon_texture = ExtResource("1_n4eae")
+cast_windup = 1.0
+impact_pause = 0.15

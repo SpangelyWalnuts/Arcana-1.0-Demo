@@ -14,3 +14,4 @@ flat_power = 1
 target_type = 1
 tags = Array[StringName]([&"fire"])
 icon_texture = ExtResource("1_wub75")
+cast_windup = 1.0

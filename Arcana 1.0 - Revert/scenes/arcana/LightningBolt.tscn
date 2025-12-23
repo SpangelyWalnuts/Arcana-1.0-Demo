@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://bcbv3m3l22drh"]
+[gd_scene load_steps=13 format=3 uid="uid://bcbv3m3l22drh"]
 
 [ext_resource type="Script" uid="uid://b1s4lwaj4dvdw" path="res://scripts/animations/arcana/electromancer/lightningboltanim.gd" id="1_luwpe"]
 [ext_resource type="Texture2D" uid="uid://bf2jghhrqb1cn" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt1.png" id="2_luwpe"]
@@ -9,13 +9,11 @@
 [ext_resource type="Texture2D" uid="uid://yuxno108qtq" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt6.png" id="7_bhutm"]
 [ext_resource type="Texture2D" uid="uid://bvugeyx4hrhwl" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt7.png" id="8_8yvrq"]
 [ext_resource type="Texture2D" uid="uid://4m4wsm47tuk1" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt8.png" id="9_w1s6p"]
+[ext_resource type="Texture2D" uid="uid://ptcjdkn0dv7q" path="res://art/ui/Selection.png" id="10_kettf"]
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_8fnjt"]
 animations = [{
 "frames": [{
-"duration": 1.0,
-"texture": ExtResource("2_luwpe")
-}, {
 "duration": 1.0,
 "texture": ExtResource("3_kettf")
 }, {
@@ -27,6 +25,9 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("6_ly42j")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_luwpe")
 }, {
 "duration": 1.0,
 "texture": ExtResource("7_bhutm")
@@ -42,6 +43,10 @@ animations = [{
 "speed": 8.0
 }]
 
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_kettf"]
+blend_mode = 1
+light_mode = 1
+
 [node name="Node2D" type="Node2D"]
 script = ExtResource("1_luwpe")
 
@@ -51,4 +56,19 @@ texture_repeat = 1
 position = Vector2(16, 16)
 sprite_frames = SubResource("SpriteFrames_8fnjt")
 animation = &"lightningbolt"
+frame = 7
+frame_progress = 1.0
 offset = Vector2(0, -32)
+
+[node name="ImpactLight" type="PointLight2D" parent="."]
+modulate = Color(1, 0.6215225, 0.9885413, 1)
+texture_filter = 1
+texture_repeat = 1
+material = SubResource("CanvasItemMaterial_kettf")
+color = Color(0.827451, 0.60784316, 1, 1)
+energy = 0.8
+range_z_min = 0
+range_z_max = 220
+texture = ExtResource("10_kettf")
+offset = Vector2(16, 16)
+texture_scale = 2.0

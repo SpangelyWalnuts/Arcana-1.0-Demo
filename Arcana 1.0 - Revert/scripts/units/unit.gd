@@ -9,7 +9,8 @@ var level: int = 1
 var exp: int = 0
 var unit_data: UnitData = null
 
-
+@export var visuals_path: NodePath = NodePath("AnimatedSprite2D")
+var _outline_mat: ShaderMaterial
 @export var unit_class: UnitClass
 @export var is_active: bool = true
 @export var attack_anim_name: StringName = &"attack"
@@ -575,3 +576,33 @@ func play_hit_react() -> void:
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	tween.tween_property(s, "modulate", orig, 0.08)\
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+
+func _get_visuals() -> CanvasItem:
+	var v := get_node_or_null(visuals_path)
+	if v != null and v is CanvasItem:
+		return v
+	# fallback: try common names
+	for n in ["Anim", "AnimatedSprite2D", "Sprite2D"]:
+		var t := get_node_or_null(n)
+		if t != null and t is CanvasItem:
+			return t
+	return null
+
+func set_outline_enabled(on: bool, color: Color = Color(0.2, 0.8, 1.0, 1.0)) -> void:
+	var vis := _get_visuals()
+	if vis == null:
+		return
+
+	# Lazily create/duplicate a material instance per unit
+	if _outline_mat == null:
+		# Load the shared ShaderMaterial and duplicate so params are per-unit
+		var base := load("res://shaders/outline_flow.tres")
+		if base is ShaderMaterial:
+			_outline_mat = (base as ShaderMaterial).duplicate() as ShaderMaterial
+			vis.material = _outline_mat
+
+	if _outline_mat == null:
+		return
+
+	_outline_mat.set_shader_parameter("enabled", on)
+	_outline_mat.set_shader_parameter("outline_color", color)
