@@ -98,6 +98,7 @@ const STARTING_UNIT_CLASS_PATHS := [
 	"res://data/unit_classes/Cryomancer.tres",
 	"res://data/unit_classes/Shaman.tres",
 	"res://data/unit_classes/Electromancer.tres",
+	"res://data/unit_classes/Hydromancer.tres",
 ]
 
 # If/when you add a dedicated draft UI scene:

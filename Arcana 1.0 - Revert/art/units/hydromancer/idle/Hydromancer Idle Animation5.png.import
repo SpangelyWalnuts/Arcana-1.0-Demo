@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dohdap1fk0eus"
-path="res://.godot/imported/Alchemist_Map_Sprite.png-af53bc26aff36ccc175a54d55e6c5f58.ctex"
+uid="uid://jf8bp6mpcncy"
+path="res://.godot/imported/Hydromancer Idle Animation5.png-e547477612887ba7bebf7f5d27138d16.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/Alchemist_Map_Sprite.png"
-dest_files=["res://.godot/imported/Alchemist_Map_Sprite.png-af53bc26aff36ccc175a54d55e6c5f58.ctex"]
+source_file="res://art/units/hydromancer/idle/Hydromancer Idle Animation5.png"
+dest_files=["res://.godot/imported/Hydromancer Idle Animation5.png-e547477612887ba7bebf7f5d27138d16.ctex"]
 
 [params]
 

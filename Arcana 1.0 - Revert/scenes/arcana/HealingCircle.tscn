@@ -1,6 +1,6 @@
 [gd_scene load_steps=35 format=3 uid="uid://nlciohyc66th"]
 
-[ext_resource type="Script" uid="uid://bcmp5loxa3yvq" path="res://healingcircleanim.gd" id="1_qgl5a"]
+[ext_resource type="Script" uid="uid://bcmp5loxa3yvq" path="res://scripts/animations/arcana/cleric/healingcircleanim.gd" id="1_qgl5a"]
 [ext_resource type="Texture2D" uid="uid://bruhqn58kc7ys" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle1.png" id="2_f4d1m"]
 [ext_resource type="Texture2D" uid="uid://b3p4s5p7w80gb" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle2.png" id="3_s02c5"]
 [ext_resource type="Texture2D" uid="uid://cw317kd31ghds" path="res://art/animations/arcana/cleric/HealingCircle/Healing Circle3.png" id="4_gmd00"]

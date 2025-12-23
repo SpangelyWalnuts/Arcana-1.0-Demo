@@ -1,0 +1,54 @@
+[gd_scene load_steps=11 format=3 uid="uid://bcbv3m3l22drh"]
+
+[ext_resource type="Script" uid="uid://b1s4lwaj4dvdw" path="res://scripts/animations/arcana/electromancer/lightningboltanim.gd" id="1_luwpe"]
+[ext_resource type="Texture2D" uid="uid://bf2jghhrqb1cn" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt1.png" id="2_luwpe"]
+[ext_resource type="Texture2D" uid="uid://buenhyh31302o" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt2.png" id="3_kettf"]
+[ext_resource type="Texture2D" uid="uid://cb2uunvveo7kh" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt3.png" id="4_u88i1"]
+[ext_resource type="Texture2D" uid="uid://cpvx43aomelj2" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt4.png" id="5_phb5i"]
+[ext_resource type="Texture2D" uid="uid://clsb7rmgy2scd" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt5.png" id="6_ly42j"]
+[ext_resource type="Texture2D" uid="uid://yuxno108qtq" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt6.png" id="7_bhutm"]
+[ext_resource type="Texture2D" uid="uid://bvugeyx4hrhwl" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt7.png" id="8_8yvrq"]
+[ext_resource type="Texture2D" uid="uid://4m4wsm47tuk1" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt8.png" id="9_w1s6p"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_8fnjt"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_luwpe")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_kettf")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_u88i1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_phb5i")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_ly42j")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_bhutm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_8yvrq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_w1s6p")
+}],
+"loop": true,
+"name": &"lightningbolt",
+"speed": 8.0
+}]
+
+[node name="Node2D" type="Node2D"]
+script = ExtResource("1_luwpe")
+
+[node name="Anim" type="AnimatedSprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(16, 16)
+sprite_frames = SubResource("SpriteFrames_8fnjt")
+animation = &"lightningbolt"
+speed_scale = 0.5

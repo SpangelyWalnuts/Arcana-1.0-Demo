@@ -1,5 +1,6 @@
-[gd_resource type="Resource" script_class="Equipment" load_steps=2 format=3 uid="uid://dvtuk0qkija1f"]
+[gd_resource type="Resource" script_class="Equipment" load_steps=3 format=3 uid="uid://dvtuk0qkija1f"]
 
+[ext_resource type="Texture2D" uid="uid://cdgeeye7od1v3" path="res://art/equipment/legendary/Miracle Idol.png" id="1_4ym5a"]
 [ext_resource type="Script" uid="uid://bnsyp2yvudsd2" path="res://scripts/data/equipment.gd" id="2_21741"]
 
 [resource]
@@ -7,4 +8,5 @@ script = ExtResource("2_21741")
 name = "Miracle Idol"
 description = "Wielder is immune to all debuffs."
 rarity = "Legendary"
+icon_texture = ExtResource("1_4ym5a")
 immune_negative_statuses = true

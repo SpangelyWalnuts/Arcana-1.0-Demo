@@ -1,4 +1,4 @@
-[gd_scene load_steps=70 format=3 uid="uid://n3fdkibgiero"]
+[gd_scene load_steps=71 format=3 uid="uid://n3fdkibgiero"]
 
 [ext_resource type="Script" uid="uid://h2yfgpr5nkon" path="res://scripts/core/Main.gd" id="1_v0fxp"]
 [ext_resource type="PackedScene" uid="uid://dtcrbthviju4m" path="res://scenes/ui/SelectionRing.tscn" id="2_8kqbm"]
@@ -38,6 +38,7 @@
 [ext_resource type="PackedScene" uid="uid://daxq4r3e6lfcn" path="res://scenes/ui/LevelUpPanel.tscn" id="39_chcsr"]
 [ext_resource type="Texture2D" uid="uid://mdxd06352mgu" path="res://art/ui/Small Turn BAckground 48 x 32.png" id="39_leefl"]
 [ext_resource type="PackedScene" uid="uid://5644a5ai3ea6" path="res://scenes/ui/CombatLogPanel.tscn" id="42_8kqbm"]
+[ext_resource type="Resource" uid="uid://docpmxpg6rvjj" path="res://data/unit_classes/Hydromancer.tres" id="42_j8vbb"]
 [ext_resource type="Script" uid="uid://bf87e28tdo73f" path="res://scripts/core/enemy_spawn_manager.gd" id="43_q8d2n"]
 [ext_resource type="Resource" uid="uid://dy0tp2axtcqvr" path="res://data/unit_classes/Pyromancer.tres" id="45_gnjag"]
 [ext_resource type="Resource" uid="uid://bjrnn7q0lcs5g" path="res://data/unit_classes/Electromancer.tres" id="46_leefl"]
@@ -675,8 +676,8 @@ grid = NodePath("../Grid")
 units_root = NodePath("../Units")
 enemy_unit_scene = ExtResource("2_dau2k")
 enemies_per_floor = 10
-offense_classes = [ExtResource("46_leefl"), ExtResource("45_gnjag")]
-defense_classes = [ExtResource("48_kylyq"), ExtResource("47_8kqbm")]
+offense_classes = [ExtResource("46_leefl"), ExtResource("45_gnjag"), ExtResource("42_j8vbb")]
+defense_classes = [ExtResource("47_8kqbm"), ExtResource("48_kylyq")]
 support_classes = [ExtResource("51_oh68v"), ExtResource("52_bwyab"), ExtResource("49_0l231")]
 offense_profiles = Array[ExtResource("47_do1pq")]([ExtResource("48_leefl"), ExtResource("50_0l231"), ExtResource("51_j8vbb")])
 defense_profiles = Array[ExtResource("47_do1pq")]([ExtResource("49_8kqbm"), ExtResource("50_kylyq"), ExtResource("51_0l231"), ExtResource("54_0l231")])

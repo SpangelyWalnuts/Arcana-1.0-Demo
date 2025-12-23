@@ -1,0 +1,64 @@
+[gd_resource type="Resource" script_class="UnitClass" load_steps=14 format=3 uid="uid://docpmxpg6rvjj"]
+
+[ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_lbj4l"]
+[ext_resource type="Texture2D" uid="uid://cfpja35qfvwbu" path="res://art/units/hydromancer/Hydromancer Icon.png" id="1_ljoqv"]
+[ext_resource type="Texture2D" uid="uid://gnhrl6y5sud6" path="res://art/units/hydromancer/idle/Hydromancer Idle Animation1.png" id="1_sgdo7"]
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="2_30r5q"]
+[ext_resource type="Texture2D" uid="uid://3mapqhkpxgy0" path="res://art/units/hydromancer/idle/Hydromancer Idle Animation2.png" id="2_ljoqv"]
+[ext_resource type="Texture2D" uid="uid://bky22cu33dewo" path="res://art/units/hydromancer/Hydromancer Map.png" id="3_f6234"]
+[ext_resource type="Texture2D" uid="uid://b7fbb0bduinqe" path="res://art/units/hydromancer/idle/Hydromancer Idle Animation3.png" id="3_hpmef"]
+[ext_resource type="Texture2D" uid="uid://dm8vd1ilq7y87" path="res://art/units/hydromancer/idle/Hydromancer Idle Animation4.png" id="4_ayvv4"]
+[ext_resource type="Texture2D" uid="uid://jf8bp6mpcncy" path="res://art/units/hydromancer/idle/Hydromancer Idle Animation5.png" id="5_18kfw"]
+[ext_resource type="Texture2D" uid="uid://eomun86dj1fx" path="res://art/units/hydromancer/idle/Hydromancer Idle Animation6.png" id="6_0omwj"]
+[ext_resource type="Texture2D" uid="uid://do5nta3fdlj3n" path="res://art/units/hydromancer/idle/Hydromancer Idle Animation7.png" id="7_xq6e5"]
+[ext_resource type="Texture2D" uid="uid://ckvhhyrnfhpjs" path="res://art/units/hydromancer/idle/Hydromancer Idle Animation8.png" id="8_2p32w"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_e14p8"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_sgdo7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_ljoqv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_hpmef")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_ayvv4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_18kfw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_0omwj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_xq6e5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_2p32w")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}]
+
+[resource]
+script = ExtResource("1_lbj4l")
+display_name = "Hydromancer"
+max_hp = 11
+atk = 3
+defense = 0
+attack_range = 2
+max_mana = 10
+growth_hp = 0.6
+growth_atk = 0.5
+growth_defense = 0.15
+growth_move = 0.0
+growth_mana = 0.6
+sprite_texture = ExtResource("3_f6234")
+portrait_texture = ExtResource("1_ljoqv")
+icon_texture = ExtResource("1_ljoqv")
+idle_frames = SubResource("SpriteFrames_e14p8")

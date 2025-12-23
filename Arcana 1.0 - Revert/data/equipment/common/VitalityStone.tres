@@ -1,8 +1,10 @@
-[gd_resource type="Resource" script_class="Equipment" load_steps=2 format=3 uid="uid://cshqgq5wdfe5f"]
+[gd_resource type="Resource" script_class="Equipment" load_steps=3 format=3 uid="uid://cshqgq5wdfe5f"]
 
 [ext_resource type="Script" uid="uid://bnsyp2yvudsd2" path="res://scripts/data/equipment.gd" id="1_4bds4"]
+[ext_resource type="Texture2D" uid="uid://dfka70ugg71ip" path="res://art/equipment/common/Vitality Stone.png" id="1_p6le2"]
 
 [resource]
 script = ExtResource("1_4bds4")
 name = "Vitality Stone"
+icon_texture = ExtResource("1_p6le2")
 bonus_max_hp = 3
