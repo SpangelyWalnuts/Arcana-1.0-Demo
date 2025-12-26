@@ -54,6 +54,10 @@ var current_intent: String = ""  # "attack", "move", "wait", or ""
 @onready var sprite_static: Sprite2D = $Sprite2D
 @onready var sprite_anim: AnimatedSprite2D = $AnimatedSprite2D
 
+#Animation Speed
+@export var move_seconds_per_tile: float = 0.14  # FE-ish. Try 0.14–0.18
+@export var move_step_pause: float = 0.00        # optional tiny pause between tiles (0.00–0.03)
+
 # Used for KO FX; works with both Sprite2D and AnimatedSprite2D
 var sprite: CanvasItem
 
@@ -460,6 +464,81 @@ func _refresh_boss_icon() -> void:
 
 
 #ANIMATION HELPERS
+# Unit.gd
+
+@export var move_tiles_per_second: float = 8.0
+
+var _move_tween: Tween
+
+func move_to_tile(tile: Vector2i, grid: Node) -> void:
+	if grid == null or not grid.has_method("tile_to_world"):
+		# Fallback: just snap
+		grid_position = tile
+		if grid != null and grid.has_method("tile_to_world"):
+			global_position = grid.tile_to_world(tile)
+		return
+
+	# Cancel any previous move tween
+	if _move_tween != null and _move_tween.is_valid():
+		_move_tween.kill()
+
+	# Update logical position immediately (keeps occupancy/pathing correct)
+	var from_tile: Vector2i = grid_position
+	grid_position = tile
+
+	var from_pos: Vector2 = position
+	var to_pos: Vector2 = grid.tile_to_world(tile)
+
+	# Play walk if available
+	_play_walk_anim(from_pos, to_pos)
+
+	# Duration based on tile distance
+	var tile_dist: int = abs(tile.x - from_tile.x) + abs(tile.y - from_tile.y)
+	var seconds: float = float(tile_dist) / max(move_tiles_per_second, 0.01)
+
+	_move_tween = create_tween()
+	_move_tween.tween_property(self, "position", to_pos, seconds) \
+		.set_trans(Tween.TRANS_SINE) \
+		.set_ease(Tween.EASE_IN_OUT)
+
+	await _move_tween.finished
+
+	# Return to idle after movement
+	_play_idle_anim()
+
+
+func _play_walk_anim(from_pos: Vector2, to_pos: Vector2) -> void:
+	var spr := get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	if spr == null:
+		return
+
+# Optional facing (if you use flip_h)
+	if to_pos.x < from_pos.x:
+		spr.flip_h = false
+	elif to_pos.x > from_pos.x:
+		spr.flip_h = true
+
+	# Prefer a UnitClass-provided name if you have one, otherwise "walk"
+	var anim_name: StringName = &"walk"
+	if unit_class != null and ("walk_anim" in unit_class):
+		anim_name = StringName(unit_class.walk_anim)
+
+	if spr.sprite_frames != null and spr.sprite_frames.has_animation(anim_name):
+		spr.play(anim_name)
+
+
+func _play_idle_anim() -> void:
+	var spr := get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	if spr == null:
+		return
+
+	var anim_name: StringName = &"idle"
+	if unit_class != null and ("idle_anim" in unit_class):
+		anim_name = StringName(unit_class.idle_anim)
+
+	if spr.sprite_frames != null and spr.sprite_frames.has_animation(anim_name):
+		spr.play(anim_name)
+
 func play_attack_anim(target_world_pos: Vector2) -> void:
 	# Prefer sprite-sheet attack animation if we have one
 	if sprite != null and is_instance_valid(sprite) and sprite is AnimatedSprite2D:
@@ -606,3 +685,44 @@ func set_outline_enabled(on: bool, color: Color = Color(0.2, 0.8, 1.0, 1.0)) -> 
 
 	_outline_mat.set_shader_parameter("enabled", on)
 	_outline_mat.set_shader_parameter("outline_color", color)
+
+var _is_moving: bool = false
+
+func move_along_path(path: Array[Vector2i], grid: Node) -> void:
+	# path should include the start tile as path[0], end tile last
+	if grid == null or not grid.has_method("tile_to_world"):
+		return
+	if path.size() <= 1:
+		return
+
+	# cancel previous move
+	if _move_tween != null and _move_tween.is_valid():
+		_move_tween.kill()
+
+	_is_moving = true
+
+	for i in range(1, path.size()):
+		var next_tile: Vector2i = path[i]
+
+		var from_pos: Vector2 = position
+		var to_pos: Vector2 = grid.tile_to_world(next_tile)
+
+		_play_walk_anim(from_pos, to_pos)
+
+		# Update logical grid_position at step start or end.
+		# FE usually feels best when it updates as you step onto the tile:
+		grid_position = next_tile
+
+		# Tween one tile step
+		_move_tween = create_tween()
+		_move_tween.tween_property(self, "position", to_pos, move_seconds_per_tile) \
+			.set_trans(Tween.TRANS_SINE) \
+			.set_ease(Tween.EASE_IN_OUT)
+
+		await _move_tween.finished
+
+		if move_step_pause > 0.0:
+			await get_tree().create_timer(move_step_pause).timeout
+
+	_play_idle_anim()
+	_is_moving = false

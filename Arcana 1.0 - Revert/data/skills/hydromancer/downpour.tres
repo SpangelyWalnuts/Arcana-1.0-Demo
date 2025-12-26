@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://dlgwaaakyji2g"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_p2f44"]
+[ext_resource type="Texture2D" uid="uid://dwwuj3lokxbah" path="res://art/ui/spell icons/Downpour.png" id="1_s7578"]
+
+[resource]
+script = ExtResource("1_p2f44")
+name = "Downpour"
+mana_cost = 3
+effect_type = 3
+cast_range = 6
+aoe_radius = 3
+target_type = 1
+can_target_self = true
+status_key = &"wet"
+duration_turns = 4
+icon_texture = ExtResource("1_s7578")
+cast_windup = 1.0
+metadata/_custom_type_script = "uid://sakf75ug1g8j"

@@ -3,7 +3,6 @@
 [ext_resource type="Script" uid="uid://c171dtrx2rjt2" path="res://scenes/ui/level_up_panel.gd" id="1_rdsd0"]
 
 [node name="LevelUpPanel" type="Control"]
-visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -15,9 +14,9 @@ script = ExtResource("1_rdsd0")
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 0
 offset_left = 193.0
-offset_top = 291.0
-offset_right = 233.0
-offset_bottom = 331.0
+offset_top = 290.0
+offset_right = 311.0
+offset_bottom = 449.0
 
 [node name="MarginContainer" type="MarginContainer" parent="Panel"]
 layout_mode = 0

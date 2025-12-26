@@ -1,0 +1,89 @@
+[gd_scene load_steps=17 format=3 uid="uid://hac5ksld8jw7"]
+
+[ext_resource type="Script" uid="uid://w3cgxyx142m2" path="res://scripts/animations/arcana/cryomancer/icespearanim.gd" id="1_yha2f"]
+[ext_resource type="Texture2D" uid="uid://c5mw3qc1rmc6l" path="res://art/animations/arcana/cryomancer/ice spear/Ice Spear1.png" id="2_yha2f"]
+[ext_resource type="Texture2D" uid="uid://cwnuncl7wtk2e" path="res://art/animations/arcana/cryomancer/ice spear/Ice Spear2.png" id="3_6kufy"]
+[ext_resource type="Texture2D" uid="uid://6phcinqjcqpt" path="res://art/animations/arcana/cryomancer/ice spear/Ice Spear3.png" id="4_74chh"]
+[ext_resource type="Texture2D" uid="uid://cessh4fjuc5vl" path="res://art/animations/arcana/cryomancer/ice spear/Ice Spear4.png" id="5_k85aw"]
+[ext_resource type="Texture2D" uid="uid://c678tskv6hkek" path="res://art/animations/arcana/cryomancer/ice spear/Ice Spear5.png" id="6_21g6y"]
+[ext_resource type="Texture2D" uid="uid://d3rtp2hanfhke" path="res://art/animations/arcana/cryomancer/ice spear/Ice Spear6.png" id="7_gcmi3"]
+[ext_resource type="Texture2D" uid="uid://bf1vqwxbm1why" path="res://art/animations/arcana/cryomancer/ice spear/Ice Spear7.png" id="8_x1qag"]
+[ext_resource type="Texture2D" uid="uid://crsks47s8835f" path="res://art/animations/arcana/cryomancer/ice spear/Ice Spear8.png" id="9_dsfxs"]
+[ext_resource type="Texture2D" uid="uid://ci4o5hxyk4rsp" path="res://art/animations/arcana/cryomancer/ice spear/Ice Spear9.png" id="10_bt5ox"]
+[ext_resource type="Texture2D" uid="uid://ijhcyfune0rb" path="res://art/animations/arcana/cryomancer/ice spear/Ice Spear10.png" id="11_d8hpv"]
+[ext_resource type="Texture2D" uid="uid://cixf18aqewlly" path="res://art/animations/arcana/cryomancer/ice spear/Ice Spear11.png" id="12_nd7y8"]
+[ext_resource type="Texture2D" uid="uid://dyhu1sg5soqfi" path="res://art/animations/arcana/cryomancer/ice spear/Ice Spear12.png" id="13_2hxu6"]
+[ext_resource type="Texture2D" uid="uid://ptcjdkn0dv7q" path="res://art/ui/Selection.png" id="14_sgbpu"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_ohfu5"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_yha2f")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_6kufy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_74chh")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_k85aw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_21g6y")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_gcmi3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_x1qag")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_dsfxs")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_bt5ox")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_d8hpv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_nd7y8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_2hxu6")
+}],
+"loop": false,
+"name": &"icespear",
+"speed": 12.0
+}]
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_kettf"]
+blend_mode = 1
+light_mode = 1
+
+[node name="Node2D" type="Node2D"]
+script = ExtResource("1_yha2f")
+
+[node name="Anim" type="AnimatedSprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(-32, 0)
+sprite_frames = SubResource("SpriteFrames_ohfu5")
+animation = &"icespear"
+offset = Vector2(4, -36)
+
+[node name="ImpactLight" type="PointLight2D" parent="."]
+visible = false
+modulate = Color(1, 0.6215225, 0.9885413, 1)
+texture_filter = 1
+texture_repeat = 1
+material = SubResource("CanvasItemMaterial_kettf")
+color = Color(0.827451, 0.60784316, 1, 1)
+energy = 0.8
+range_z_min = 0
+range_z_max = 220
+texture = ExtResource("14_sgbpu")
+offset = Vector2(16, 16)
+texture_scale = 2.0

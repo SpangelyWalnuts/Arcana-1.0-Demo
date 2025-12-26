@@ -1,4 +1,4 @@
-[gd_scene load_steps=75 format=3 uid="uid://n3fdkibgiero"]
+[gd_scene load_steps=76 format=3 uid="uid://n3fdkibgiero"]
 
 [ext_resource type="Script" uid="uid://h2yfgpr5nkon" path="res://scripts/core/Main.gd" id="1_v0fxp"]
 [ext_resource type="PackedScene" uid="uid://dtcrbthviju4m" path="res://scenes/ui/SelectionRing.tscn" id="2_8kqbm"]
@@ -29,6 +29,7 @@
 [ext_resource type="Texture2D" uid="uid://b1ff2vn56sd5f" path="res://art/animations/highlight/Yellow Highlight/Yellow Highlight7.png" id="19_leefl"]
 [ext_resource type="Texture2D" uid="uid://d1mwiv5y4wvhh" path="res://art/animations/highlight/Yellow Highlight/Yellow Highlight8.png" id="20_8kqbm"]
 [ext_resource type="PackedScene" uid="uid://bcbv3m3l22drh" path="res://scenes/arcana/LightningBolt.tscn" id="24_oh68v"]
+[ext_resource type="PackedScene" uid="uid://hac5ksld8jw7" path="res://scenes/arcana/IceSpear.tscn" id="26_13ms4"]
 [ext_resource type="PackedScene" uid="uid://cvl280pjarm5v" path="res://vfx/TargetPulseLight.tscn" id="26_wldt1"]
 [ext_resource type="Material" uid="uid://dcacfaxebymha" path="res://shaders/outline_flow.tres" id="27_7r7ay"]
 [ext_resource type="Texture2D" uid="uid://rax4vkjh37l5" path="res://art/ui/text backgrounds/Banner 96 x 32.png" id="30_grs5f"]
@@ -230,9 +231,11 @@ script = ExtResource("10_d7485")
 script = ExtResource("11_dau2k")
 heal_circle_vfx_scene = ExtResource("31_kylyq")
 cast_dim_min_visible = 0.12
+impact_flash_time = 0.1
 cast_dim_post_impact_hold = 0.4
 top_fx_root_path = NodePath("../TopFXLayer/TopFX")
 lightning_strike_vfx_scene = ExtResource("24_oh68v")
+ice_spear_vfx_scene = ExtResource("26_13ms4")
 target_pulse_light_scene = ExtResource("26_wldt1")
 target_outline_shader = ExtResource("27_7r7ay")
 floating_text_root_path = NodePath("../FloatingTextRoot")

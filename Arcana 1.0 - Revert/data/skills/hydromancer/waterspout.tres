@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://14k7og1aidt8"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_fb0xw"]
+[ext_resource type="Texture2D" uid="uid://rj5ktf6ggcmy" path="res://art/ui/spell icons/Waterspout.png" id="1_hhy20"]
+
+[resource]
+script = ExtResource("1_fb0xw")
+name = "Waterspout"
+mana_cost = 4
+cast_range = 5
+aoe_radius = 1
+flat_power = 1
+status_key = &"wet"
+tags = Array[StringName]([&"water"])
+duration_turns = 4
+icon_texture = ExtResource("1_hhy20")
+metadata/_custom_type_script = "uid://sakf75ug1g8j"

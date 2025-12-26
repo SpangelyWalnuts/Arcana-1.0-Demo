@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=14 format=3 uid="uid://docpmxpg6rvjj"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=17 format=3 uid="uid://docpmxpg6rvjj"]
 
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_lbj4l"]
 [ext_resource type="Texture2D" uid="uid://cfpja35qfvwbu" path="res://art/units/hydromancer/Hydromancer Icon.png" id="1_ljoqv"]
@@ -12,6 +12,9 @@
 [ext_resource type="Texture2D" uid="uid://eomun86dj1fx" path="res://art/units/hydromancer/idle/Hydromancer Idle Animation6.png" id="6_0omwj"]
 [ext_resource type="Texture2D" uid="uid://do5nta3fdlj3n" path="res://art/units/hydromancer/idle/Hydromancer Idle Animation7.png" id="7_xq6e5"]
 [ext_resource type="Texture2D" uid="uid://ckvhhyrnfhpjs" path="res://art/units/hydromancer/idle/Hydromancer Idle Animation8.png" id="8_2p32w"]
+[ext_resource type="Resource" uid="uid://dlgwaaakyji2g" path="res://data/skills/hydromancer/downpour.tres" id="12_hpmef"]
+[ext_resource type="Resource" uid="uid://b6l8etcgm2nfq" path="res://data/skills/hydromancer/stream.tres" id="13_18kfw"]
+[ext_resource type="Resource" uid="uid://14k7og1aidt8" path="res://data/skills/hydromancer/waterspout.tres" id="14_0omwj"]
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_e14p8"]
 animations = [{
@@ -53,6 +56,7 @@ atk = 3
 defense = 0
 attack_range = 2
 max_mana = 10
+skills = Array[ExtResource("2_30r5q")]([ExtResource("12_hpmef"), ExtResource("13_18kfw"), ExtResource("14_0omwj")])
 growth_hp = 0.6
 growth_atk = 0.5
 growth_defense = 0.15

@@ -7,6 +7,7 @@
 [node name="Terrain" type="TileMap" parent="."]
 texture_filter = 1
 texture_repeat = 1
+position = Vector2(0, -2)
 tile_set = ExtResource("1_6kpfo")
 rendering_quadrant_size = 32
 format = 2

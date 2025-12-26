@@ -36,3 +36,4 @@ class_name UnitClass
 @export var icon_texture: Texture2D      # optional, small class icon
 @export var idle_frames: SpriteFrames  # optional per-class idle animation
 @export var idle_anim_name: StringName = &"idle"
+@export var walk_anim: StringName = &"walk"

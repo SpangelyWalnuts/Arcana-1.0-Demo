@@ -348,14 +348,15 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "Start Battle"
 
+[node name="AutoPlaceButton" type="Button" parent="Panel/BottomBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Auto Place"
+
 [node name="ReturnToTitleButton" type="Button" parent="Panel/BottomBar/MarginContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Return to Title"
-
-[node name="AutoPlaceButton" type="Button" parent="Panel/BottomBar/MarginContainer/HBoxContainer"]
-layout_mode = 2
-text = "Auto Place"
 
 [node name="RosterDebugLabel" type="Label" parent="."]
 layout_mode = 0

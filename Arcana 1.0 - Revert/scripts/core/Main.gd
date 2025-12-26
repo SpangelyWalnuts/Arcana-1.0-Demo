@@ -665,8 +665,14 @@ func _try_move_selected_unit_to_tile(tile: Vector2i) -> void:
 		return
 
 	# If we get here, tile is reachable and free
-	selected_unit.grid_position = tile
-	selected_unit.position = grid.tile_to_world(tile)
+	var start: Vector2i = selected_unit.grid_position
+	var path: Array[Vector2i] = _build_move_path(selected_unit, start, tile)
+	if path.is_empty():
+		print("No path found to tile (unexpected if reachable).")
+		return
+
+	await (selected_unit as Node).move_along_path(path, grid)
+
 	selected_unit.has_acted = true
 	_queue_enemy_intents_refresh()
 
@@ -2303,3 +2309,59 @@ func _clear_enemy_intents() -> void:
 			e.set_intent_icon("")  # hides via your new fade-out logic
 		if e.has_meta("intent_skill"):
 			e.remove_meta("intent_skill")
+
+#MOVEMENT HELPER
+func _neighbors4(cell: Vector2i) -> Array[Vector2i]:
+	return [
+		cell + Vector2i(1, 0),
+		cell + Vector2i(-1, 0),
+		cell + Vector2i(0, 1),
+		cell + Vector2i(0, -1),
+	]
+
+func _is_tile_walkable_for_move(unit, cell: Vector2i) -> bool:
+	# must be reachable
+	var reachable: Array[Vector2i] = get_reachable_tiles_for_unit(unit)
+	if not reachable.has(cell):
+		return false
+
+	# must not be occupied
+	return _get_unit_at_tile(cell) == null
+
+func _reconstruct_path(came_from: Dictionary, start: Vector2i, goal: Vector2i) -> Array[Vector2i]:
+	var path: Array[Vector2i] = []
+	if start == goal:
+		path.append(start)
+		return path
+	if not came_from.has(goal):
+		return path
+
+	var cur: Vector2i = goal
+	path.append(cur)
+	while cur != start:
+		cur = came_from[cur]
+		path.append(cur)
+
+	path.reverse()
+	return path
+
+func _build_move_path(unit, start: Vector2i, goal: Vector2i) -> Array[Vector2i]:
+	# BFS on reachable/walkable tiles only
+	var frontier: Array[Vector2i] = [start]
+	var came_from: Dictionary = {}
+	came_from[start] = start
+
+	while not frontier.is_empty():
+		var current: Vector2i = frontier.pop_front()
+		if current == goal:
+			break
+
+		for n in _neighbors4(current):
+			if came_from.has(n):
+				continue
+			if not _is_tile_walkable_for_move(unit, n):
+				continue
+			came_from[n] = current
+			frontier.append(n)
+
+	return _reconstruct_path(came_from, start, goal)

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://b6l8etcgm2nfq"]
+
+[ext_resource type="Texture2D" uid="uid://duedgcb0gfx0j" path="res://art/ui/spell icons/Stream.png" id="1_1s74c"]
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_v23km"]
+
+[resource]
+script = ExtResource("1_v23km")
+name = "Stream"
+mana_cost = 3
+cast_range = 4
+flat_power = 1
+status_key = &"wet"
+tags = Array[StringName]([&"water"])
+duration_turns = 4
+icon_texture = ExtResource("1_1s74c")
+metadata/_custom_type_script = "uid://sakf75ug1g8j"

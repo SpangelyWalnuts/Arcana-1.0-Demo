@@ -5,6 +5,7 @@ extends Node2D
 @onready var light: PointLight2D = $ImpactLight
 
 func _ready() -> void:
+	#print("[VFX] lightning fps=", anim.sprite_frames.get_animation_speed(anim.animation))
 	anim.play("lightningbolt")
 
 	if light:

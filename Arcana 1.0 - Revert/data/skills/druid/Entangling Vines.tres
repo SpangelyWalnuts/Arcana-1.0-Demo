@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="Skill" load_steps=3 format=3 uid="uid://ci844ttgxgesx"]
+[gd_resource type="Resource" script_class="Skill" load_steps=4 format=3 uid="uid://ci844ttgxgesx"]
 
 [ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_hxlcp"]
+[ext_resource type="Texture2D" uid="uid://60us4sef3sdq" path="res://art/ui/spell icons/Entangling Vines.png" id="1_xkw4v"]
 [ext_resource type="PackedScene" uid="uid://b7vowukv72321" path="res://scenes/terrain_effects/DruidVinesEffect.tscn" id="2_dwlhb"]
 
 [resource]
@@ -17,3 +18,4 @@ terrain_object_scene = ExtResource("2_dwlhb")
 terrain_object_key = "vines"
 terrain_object_duration = 3
 terrain_object_move_cost_bonus = 2
+icon_texture = ExtResource("1_xkw4v")

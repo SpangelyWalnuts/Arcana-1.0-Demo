@@ -29,6 +29,7 @@ var _cast_flash_done: bool = false
 @export var top_fx_root_path: NodePath
 @export var hit_spark_vfx_scene: PackedScene
 @export var lightning_strike_vfx_scene: PackedScene
+@export var ice_spear_vfx_scene: PackedScene
 @export var target_pulse_light_scene: PackedScene
 @export var target_outline_shader: ShaderMaterial # assign outline_flow.tres here
 # Where to put floating text (if null, we fall back to Main/UI)
@@ -335,6 +336,7 @@ func execute_skill_on_target(user, target, skill: Skill, play_cast: bool = true)
 		Skill.EffectType.BUFF, Skill.EffectType.DEBUFF:
 			_apply_status_skill(user, target, skill)
 		Skill.EffectType.DAMAGE:
+			await _play_skill_impact_vfx_and_wait(user, target, skill)
 			_apply_skill_damage(user, target, skill)
 		Skill.EffectType.TERRAIN:
 			print("CombatManager: Terrain skill targeted a unit; ignored.")
@@ -414,18 +416,17 @@ func _apply_skill_damage(user, target, skill: Skill) -> void:
 	var amount: int = int(round(raw))
 	if amount < 1:
 		amount = 1
+		
+	
 
+# Apply damage exactly at impact
 	var before_hp: int = int(target.hp)
 	var survived: bool = target.take_damage(amount)
-
-# (optional) tiny anticipation so the bolt lands on a beat
-	if _skill_has_tag(skill, &"vfx_lightning_bolt") and lightning_strike_vfx_scene != null:
-		await get_tree().create_timer(0.06).timeout
-		_spawn_vfx_at_world(lightning_strike_vfx_scene, _fx_world_pos_for_unit(target), true)
 
 	_do_hitstop()
 	_do_screen_shake()
 	_spawn_floating_text(_fx_world_pos_for_unit(target), "-%d" % amount, false)
+
 
 	if not survived:
 		_apply_on_kill_rewards(user, target)
@@ -689,6 +690,28 @@ func _resolve_status_reactions(user, target, skill: Skill) -> void:
 
 		if CombatLog != null:
 			CombatLog.add("Reaction: Chilled + Ice → Frozen (%s)" % target.name, {"type":"reaction"})
+
+	# Wet + Fire => Wet Consumed
+	if _skill_has_tag(skill, &"fire") and StatusManager.has_status(target, &"wet"):
+		StatusManager.remove_status(target, &"wet")
+	if CombatLog != null:
+		CombatLog.add("Reaction: Wet + Fire → Dry (%s)" % target.name, {"type":"reaction"})
+	# Wet + Chilled => Chilled Consumed
+	if _skill_has_tag(skill, &"fire") and StatusManager.has_status(target, &"chilled"):
+		StatusManager.remove_status(target, &"chilled")
+		if CombatLog != null:
+			CombatLog.add("Reaction: Chilled + Fire → Warm (%s)" % target.name, {"type":"reaction"})
+	# Frozen + Fire => Wet (Frozen Consumed)
+	if _skill_has_tag(skill, &"fire") and StatusManager.has_status(target, &"frozen"):
+		StatusManager.remove_status(target, &"frozen")
+
+		var chilled_skill: Skill = RunManager.get_chilled_status_skill() if RunManager != null and RunManager.has_method("get_chilled_status_skill") else null
+		if chilled_skill != null:
+			StatusManager.apply_status_to_unit(target, chilled_skill, user)
+
+		if CombatLog != null:
+			CombatLog.add("  -> reaction: Frozen + Fire = Wet on %s" % target.name,
+				{"type":"reaction", "target": target.name})
 
 const META_TEMP_ATK_BONUS := &"temp_atk_bonus"
 
@@ -1003,3 +1026,24 @@ func _clear_target_outline_overlays() -> void:
 		t.tween_callback(o.queue_free)
 
 	_target_outline_overlays.clear()
+
+
+func _vfx_impact_delay_for_skill(skill: Skill) -> float:
+	# Example tags:
+	# vfx_lightning_bolt, vfx_your_new_anim
+	if _skill_has_tag(skill, &"vfx_lightning_bolt"):
+		return 0.5 # frame 7 at 12 fps -> 6/12
+	if _skill_has_tag(skill, &"vfx_ice_spear"):
+		return 0.75 # frame 10 at 12 fps -> 9/12
+	return 0.0
+
+func _play_skill_impact_vfx_and_wait(user, target, skill: Skill) -> void:
+	# Spawn the VFX at the start of the impact window
+	if _skill_has_tag(skill, &"vfx_lightning_bolt") and lightning_strike_vfx_scene != null:
+		_spawn_vfx_at_world(lightning_strike_vfx_scene, _fx_world_pos_for_unit(target), true)
+	elif _skill_has_tag(skill, &"vfx_ice_spear") and ice_spear_vfx_scene != null:
+		_spawn_vfx_at_world(ice_spear_vfx_scene, _fx_world_pos_for_unit(target), true)
+
+	var d := _vfx_impact_delay_for_skill(skill)
+	if d > 0.0:
+		await get_tree().create_timer(d).timeout

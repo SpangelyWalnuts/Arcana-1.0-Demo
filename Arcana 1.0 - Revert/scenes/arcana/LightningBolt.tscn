@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://bcbv3m3l22drh"]
+[gd_scene load_steps=17 format=3 uid="uid://bcbv3m3l22drh"]
 
 [ext_resource type="Script" uid="uid://b1s4lwaj4dvdw" path="res://scripts/animations/arcana/electromancer/lightningboltanim.gd" id="1_luwpe"]
 [ext_resource type="Texture2D" uid="uid://bf2jghhrqb1cn" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt1.png" id="2_luwpe"]
@@ -9,11 +9,18 @@
 [ext_resource type="Texture2D" uid="uid://yuxno108qtq" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt6.png" id="7_bhutm"]
 [ext_resource type="Texture2D" uid="uid://bvugeyx4hrhwl" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt7.png" id="8_8yvrq"]
 [ext_resource type="Texture2D" uid="uid://4m4wsm47tuk1" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt8.png" id="9_w1s6p"]
+[ext_resource type="Texture2D" uid="uid://cwpjqbsn8tn15" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt9.png" id="10_bhutm"]
 [ext_resource type="Texture2D" uid="uid://ptcjdkn0dv7q" path="res://art/ui/Selection.png" id="10_kettf"]
+[ext_resource type="Texture2D" uid="uid://cemqc6hsotvcj" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt10.png" id="11_8yvrq"]
+[ext_resource type="Texture2D" uid="uid://ci1vv35fh7veo" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt11.png" id="12_w1s6p"]
+[ext_resource type="Texture2D" uid="uid://bjx38e3g8l7yc" path="res://art/animations/arcana/electromancer/lightningbolt/Lightning Bolt12.png" id="13_8fnjt"]
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_8fnjt"]
 animations = [{
 "frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_luwpe")
+}, {
 "duration": 1.0,
 "texture": ExtResource("3_kettf")
 }, {
@@ -27,9 +34,6 @@ animations = [{
 "texture": ExtResource("6_ly42j")
 }, {
 "duration": 1.0,
-"texture": ExtResource("2_luwpe")
-}, {
-"duration": 1.0,
 "texture": ExtResource("7_bhutm")
 }, {
 "duration": 1.0,
@@ -37,10 +41,22 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("9_w1s6p")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_bhutm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_8yvrq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_w1s6p")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_8fnjt")
 }],
 "loop": false,
 "name": &"lightningbolt",
-"speed": 8.0
+"speed": 12.0
 }]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_kettf"]
@@ -54,13 +70,14 @@ script = ExtResource("1_luwpe")
 texture_filter = 1
 texture_repeat = 1
 position = Vector2(16, 16)
+scale = Vector2(2, 2)
 sprite_frames = SubResource("SpriteFrames_8fnjt")
 animation = &"lightningbolt"
-frame = 7
 frame_progress = 1.0
-offset = Vector2(0, -32)
+offset = Vector2(4, -36)
 
 [node name="ImpactLight" type="PointLight2D" parent="."]
+visible = false
 modulate = Color(1, 0.6215225, 0.9885413, 1)
 texture_filter = 1
 texture_repeat = 1
