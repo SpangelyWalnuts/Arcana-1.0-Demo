@@ -297,6 +297,14 @@ func execute_skill_on_target(user, target, skill: Skill, play_cast: bool = true)
 	if play_cast:
 		if user.has_method("play_cast_anim"):
 			user.play_cast_anim()
+				# Range check for single-target casts (AoE calls this with play_cast = false)
+		var user_tile = user.get("grid_position")
+		var target_tile = target.get("grid_position")
+		if user_tile != null and target_tile != null:
+			var dist: int = abs(user_tile.x - target_tile.x) + abs(user_tile.y - target_tile.y)
+			if dist > skill.cast_range:
+				print("Target is out of cast range for", skill.name)
+				return
 
 		await _screen_fx_begin_cast()
 		

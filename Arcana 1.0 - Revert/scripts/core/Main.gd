@@ -518,6 +518,12 @@ func _handle_skill_target_click(tile: Vector2i) -> void:
 	# -------------------------------------------------
 	# SINGLE-TARGET UNIT SKILLS
 	# -------------------------------------------------
+		# ✅ Range check (single-target unit skills)
+	var dist_to_target: int = _distance(selected_unit.grid_position, tile)
+	if dist_to_target > skill.cast_range:
+		print("Target is out of cast range.")
+		return
+
 	if not _is_valid_skill_target(selected_unit, target, skill):
 		print(" -> invalid target for this skill")
 		return
