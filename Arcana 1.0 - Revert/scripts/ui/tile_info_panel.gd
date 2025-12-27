@@ -28,6 +28,11 @@ var _current_tween: Tween = null
 
 
 func _ready() -> void:
+	# Keep status icons in sync when statuses change via combat interactions.
+	if StatusManager != null and StatusManager.has_signal("status_changed"):
+		if not StatusManager.status_changed.is_connected(_on_status_changed):
+			StatusManager.status_changed.connect(_on_status_changed)
+
 	# Remember where the panel sits in the editor (visible position)
 	_home_position = position
 
@@ -273,3 +278,14 @@ func _update_arcana_icons(unit) -> void:
 		icon.tooltip_text = str(s.get("name"))
 
 		unit_arcana_icons.add_child(icon)
+
+func _on_status_changed(changed_unit) -> void:
+	# Only refresh if the changed unit is the one we're currently displaying.
+	if changed_unit == null:
+		return
+
+	if _last_hovered_unit != null and is_instance_valid(_last_hovered_unit):
+		if changed_unit == _last_hovered_unit:
+			_update_status_icons(_last_hovered_unit)
+			# If you also show arcana tied to status changes, uncomment:
+			# _update_arcana_icons(_last_hovered_unit)

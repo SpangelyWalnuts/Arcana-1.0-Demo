@@ -188,6 +188,7 @@ func _ready() -> void:
 	turn_manager.phase_changed.connect(_on_phase_changed)
 	action_menu.action_selected.connect(_on_action_menu_selected)
 	skill_menu.skill_selected.connect(_on_skill_menu_selected)
+	_queue_enemy_intents_refresh()
 	skill_menu.skill_selected.connect(_on_skill_menu_skill_selected)
 	_update_turn_label()
 	
@@ -518,12 +519,6 @@ func _handle_skill_target_click(tile: Vector2i) -> void:
 	# -------------------------------------------------
 	# SINGLE-TARGET UNIT SKILLS
 	# -------------------------------------------------
-		# ✅ Range check (single-target unit skills)
-	var dist_to_target: int = _distance(selected_unit.grid_position, tile)
-	if dist_to_target > skill.cast_range:
-		print("Target is out of cast range.")
-		return
-
 	if not _is_valid_skill_target(selected_unit, target, skill):
 		print(" -> invalid target for this skill")
 		return
@@ -904,6 +899,8 @@ func _on_phase_changed(new_phase) -> void:
 			if CombatLog != null:
 				CombatLog.set_turn_index(run_turns)
 				print("PLAYER PHASE - Turn:", run_turns)
+				current_turn = run_turns
+				_update_turn_label()
 				
 			_reset_player_units()
 			# ⚠️ Legacy terrain-effect ticking:
@@ -1527,7 +1524,7 @@ func _update_enemy_hover_preview() -> void:
 #TURN LABEL HELPER
 func _update_turn_label() -> void:
 	if turn_label != null:
-		turn_label.text = "Turn %d" % current_turn
+		turn_label.text = "Turn %d" % run_turns
 
 #UNIT INDEX HELPER
 func _get_unacted_player_units() -> Array:

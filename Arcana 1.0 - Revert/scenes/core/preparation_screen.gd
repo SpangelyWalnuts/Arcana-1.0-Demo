@@ -1151,6 +1151,10 @@ func _on_equip_slot_pressed(slot_idx: int) -> void:
 		return
 
 	if _inv_take_one(RunManager.inventory_equipment, _selected_convoy_res):
+		# If slot already occupied, return old equipment to convoy before equipping new one.
+		var previous: Equipment = data.equipment_slots[slot_idx] as Equipment
+		if previous != null:
+			_inv_add_one(RunManager.inventory_equipment, previous)
 		data.equipment_slots[slot_idx] = _selected_convoy_res
 
 	_selected_convoy_kind = &"none"
@@ -1181,6 +1185,10 @@ func _on_item_slot_pressed(slot_idx: int) -> void:
 		return
 
 	if _inv_take_one(RunManager.inventory_items, _selected_convoy_res):
+		# If slot already occupied, return old item to convoy before equipping new one.
+		var previous: Resource = data.item_slots[slot_idx] as Resource
+		if previous != null:
+			_inv_add_one(RunManager.inventory_items, previous)
 		data.item_slots[slot_idx] = _selected_convoy_res
 
 	_selected_convoy_kind = &"none"

@@ -156,8 +156,8 @@ func perform_attack(attacker, defender, is_counter: bool = false) -> void:
 			print(defender.name, " counterattacks!")
 			perform_attack(defender, attacker, true)
 
-		# Auto-end turn if all player units are done
-		if _all_player_units_have_acted():
+		# Auto-end turn if all player units are done (player phase only)
+		if turn_manager != null and turn_manager.current_phase == TurnManager.Phase.PLAYER and _all_player_units_have_acted():
 			turn_manager.end_turn()
 
 # ✅ tell AI (or anyone) the attack chain is finished
@@ -291,7 +291,7 @@ func use_skill(caster, skill: Skill, center_tile: Vector2i) -> void:
 	if caster.has_node("Sprite2D"):
 		caster.get_node("Sprite2D").modulate = Color.WHITE
 
-	if _all_player_units_have_acted():
+	if turn_manager != null and turn_manager.current_phase == TurnManager.Phase.PLAYER and _all_player_units_have_acted():
 		turn_manager.end_turn()
 
 	_clear_target_outline_overlays()
