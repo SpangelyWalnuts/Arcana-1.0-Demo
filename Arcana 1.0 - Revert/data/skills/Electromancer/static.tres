@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://b7vajbemd8oro"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_oqsrt"]
+
+[resource]
+script = ExtResource("1_oqsrt")
+name = "Static"
+mana_cost = 3
+effect_type = 2
+target_type = 3
+can_target_self = true
+status_key = &"static_retaliation"
+duration_turns = 4
+metadata/_custom_type_script = "uid://sakf75ug1g8j"

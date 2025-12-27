@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=17 format=3 uid="uid://bwlb1xfhjqbtr"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=18 format=3 uid="uid://bwlb1xfhjqbtr"]
 
 [ext_resource type="Texture2D" uid="uid://c1pgb5eewqk1n" path="res://art/units/Cryomancer Icon.png" id="1_3dpi8"]
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_c58w8"]
@@ -15,6 +15,7 @@
 [ext_resource type="Texture2D" uid="uid://cnlfjnyg27xa3" path="res://art/units/Cryomancer/Animations/idle/Cryomancer Idle Animation8.png" id="9_d0icy"]
 [ext_resource type="Texture2D" uid="uid://o6m1y3h485uh" path="res://art/units/Cryomancer.png" id="14_h018i"]
 [ext_resource type="Resource" uid="uid://pq87a0bvcj5b" path="res://data/skills/cryomancer/IceSpear.tres" id="14_pdx8l"]
+[ext_resource type="Resource" uid="uid://ueue077cs1wb" path="res://data/skills/cryomancer/IceMirror.tres" id="15_pdx8l"]
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_o6rfk"]
 animations = [{
@@ -55,7 +56,7 @@ max_hp = 16
 atk = 2
 attack_range = 2
 max_mana = 10
-skills = Array[ExtResource("2_nf8b4")]([ExtResource("3_upeti"), ExtResource("4_t4jmv"), ExtResource("14_pdx8l")])
+skills = Array[ExtResource("2_nf8b4")]([ExtResource("3_upeti"), ExtResource("4_t4jmv"), ExtResource("14_pdx8l"), ExtResource("15_pdx8l")])
 growth_hp = 1.0
 growth_atk = 0.3
 growth_move = 0.0

@@ -209,23 +209,29 @@ func _wait_skill_finished_safe(main: Node, enemy: Node, timeout_sec: float = 0.6
 
 	var cm: Node = _get_child_or_prop(main, "combat_manager")
 	if cm == null:
-		# Fallback: just give a tiny pacing delay
 		await get_tree().create_timer(0.15).timeout
 		return
 
-	# If the signal doesn't exist, also fallback.
 	if not cm.has_signal("skill_sequence_finished"):
 		await get_tree().create_timer(0.15).timeout
 		return
 
 	var done: bool = false
+	var enemy_ref: WeakRef = weakref(enemy)
 
 	# One-shot listener: marks done only when THIS enemy is the caster
 	var cb := func(emitted):
+		var enemy_node = enemy_ref.get_ref()
+		if enemy_node == null or not is_instance_valid(enemy_node):
+			# Enemy no longer exists; stop waiting
+			done = true
+			return
+
 		var caster = emitted
 		if emitted is Array and emitted.size() > 0:
 			caster = emitted[0]
-		if caster == enemy:
+
+		if caster == enemy_node:
 			done = true
 
 	cm.skill_sequence_finished.connect(cb, CONNECT_ONE_SHOT)
@@ -235,9 +241,11 @@ func _wait_skill_finished_safe(main: Node, enemy: Node, timeout_sec: float = 0.6
 		if done:
 			return
 		if t.time_left <= 0.0:
-			print("[AI] skill_sequence_finished TIMEOUT for:", enemy.name)
+			if enemy_ref.get_ref() != null:
+				print("[AI] skill_sequence_finished TIMEOUT for:", enemy.name)
 			return
 		await get_tree().process_frame
+
 
 func get_intent(main: Node, enemy: Node, players: Array) -> String:
 	if enemy == null or not is_instance_valid(enemy) or _get_int(enemy, "hp", 0) <= 0:

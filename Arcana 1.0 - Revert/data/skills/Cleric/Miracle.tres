@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://bda4cambw265s"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_4csyx"]
+
+[resource]
+script = ExtResource("1_4csyx")
+name = "Miracle"
+description = "Prevent lethal damage once this floor."
+mana_cost = 6
+effect_type = 2
+duration_turns = 2
+metadata/_custom_type_script = "uid://sakf75ug1g8j"

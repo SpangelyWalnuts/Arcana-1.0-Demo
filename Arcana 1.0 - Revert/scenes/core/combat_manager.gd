@@ -71,6 +71,26 @@ func perform_attack(attacker, defender, is_counter: bool = false) -> void:
 	var raw_damage: int = effective_atk - (effective_def + terrain_def)
 	var damage: int = max(raw_damage, 0)
 
+	# --- Damage modification phase (before damage is applied) ---
+	var dist: int = abs(attacker.grid_position.x - defender.grid_position.x) + abs(attacker.grid_position.y - defender.grid_position.y)
+	var is_melee: bool = dist <= 1
+	var dmg_ctx: Dictionary = {
+		"attacker": attacker,
+		"defender": defender,
+		"damage": int(damage),
+		"is_basic": true,
+		"is_melee": is_melee,
+		"is_counter": is_counter,
+		"skill": null,
+	}
+	if defender != null and is_instance_valid(defender) and defender.has_method("on_before_damage_taken"):
+		defender.on_before_damage_taken(dmg_ctx)
+	if attacker != null and is_instance_valid(attacker) and attacker.has_method("on_before_damage_dealt"):
+		attacker.on_before_damage_dealt(dmg_ctx)
+	damage = int(dmg_ctx.get("damage", damage))
+	if damage < 0:
+		damage = 0
+
 	print(attacker.name, " attacks ", defender.name,
 		" for ", damage, " dmg (atk=", effective_atk,
 		", def=", effective_def, ", terrain def +", terrain_def, ")")
@@ -102,6 +122,22 @@ func perform_attack(attacker, defender, is_counter: bool = false) -> void:
 			_spawn_vfx_at_world(hit_spark_vfx_scene, _fx_world_pos_for_unit(defender))
 
 	var defender_survived: bool = defender.take_damage(damage)
+
+	# Reactive effects on defender being hit by a BASIC attack
+	if defender != null \
+	and is_instance_valid(defender) \
+	and defender.has_method("on_basic_attack_taken"):
+
+		var reactive_ctx := {
+		"attacker": attacker,
+		"defender": defender,
+		"damage": damage,
+		"is_counter": is_counter
+		}
+
+		defender.on_basic_attack_taken(reactive_ctx)
+
+
 	if not defender_survived:
 		_apply_on_kill_rewards(attacker, defender)
 
@@ -297,14 +333,6 @@ func execute_skill_on_target(user, target, skill: Skill, play_cast: bool = true)
 	if play_cast:
 		if user.has_method("play_cast_anim"):
 			user.play_cast_anim()
-				# Range check for single-target casts (AoE calls this with play_cast = false)
-		var user_tile = user.get("grid_position")
-		var target_tile = target.get("grid_position")
-		if user_tile != null and target_tile != null:
-			var dist: int = abs(user_tile.x - target_tile.x) + abs(user_tile.y - target_tile.y)
-			if dist > skill.cast_range:
-				print("Target is out of cast range for", skill.name)
-				return
 
 		await _screen_fx_begin_cast()
 		
@@ -428,6 +456,26 @@ func _apply_skill_damage(user, target, skill: Skill) -> void:
 	
 
 # Apply damage exactly at impact
+	# --- Damage modification phase (before damage is applied) ---
+	var dist_to_target: int = abs(user.grid_position.x - target.grid_position.x) + abs(user.grid_position.y - target.grid_position.y)
+	var is_melee_skill: bool = dist_to_target <= 1
+	var dmg_ctx: Dictionary = {
+		"attacker": user,
+		"defender": target,
+		"damage": int(amount),
+		"is_basic": false,
+		"is_melee": is_melee_skill,
+		"is_counter": false,
+		"skill": skill,
+	}
+	if target != null and is_instance_valid(target) and target.has_method("on_before_damage_taken"):
+		target.on_before_damage_taken(dmg_ctx)
+	if user != null and is_instance_valid(user) and user.has_method("on_before_damage_dealt"):
+		user.on_before_damage_dealt(dmg_ctx)
+	amount = int(dmg_ctx.get("damage", amount))
+	if amount < 0:
+		amount = 0
+
 	var before_hp: int = int(target.hp)
 	var survived: bool = target.take_damage(amount)
 
@@ -890,7 +938,15 @@ func _spawn_floating_text(world_pos: Vector2, text: String, is_heal: bool) -> vo
 	t.set_parallel(true)
 	t.tween_property(lbl, "position", lbl.position + up, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	t.tween_property(lbl, "modulate:a", 0.0, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
-	t.finished.connect(func(): if is_instance_valid(lbl): lbl.queue_free(), CONNECT_ONE_SHOT)
+	var lbl_ref: WeakRef = weakref(lbl)
+	t.finished.connect(func() -> void:
+		var node := lbl_ref.get_ref() as Label
+		if node != null and is_instance_valid(node):
+			node.queue_free()
+	, CONNECT_ONE_SHOT)
+
+
+
 
 func _screen_fx_set_cast_dim(on: bool) -> void:
 	if screen_fx_path == NodePath():

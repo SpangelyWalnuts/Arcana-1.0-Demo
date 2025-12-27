@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://bx10w26df1d0l"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_o4t5w"]
+
+[resource]
+script = ExtResource("1_o4t5w")
+name = "Barkflesh"
+mana_cost = 4
+effect_type = 2
+aoe_radius = 1
+target_type = 2
+can_target_self = true
+def_mod = 1
+metadata/_custom_type_script = "uid://sakf75ug1g8j"

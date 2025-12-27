@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://bpe5jgycv4ntg"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_ep278"]
+
+[resource]
+script = ExtResource("1_ep278")
+name = "Soak"
+effect_type = 3
+cast_range = 6
+target_type = 1
+can_target_self = true
+status_key = &"wet"
+metadata/_custom_type_script = "uid://sakf75ug1g8j"

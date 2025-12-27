@@ -40,3 +40,8 @@ var rarity: String = "Common"
 
 # Restore mana on kill (clamped to max_mana).
 @export var on_kill_mana_restore: int = 0
+
+# -----------------------------
+# Effects (Phase 2)
+# -----------------------------
+@export var effects: Array[CombatEffect] = []  # Reactive/passive effects (e.g. Ice Mirror)

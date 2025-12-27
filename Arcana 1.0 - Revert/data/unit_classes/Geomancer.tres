@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="UnitClass" load_steps=17 format=3 uid="uid://r0vriv0j5ote"]
+[gd_resource type="Resource" script_class="UnitClass" load_steps=18 format=3 uid="uid://r0vriv0j5ote"]
 
 [ext_resource type="Texture2D" uid="uid://oefrfeuyan0e" path="res://art/units/geomancer/Geomancer Icon.png" id="1_8ln0j"]
 [ext_resource type="Script" uid="uid://b823ipo4ebjd5" path="res://scripts/data/unit_class.gd" id="1_phwwh"]
@@ -15,6 +15,7 @@
 [ext_resource type="Texture2D" uid="uid://lcwnjvsxy7u1" path="res://art/units/geomancer/animations/idle/Geomancer Idle Animation6.png" id="7_ixbsb"]
 [ext_resource type="Texture2D" uid="uid://u7s1r1mbdt4e" path="res://art/units/geomancer/animations/idle/Geomancer Idle Animation7.png" id="8_gk2vh"]
 [ext_resource type="Texture2D" uid="uid://dlkf6binjg8lu" path="res://art/units/geomancer/animations/idle/Geomancer Idle Animation8.png" id="9_p3mva"]
+[ext_resource type="Resource" uid="uid://3num0yl6qwjv" path="res://data/skills/geomancer/EarthenRetaliation.tres" id="15_svlp8"]
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_84svg"]
 animations = [{
@@ -55,7 +56,7 @@ max_hp = 15
 atk = 3
 defense = 2
 max_mana = 10
-skills = Array[ExtResource("2_du10u")]([ExtResource("3_du10u"), ExtResource("4_8f8no"), ExtResource("5_l41ud")])
+skills = Array[ExtResource("2_du10u")]([ExtResource("3_du10u"), ExtResource("4_8f8no"), ExtResource("5_l41ud"), ExtResource("15_svlp8")])
 growth_atk = 0.3
 growth_defense = 0.6
 growth_move = 0.0

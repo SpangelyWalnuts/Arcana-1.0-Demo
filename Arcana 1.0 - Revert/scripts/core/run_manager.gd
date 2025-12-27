@@ -122,12 +122,15 @@ const EQUIPMENT_DEF_PATHS := [
 	"res://data/equipment/uncommon/Boots.tres",
 	"res://data/equipment/uncommon/CounterCurse.tres",
 	"res://data/equipment/uncommon/SoulStone.tres",
+	"res://data/equipment/uncommon/FrozenTear.tres",
 	
 	"res://data/equipment/rare/FurCoat.tres",
 	"res://data/equipment/rare/StartingGear.tres",
 	"res://data/equipment/rare/CurseBook.tres",
 	"res://data/equipment/rare/DryMantle.tres",
+	"res://data/equipment/rare/LivingEarth.tres",
 	
+	"res://data/equipment/legendary/OverloadedCloak.tres",	
 	"res://data/equipment/legendary/ParallelThought.tres",
 	"res://data/equipment/legendary/MiracleIdol.tres",
 ]
@@ -171,7 +174,7 @@ func start_new_run() -> void:
 	_map_seed_floor = -1
 	current_floor = 1
 	refresh_floor_config()
-	gold = 100
+	gold = 500
 	artifacts.clear()
 
 	# Reset state
@@ -663,7 +666,7 @@ func generate_shop_stock(floor: int) -> void:
 
 	# Slot counts (keep stable for readability; adjust later if you want)
 	var num_items: int = mini(3, item_defs.size())
-	var num_equips: int = mini(3, equipment_defs.size())
+	var num_equips: int = mini(11, equipment_defs.size())
 
 	# Boss floor? Guarantee 1 rare+ equipment slot if possible
 	var boss: bool = (floor % 5) == 0

@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://u1cupmdpfkdu"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_c8lwb"]
+
+[resource]
+script = ExtResource("1_c8lwb")
+name = "Fault Line"
+metadata/_custom_type_script = "uid://sakf75ug1g8j"

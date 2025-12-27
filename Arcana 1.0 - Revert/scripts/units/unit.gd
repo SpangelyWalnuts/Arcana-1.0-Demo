@@ -8,6 +8,7 @@ var skills: Array = []   # array of Skill resources
 var level: int = 1
 var exp: int = 0
 var unit_data: UnitData = null
+var effect_runner: EffectRunner = null  # reactive passives (equipment/arcana)
 
 @export var visuals_path: NodePath = NodePath("AnimatedSprite2D")
 var _outline_mat: ShaderMaterial
@@ -198,6 +199,11 @@ func _ready() -> void:
 
 
 	_update_hp_bar()
+
+	# 7.5) Effect runner (reactive effects from equipment / arcana buffs)
+	effect_runner = EffectRunner.new()
+	effect_runner.setup(self)
+
 	refresh_status_icons()  # start empty, but keeps UI clean
 	_refresh_boss_icon()
 
@@ -232,6 +238,36 @@ func reset_for_new_turn() -> void:
 
 func is_enemy_of(other) -> bool:
 	return team != other.team
+
+
+
+func on_basic_attack_taken(ctx: Dictionary) -> void:
+	if effect_runner == null:
+		return
+
+	var effects: Array = effect_runner.gather_effects()
+	for effect in effects:
+		if effect != null and effect.has_method("on_basic_attack_taken"):
+			effect.on_basic_attack_taken(self, ctx)
+
+
+
+func on_before_damage_taken(ctx: Dictionary) -> void:
+	if effect_runner == null:
+		return
+	var effects: Array = effect_runner.gather_effects()
+	for effect in effects:
+		if effect != null and effect.has_method("on_before_damage_taken"):
+			effect.on_before_damage_taken(self, ctx)
+
+
+func on_before_damage_dealt(ctx: Dictionary) -> void:
+	if effect_runner == null:
+		return
+	var effects: Array = effect_runner.gather_effects()
+	for effect in effects:
+		if effect != null and effect.has_method("on_before_damage_dealt"):
+			effect.on_before_damage_dealt(self, ctx)
 
 
 func take_damage(amount: int) -> bool:
@@ -726,3 +762,11 @@ func move_along_path(path: Array[Vector2i], grid: Node) -> void:
 
 	_play_idle_anim()
 	_is_moving = false
+
+func get_equipment() -> Array:
+	if unit_data == null:
+		return []
+	return unit_data.equipment_slots
+
+func get_defense() -> int:
+	return defense

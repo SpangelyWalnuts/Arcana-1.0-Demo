@@ -14,6 +14,7 @@ const STATUS_ICON_TEXTURES: Dictionary = {
 	"wet": preload("res://art/ui/status_icons/wet.png"),
 	"chilled": preload("res://art/ui/status_icons/chilled.png"),
 	"shocked": preload("res://art/ui/status_icons/fatigue.png"),
+	"static_retaliation": preload("res://art/ui/status_icons/fatigue.png"),
 	"frozen": preload("res://art/ui/status_icons/Frozen.png"),
 }
 

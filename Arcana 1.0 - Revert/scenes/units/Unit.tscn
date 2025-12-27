@@ -15,7 +15,7 @@ intent_attack_texture = ExtResource("2_5uit4")
 intent_move_texture = ExtResource("3_e2ob1")
 intent_wait_texture = ExtResource("4_5uit4")
 intent_cast_texture = ExtResource("5_e2ob1")
-move_seconds_per_tile = 0.5
+move_seconds_per_tile = 0.4
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture_filter = 1

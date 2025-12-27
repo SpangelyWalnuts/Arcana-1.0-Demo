@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Equipment" load_steps=5 format=3 uid="uid://7my0q33v4xyi"]
+
+[ext_resource type="Script" uid="uid://bykyqy61esv3j" path="res://scripts/effects/CombatEffect.gd" id="1_pcwne"]
+[ext_resource type="Script" uid="uid://3q80t7ed60a1" path="res://scripts/effects/StaticRetaliationEffect.gd" id="2_45gjc"]
+[ext_resource type="Script" uid="uid://bnsyp2yvudsd2" path="res://scripts/data/equipment.gd" id="3_eul8r"]
+
+[sub_resource type="Resource" id="Resource_feoxa"]
+script = ExtResource("2_45gjc")
+metadata/_custom_type_script = "uid://3q80t7ed60a1"
+
+[resource]
+script = ExtResource("3_eul8r")
+name = "Overloaded Cloak"
+rarity = "Legendary"
+immune_status_keys = Array[StringName]([&"shocked"])
+effects = Array[ExtResource("1_pcwne")]([SubResource("Resource_feoxa")])
+metadata/_custom_type_script = "uid://bnsyp2yvudsd2"

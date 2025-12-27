@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://ueue077cs1wb"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_iodjw"]
+
+[resource]
+script = ExtResource("1_iodjw")
+name = "Ice Mirror"
+description = "Target gains buff that when hit by a basic attack, the attacker become chilled."
+mana_cost = 3
+effect_type = 2
+cast_range = 0
+target_type = 3
+can_target_self = true
+status_key = &"ice_mirror"
+duration_turns = 3
+metadata/_custom_type_script = "uid://sakf75ug1g8j"

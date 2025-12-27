@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://3evwqn4bty2h"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_a1ewp"]
+
+[resource]
+script = ExtResource("1_a1ewp")
+name = "Lightning Rod"
+metadata/_custom_type_script = "uid://sakf75ug1g8j"

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Skill" load_steps=2 format=3 uid="uid://dwpuxkrovpmcq"]
+
+[ext_resource type="Script" uid="uid://sakf75ug1g8j" path="res://scripts/data/skill.gd" id="1_hvo27"]
+
+[resource]
+script = ExtResource("1_hvo27")
+name = "Hymn"
+description = "Allies in radius gain resist next status applied."
+mana_cost = 4
+effect_type = 2
+cast_range = 0
+aoe_radius = 2
+target_type = 2
+can_target_self = true
+metadata/_custom_type_script = "uid://sakf75ug1g8j"

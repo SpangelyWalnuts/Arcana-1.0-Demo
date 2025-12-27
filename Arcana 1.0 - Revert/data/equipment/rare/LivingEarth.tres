@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Equipment" load_steps=5 format=3 uid="uid://bl85iufc7dqmd"]
+
+[ext_resource type="Script" uid="uid://bykyqy61esv3j" path="res://scripts/effects/CombatEffect.gd" id="1_om65s"]
+[ext_resource type="Script" uid="uid://d0lof4evyutk8" path="res://scripts/effects/LivingBedrockEffect.gd" id="2_4bylk"]
+[ext_resource type="Script" uid="uid://bnsyp2yvudsd2" path="res://scripts/data/equipment.gd" id="2_nf6xv"]
+
+[sub_resource type="Resource" id="Resource_huiqh"]
+script = ExtResource("2_4bylk")
+metadata/_custom_type_script = "uid://d0lof4evyutk8"
+
+[resource]
+script = ExtResource("2_nf6xv")
+name = "Living Earth"
+rarity = "Rare"
+bonus_max_hp = 4
+bonus_defense = 3
+effects = Array[ExtResource("1_om65s")]([SubResource("Resource_huiqh")])
+metadata/_custom_type_script = "uid://bnsyp2yvudsd2"
